@@ -32,7 +32,7 @@ function deleteTsOutput(parentPath) {
         if (fs.lstatSync(curPath).isDirectory()) {
             if (file == "ts-output") {
                 fs.rmSync(curPath, { recursive: true, force: true })
-            } else {
+            } else if (file !== "#current-cloud-backend") {
                 deleteTsOutput(curPath)
             }
         }
