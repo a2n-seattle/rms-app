@@ -21,15 +21,15 @@ jobs:
 
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: use node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
 
       - name: configure amplify
-        uses: ambientlight/amplify-cli-action@0.2.2
+        uses: actions/amplify-cli-action@0.3.0
         with:
           amplify_command: configure
           amplify_env: alpha
