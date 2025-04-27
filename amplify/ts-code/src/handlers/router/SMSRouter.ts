@@ -4,7 +4,7 @@ import { DDBClient } from "../../injection/db/DDBClient"
 import { CloudWatchClient } from "../../injection/metrics/CloudWatchClient"
 import { MetricsClient } from "../../injection/metrics/MetricsClient"
 import { SNSEvent, SNSEventRecord, SNSHandler } from "aws-lambda"
-import { Pinpoint } from "aws-sdk"
+import { Pinpoint, SendMessagesCommandInput } from "@aws-sdk/client-pinpoint";
 
 const pinpoint: Pinpoint = new Pinpoint()
 
@@ -46,7 +46,7 @@ class SMSRouter {
      * Function to send Pinpoint SMS response.
      */
     private sendMessage(response: string): Promise<any> {
-        const params: Pinpoint.Types.SendMessagesRequest = {
+        const params: SendMessagesCommandInput = {
             ApplicationId: process.env.PinpointAppId,
             MessageRequest: {
                 Addresses: {
@@ -64,7 +64,7 @@ class SMSRouter {
             }
         }
 
-        return pinpoint.sendMessages(params).promise()
+        return pinpoint.sendMessages(params)
             .then(
                 () => {
                     console.log(`Message sent to ${this.responseDestination}`)
@@ -73,7 +73,7 @@ class SMSRouter {
                     console.error(`Error encountered when attempting to send to ${this.responseDestination}:`)
                     console.error(reason)
                 }
-            )
+            );
     }
 }
 

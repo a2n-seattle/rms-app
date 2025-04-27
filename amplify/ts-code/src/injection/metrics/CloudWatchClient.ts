@@ -1,6 +1,5 @@
 import { MetricsClient } from "./MetricsClient"
-import { CloudWatch } from "aws-sdk"
-import { PutMetricDataInput } from "aws-sdk/clients/cloudwatch"
+import { CloudWatch, CloudWatchClientConfig, PutMetricDataCommandInput } from "@aws-sdk/client-cloudwatch";
 
 const NAMESPACE_PREFIX = "gp-seattle-inventory/"
 
@@ -8,7 +7,7 @@ export class CloudWatchClient implements MetricsClient {
     private readonly context: string
     private readonly cw: CloudWatch
 
-    public constructor(context: string, options?: CloudWatch.ClientConfiguration) {
+    public constructor(context: string, options?: CloudWatchClientConfig) {
         this.context = context
         this.cw = new CloudWatch(options)
     }
@@ -36,7 +35,7 @@ export class CloudWatchClient implements MetricsClient {
 
     private emitDuration(namespace: string, name: string, startTime: number): Promise<{}> {
         const duration: number = Date.now() - startTime
-        const param: PutMetricDataInput = {
+        const param: PutMetricDataCommandInput = {
             Namespace: NAMESPACE_PREFIX + namespace,
             MetricData: [
                 {
@@ -55,11 +54,11 @@ export class CloudWatchClient implements MetricsClient {
                 }
             ]
         }
-        return this.cw.putMetricData(param).promise()
+        return this.cw.putMetricData(param);
     }
 
     private emitErrors(namespace: string, name: string, value: 0 | 1): Promise<{}> {
-        const param: PutMetricDataInput = {
+        const param: PutMetricDataCommandInput = {
             Namespace: NAMESPACE_PREFIX + namespace,
             MetricData: [
                 {
@@ -78,6 +77,6 @@ export class CloudWatchClient implements MetricsClient {
                 }
             ]
         }
-        return this.cw.putMetricData(param).promise()
+        return this.cw.putMetricData(param);
     }
 }
