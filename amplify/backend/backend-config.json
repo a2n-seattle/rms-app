@@ -16,7 +16,14 @@
       "service": "AppSync"
     }
   },
-  "auth": {},
+  "auth": {
+    "rms3d290491": {
+      "service": "Cognito",
+      "providerPlugin": "awscloudformation",
+      "dependsOn": [],
+      "customAuth": false
+    }
+  },
   "function": {
     "AddItem": {
       "build": true,
