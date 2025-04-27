@@ -24,7 +24,7 @@ test('will throw excpetion when name is invalid', async () => {
             name: TestConstants.BAD_REQUEST,
             description: TestConstants.DESCRIPTION_2
         })
-    ).rejects.toThrow("Cannot set property 'description' of undefined")
+    ).rejects.toThrow("Cannot set properties of undefined (setting 'description')")
     expect(dbClient.getDB()).toEqual(DBSeed.ONE_NAME)
 })
 

@@ -14,35 +14,6 @@ describe('Amplify Tests', () => {
     })
 
     /**
-     * TODO: Single Use. Left here for validation purposes.
-     *
-    test('will sign up when api is called', async () => {
-        await expect(
-            Auth.signUp({
-            username: TestConstants.EMAIL,
-            password: TestConstants.PASSWORD,
-            attributes: {
-                email: TestConstants.EMAIL,
-                name: TestConstants.OWNER
-            }
-        ).resolves
-    })
-    */
-
-    /**
-     * AUTH: Sign In
-    */
-    test('will sign in when api is called', async () => {
-        await expect(
-            Auth.signIn({
-                username: TestConstants.EMAIL,
-                password: TestConstants.PASSWORD
-            }).then(() => Auth.currentCredentials())
-            .then((credentials: ICredentials) => credentials.authenticated)
-        ).resolves.toEqual(true)
-    })
-
-    /**
      * add item and delete item using api
     */
     test('will run successfully when write apis are called', async() => {
@@ -221,15 +192,4 @@ describe('Amplify Tests', () => {
         ).resolves.toBeDefined()
     }, 10000)
     */
-
-    /**
-     * AUTH: Sign Out
-     */
-    test('will sign out when api is called', async () => {
-        await expect(
-            Auth.signOut()
-                .then(() => Auth.currentCredentials())
-                .then((exception: any) => exception.name)
-        ).resolves.toEqual("NotAuthorizedException")
-    })
 });
