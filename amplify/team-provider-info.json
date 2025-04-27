@@ -9,70 +9,84 @@
       "UnauthRoleName": "amplify-rms-alpha-233046-unauthRole",
       "StackName": "amplify-rms-alpha-233046",
       "StackId": "arn:aws:cloudformation:us-west-2:801118485191:stack/amplify-rms-alpha-233046/574ac510-f424-11eb-b35b-06ad074ac0a3",
-      "AmplifyAppId": "dsn8z7b3klbw3"
+      "AmplifyAppId": "dsn8z7b3klbw3",
+      "AuthTriggerTemplateURL": ""
     },
     "categories": {
       "function": {
         "smsrouter": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/smsrouter-7742677962446678594f-build.zip"
+          "s3Key": "amplify-builds/smsrouter-39326a4668774562754e-build.zip"
         },
         "BorrowBatch": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/BorrowBatch-467563623937627a486c-build.zip"
+          "s3Key": "amplify-builds/BorrowBatch-32524447593377384261-build.zip"
         },
         "ReturnBatch": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/ReturnBatch-5534376a466d76366166-build.zip"
+          "s3Key": "amplify-builds/ReturnBatch-64705839346f47485a49-build.zip"
         },
         "ReturnItem": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/ReturnItem-52734a38354c6f666e4e-build.zip"
+          "s3Key": "amplify-builds/ReturnItem-70724444524c5255344f-build.zip"
         },
         "BorrowItem": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/BorrowItem-78516653326d5778445a-build.zip"
+          "s3Key": "amplify-builds/BorrowItem-3336796771797a666339-build.zip"
         },
         "DeleteBatch": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/DeleteBatch-7443446832545861706e-build.zip"
+          "s3Key": "amplify-builds/DeleteBatch-366e52436a372b424647-build.zip"
         },
         "CreateBatch": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/CreateBatch-6a5778306964556f6270-build.zip"
+          "s3Key": "amplify-builds/CreateBatch-414f4b416f563255617a-build.zip"
         },
         "DeleteItem": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/DeleteItem-516d47414d543470624a-build.zip"
+          "s3Key": "amplify-builds/DeleteItem-7533587155666861732f-build.zip"
         },
         "AddItem": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/AddItem-4957434d713432305952-build.zip"
+          "s3Key": "amplify-builds/AddItem-533748494f316c573853-build.zip"
         },
         "UpdateDescription": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/UpdateDescription-4b4233313548754b3654-build.zip"
+          "s3Key": "amplify-builds/UpdateDescription-425635477a444e637566-build.zip"
         },
         "UpdateTags": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/UpdateTags-3667326b3971314b636c-build.zip"
+          "s3Key": "amplify-builds/UpdateTags-3364786f4b664851664c-build.zip"
         },
         "UpdateItemOwner": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/UpdateItemOwner-79306575325676447935-build.zip"
+          "s3Key": "amplify-builds/UpdateItemOwner-424e6b795142684b695a-build.zip"
         },
         "UpdateItemNotes": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/UpdateItemNotes-6570797a48434e454142-build.zip"
+          "s3Key": "amplify-builds/UpdateItemNotes-2f65684c7a656f4f4f50-build.zip"
         },
         "CreateReservation": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/CreateReservation-62485335617574326131-build.zip"
+          "s3Key": "amplify-builds/CreateReservation-6436565036356e52376e-build.zip"
         },
         "DeleteReservation": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/DeleteReservation-6f7144666457704d6563-build.zip"
+          "s3Key": "amplify-builds/DeleteReservation-6e366747305846505a35-build.zip"
         }
+      },
+      "auth": {
+        "rms3d290491": {}
+      },
+      "storage": {
+        "batch": {},
+        "history": {},
+        "items": {},
+        "main": {},
+        "rms": {},
+        "schedule": {},
+        "tags": {},
+        "transactions": {}
       }
     }
   }
