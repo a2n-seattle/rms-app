@@ -12,69 +12,66 @@
       "AmplifyAppId": "dsn8z7b3klbw3"
     },
     "categories": {
-      "auth": {
-        "rms3d290491": {}
-      },
       "function": {
         "smsrouter": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/smsrouter-642f744733436155424b-build.zip"
+          "s3Key": "amplify-builds/smsrouter-7742677962446678594f-build.zip"
         },
         "BorrowBatch": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/BorrowBatch-6e584546455634727171-build.zip"
+          "s3Key": "amplify-builds/BorrowBatch-467563623937627a486c-build.zip"
         },
         "ReturnBatch": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/ReturnBatch-654868774d63746d7473-build.zip"
+          "s3Key": "amplify-builds/ReturnBatch-5534376a466d76366166-build.zip"
         },
         "ReturnItem": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/ReturnItem-7474755067434d67616b-build.zip"
+          "s3Key": "amplify-builds/ReturnItem-52734a38354c6f666e4e-build.zip"
         },
         "BorrowItem": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/BorrowItem-316a6a422f444b446750-build.zip"
+          "s3Key": "amplify-builds/BorrowItem-78516653326d5778445a-build.zip"
         },
         "DeleteBatch": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/DeleteBatch-64564e512b78456a4964-build.zip"
+          "s3Key": "amplify-builds/DeleteBatch-7443446832545861706e-build.zip"
         },
         "CreateBatch": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/CreateBatch-51613054435a6c68795a-build.zip"
+          "s3Key": "amplify-builds/CreateBatch-6a5778306964556f6270-build.zip"
         },
         "DeleteItem": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/DeleteItem-35356563596775325058-build.zip"
+          "s3Key": "amplify-builds/DeleteItem-516d47414d543470624a-build.zip"
         },
         "AddItem": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/AddItem-41492f34574575706851-build.zip"
+          "s3Key": "amplify-builds/AddItem-4957434d713432305952-build.zip"
         },
         "UpdateDescription": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/UpdateDescription-5739574c5a6e4241476b-build.zip"
+          "s3Key": "amplify-builds/UpdateDescription-4b4233313548754b3654-build.zip"
         },
         "UpdateTags": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/UpdateTags-72784336734d466f4b47-build.zip"
+          "s3Key": "amplify-builds/UpdateTags-3667326b3971314b636c-build.zip"
         },
         "UpdateItemOwner": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/UpdateItemOwner-495746556a742f714d56-build.zip"
+          "s3Key": "amplify-builds/UpdateItemOwner-79306575325676447935-build.zip"
         },
         "UpdateItemNotes": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/UpdateItemNotes-6f4843694d4b546b2b35-build.zip"
+          "s3Key": "amplify-builds/UpdateItemNotes-6570797a48434e454142-build.zip"
         },
         "CreateReservation": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/CreateReservation-725a6362534d7474324c-build.zip"
+          "s3Key": "amplify-builds/CreateReservation-62485335617574326131-build.zip"
         },
         "DeleteReservation": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/DeleteReservation-336e6e35654f72347955-build.zip"
+          "s3Key": "amplify-builds/DeleteReservation-6f7144666457704d6563-build.zip"
         }
       }
     }
