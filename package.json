@@ -22,7 +22,7 @@
     "@react-navigation/native": "^6.0.1",
     "@react-navigation/stack": "^6.0.1",
     "@reduxjs/toolkit": "^1.5.1",
-    "aws-amplify": "^4.2.2",
+    "aws-amplify": "^4.3.46",
     "aws-amplify-react-native": "^5.0.3",
     "aws-sdk": "^2.812.0",
     "dynamodb-stream": "^1.1.4",
