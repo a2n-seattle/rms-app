@@ -42,9 +42,12 @@ export class AddItem {
                     } else {
                         // Item doesn't exist, so need to create new item.
                         return this.transactionsTable.appendToScratch(number, "createItem", true)
-                            .then(() => "Related Category Tags (separated by spaces):")
+                            .then(() => "Optional name of the individual Item that person is able to set:")
                     }
                 })
+        } else if (scratch.createItem && scratch.itemName == undefined) {
+            return this.transactionsTable.appendToScratch(number, "itemName", request)
+                .then(() => "Related Category Tags (separated by spaces):")
         } else if (scratch.createItem && scratch.tags == undefined) {
             const tags: string[] = request.split(/(\s+)/)
                 .filter((str: string) => str.trim().length > 0)
@@ -54,8 +57,11 @@ export class AddItem {
         } else if (scratch.createItem && scratch.description == undefined) {
             return this.transactionsTable.appendToScratch(number, "description", request)
                 .then(() => "Owner of this item (or location where it's stored if church owned):")
-        } else if (scratch.owner === undefined) {
+        } else if (scratch.createItem && scratch.owner == undefined) {
             return this.transactionsTable.appendToScratch(number, "owner", request)
+                .then(() => "Location where the item is stored:")
+        } else if (scratch.location === undefined) {
+            return this.transactionsTable.appendToScratch(number, "location", request)
                 .then(() => "Optional notes about this specific item:")
         } else {
             scratch.notes = request
@@ -70,10 +76,12 @@ export class AddItem {
      * Required params in scratch object:
      * @param id Intended ID of item
      * @param name Name of Item
+     * @param itemName Name of the Individual Item that person is able to set
      * @param description Optional description about the item
      * @param tags Tags to query the item with
      * @param owner Owner of this item (or location where it's stored if church owned)
-     * @param tags Notes about this specific item.
+     * @param location Location where item is stored
+     * @param tags Notes about this specific item
      * Params used by router exclusively:
      * @param createItem Flag to indicate item needs to be created (used by the router function)
      */
@@ -93,8 +101,12 @@ export class AddItem {
                         }
                     }).then(() => this.getUniqueId(input.name))
                     .then((id: string) => {
-                        return this.itemTable.create(id, input.name, input.owner, input.notes)
-                            .then(() => id)
+                        if (input.itemName === undefined) {
+                            input.itemName = id
+                        }
+                        return this.itemTable.create(id, input.name, input.itemName, input.owner, input.location, input.notes)
+                        .then(() => id)
+                        
                     })
             },
             AddItem.NAME, this.metrics
@@ -134,6 +146,8 @@ export class AddItem {
 export interface AddItemInput {
     name?: string,
     displayName?:string,
+    itemName?:string,
+    location?:string,
     createItem?: boolean,
     description?: string,
     tags?: string[],

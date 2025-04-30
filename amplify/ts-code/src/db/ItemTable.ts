@@ -15,7 +15,9 @@ export class ItemTable {
     public create(
         id: string,
         name: string,
+        itemName: string,
         owner: string,
+        location: string,
         notes: string
     ): Promise<DocumentClient.PutItemOutput> {
         return this.get(id)
@@ -40,7 +42,9 @@ export class ItemTable {
                     const item: ItemsSchema = {
                         id: id,
                         name: name.toLowerCase(),
+                        itemName: itemName,
                         owner: owner,
+                        location: location,
                         notes: notes,
                         borrower: "",
                         batch: [],
@@ -140,7 +144,7 @@ export class ItemTable {
      */
      public updateItem(
         id: string,
-        key: "owner" | "notes",
+        key: "owner" | "notes" | "location",
         val: string,
         expectedValue?: string
     ): Promise<DocumentClient.GetItemOutput> {

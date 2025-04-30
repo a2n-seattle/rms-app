@@ -89,15 +89,19 @@ interface ScratchInterface {
 // Output Formatting Functions. Exporting them to be used for testing.
 
 export function getItemHeader(entry: MainSchema): string {
-    return `name: ${entry.displayName}`
+    return `id: ${entry.id}`
+        + `\ndisplayName: ${entry.displayName}`
         + `\ndescription: ${entry.description}`
         + `\ntags: ${entry.tags.toString()}`
         + `\nitems:`
 }
 
 export function getItemItem(entry: ItemsSchema) {
-    return `\n  id: ${entry.id}`
+    return `\n    id: ${entry.id}`
+        + `\n    name: ${entry.name}`
+        + `\n    itemName: ${entry.itemName}`
         + `\n    owner: ${entry.owner}`
+        + `\n    location: ${entry.location}`
         + `\n    borrower: ${entry.borrower}`
         + `\n    batch: ${entry.batch.toString()}`
         + `\n    notes: ${entry.notes}`
