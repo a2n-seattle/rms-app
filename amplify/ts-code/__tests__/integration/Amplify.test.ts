@@ -64,16 +64,6 @@ describe('Amplify Tests', () => {
         const itemId = addItemResponse.Payload.transformToString().substring(1, addItemResponse.Payload.transformToString().length - 1)
         expect(itemId).toContain("test_name-")
         
-        // Update Description
-        const updateDescriptionResponse: InvokeCommandOutput = await lambda.invoke({
-            FunctionName: `UpdateDescription${ENV_SUFFIX}`,
-            Payload: JSON.stringify({
-                name: TestConstants.DISPLAYNAME,
-                description: TestConstants.DESCRIPTION
-            })
-        })
-        expect(updateDescriptionResponse.Payload.transformToString()).toEqual(`"Successfully updated description of '${TestConstants.DISPLAYNAME}'"`)
-
         // Update Tags
         const updateTagsResponse: InvokeCommandOutput = await lambda.invoke({
             FunctionName: `UpdateTags${ENV_SUFFIX}`,
@@ -83,27 +73,6 @@ describe('Amplify Tests', () => {
             })
         })
         expect(updateTagsResponse.Payload.transformToString()).toEqual(`"Successfully updated tags for '${TestConstants.DISPLAYNAME}'"`)
-
-        // Update Item Owner
-        const updateItemOwnerResponse: InvokeCommandOutput = await lambda.invoke({
-            FunctionName: `UpdateItemOwner${ENV_SUFFIX}`,
-            Payload: JSON.stringify({
-                id: itemId,
-                currentOwner: TestConstants.OWNER,
-                newOwner: TestConstants.OWNER
-            })
-        })
-        expect(updateItemOwnerResponse.Payload.transformToString()).toEqual(`"Successfully updated owner for item '${itemId}'"`)
-
-        // Update Item Notes
-        const updateItemNotesResponse: InvokeCommandOutput = await lambda.invoke({
-            FunctionName: `UpdateItemNotes${ENV_SUFFIX}`,
-            Payload: JSON.stringify({
-                id: itemId,
-                note: TestConstants.NOTES
-            })
-        })
-        expect(updateItemNotesResponse.Payload.transformToString()).toEqual(`"Successfully updated notes about item '${itemId}'"`)
 
         // Borrow Item
         const borrowItemResponse: InvokeCommandOutput = await lambda.invoke({

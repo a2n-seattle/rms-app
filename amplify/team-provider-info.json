@@ -18,14 +18,6 @@
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
           "s3Key": "amplify-builds/smsrouter-39326a4668774562754e-build.zip"
         },
-        "BorrowBatch": {
-          "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/BorrowBatch-32524447593377384261-build.zip"
-        },
-        "ReturnBatch": {
-          "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/ReturnBatch-64705839346f47485a49-build.zip"
-        },
         "ReturnItem": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
           "s3Key": "amplify-builds/ReturnItem-70724444524c5255344f-build.zip"
@@ -50,21 +42,9 @@
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
           "s3Key": "amplify-builds/AddItem-533748494f316c573853-build.zip"
         },
-        "UpdateDescription": {
-          "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/UpdateDescription-425635477a444e637566-build.zip"
-        },
         "UpdateTags": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
           "s3Key": "amplify-builds/UpdateTags-3364786f4b664851664c-build.zip"
-        },
-        "UpdateItemOwner": {
-          "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/UpdateItemOwner-424e6b795142684b695a-build.zip"
-        },
-        "UpdateItemNotes": {
-          "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/UpdateItemNotes-2f65684c7a656f4f4f50-build.zip"
         },
         "CreateReservation": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
