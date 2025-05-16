@@ -2,6 +2,9 @@ type Main @model @auth(rules: [{allow: private, operations: [read]}]) {
     id: ID!
     displayName: String!
     description: String
+    owner: String
+    location: String
+    batch:[String!]
     tags: [String!]
     items: [String!]
 }
@@ -9,9 +12,10 @@ type Main @model @auth(rules: [{allow: private, operations: [read]}]) {
 type Items @model @auth(rules: [{allow: private, operations: [read]}]) {
     id: ID!
     name: String!
-    owner: String!
+    friendlyName: String
     borrower: String!
-    batch: [String!]
+    borrowTime: String
+    returnTime: String
     history: [String!]
     schedule: [String!]
     notes: String
@@ -48,6 +52,6 @@ type Schedule @model @auth(rules: [{allow: private, operations: [read]}]) {
 }
 
 enum Action {
-    borrow 
+    borrow
     return
 }
