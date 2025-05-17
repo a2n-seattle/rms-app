@@ -19,5 +19,10 @@ module.exports = {
         "react"
     ],
     "rules": {
+    },
+    "globals": {
+        "expect": "readonly",
+        "jest": "readonly",
+        "test": "readonly"
     }
 };
