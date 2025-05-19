@@ -21,44 +21,29 @@ export class BorrowFromSchedule {
      * Required params in scratch object:
      * @param scheduleId schedule ID
      * @param notes Notes about this action
+     * 
+     * @returns Promise that resolves to a string indicating success or failure
+     * @throws Error if schedule ID is not found
      */
     public execute(input: BorrowFromScheduleInput): Promise<string> {
         return emitAPIMetrics(
             () => {
-                let scheduleDetails: { borrower: string, itemIds: string[] };
                 return this.performAllFVAs(input)
-                    .then(() => this.getScheduleDetails(input.scheduleId))
-                    .then((details: { borrower: string; itemIds: string[] }) => {
-                        scheduleDetails = details
-                        scheduleDetails.itemIds.map((id: string) =>
-                            this.itemTable.changeBorrower(id, scheduleDetails.borrower, "borrow", input.notes)
+                    .then(() => this.scheduleTable.get(input.scheduleId))
+                    .then((schedule) => {
+                        if (schedule == undefined) {
+                            throw new Error(`Reservation not found. id: '${input.scheduleId}' is invalid`)
+                        }
+                        schedule.itemIds.map((id: string) =>
+                            this.itemTable.changeBorrower(id, schedule.borrower, "borrow", input.notes)
                         )
+                        this.scheduleTable.delete(input.scheduleId)
                     }).then(() => {
-                        return this.scheduleTable.delete(input.scheduleId)
-                    }).then(() => {
-                        return `Successfully borrowed items from schedule '${input.scheduleId}' for '${scheduleDetails.borrower}'.`
+                        return `Successfully borrowed items from schedule '${input.scheduleId}'.`
                     });
             },
             BorrowFromSchedule.NAME, this.metrics
         );
-    }
-    
-
-    /**
-     * Get schedule details
-     *
-     * @param scheduleId ID of the schedule
-     */
-    // @returns Promise that resolves to an object containing the borrower and item IDs
-    // @throws Error if there are no schedules with specified schedule ID
-    private getScheduleDetails(scheduleId: string): Promise<{borrower: string, itemIds: string[]}> {
-        return this.scheduleTable.get(scheduleId)
-            .then((schedule) => {
-                if (schedule == undefined) {
-                    throw new Error(`Reservation not found. id: '${scheduleId}' is invalid`)
-                }
-                return {'borrower': schedule.borrower, 'itemIds': schedule.itemIds}
-            })
     }
 
     // /**
