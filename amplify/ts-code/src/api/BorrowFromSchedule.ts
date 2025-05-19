@@ -1,20 +1,20 @@
 import { ScheduleTable } from "../db/ScheduleTable"
-import { BorrowItem } from "./BorrowItem"
 import { DBClient } from "../injection/db/DBClient"
 import { MetricsClient } from "../injection/metrics/MetricsClient"
 import { emitAPIMetrics } from "../metrics/MetricsHelper"
+import { ItemTable } from "../db/ItemTable"
 
 export class BorrowFromSchedule {
     public static NAME: string = "borrow from schedule"
 
     private readonly scheduleTable: ScheduleTable
-    private readonly borrowItem: BorrowItem
+    private readonly itemTable: ItemTable
     private readonly metrics?: MetricsClient
 
     public constructor(client: DBClient, metrics?: MetricsClient) {
         this.scheduleTable = new ScheduleTable(client)
+        this.itemTable = new ItemTable(client)
         this.metrics = metrics
-        this.borrowItem = new BorrowItem(client, metrics)
     }
 
     /**
@@ -28,14 +28,12 @@ export class BorrowFromSchedule {
                 let scheduleDetails: { borrower: string, itemIds: string[] };
                 return this.performAllFVAs(input)
                     .then(() => this.getScheduleDetails(input.scheduleId))
-                    .then((details) => {
+                    .then((details: { borrower: string; itemIds: string[] }) => {
                         scheduleDetails = details
-                        this.borrowItem.execute({
-                            ids: scheduleDetails.itemIds,
-                            borrower: scheduleDetails.borrower,
-                            notes: input.notes
-                        })})
-                    .then(() => {
+                        scheduleDetails.itemIds.map((id: string) =>
+                            this.itemTable.changeBorrower(id, scheduleDetails.borrower, "borrow", input.notes)
+                        )
+                    }).then(() => {
                         return this.scheduleTable.delete(input.scheduleId)
                     }).then(() => {
                         return `Successfully borrowed items from schedule '${input.scheduleId}' for '${scheduleDetails.borrower}'.`
@@ -57,7 +55,7 @@ export class BorrowFromSchedule {
         return this.scheduleTable.get(scheduleId)
             .then((schedule) => {
                 if (schedule == undefined) {
-                    throw new Error("Schedule ID '" + scheduleId + "' does not exist.")
+                    throw new Error(`Reservation not found. id: '${scheduleId}' is invalid`)
                 }
                 return {'borrower': schedule.borrower, 'itemIds': schedule.itemIds}
             })

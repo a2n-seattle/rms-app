@@ -37,6 +37,6 @@ test('will fail when schedule id does not exist', async () => {
             scheduleId: scheduleId,
             notes: TestConstants.NOTES
         })
-    ).rejects.toThrow(`Schedule ID '${scheduleId}' does not exist.`)
+    ).rejects.toThrow(`Reservation not found. id: '${scheduleId}' is invalid`)
     expect(dbClient.getDB()).toEqual(DBSeed.ONE_NAME)
 })
