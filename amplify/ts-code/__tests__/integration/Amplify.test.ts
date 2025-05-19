@@ -1,7 +1,7 @@
 import { Amplify } from 'aws-amplify'
 import { AuthSession, fetchAuthSession, signIn, SignInOutput, signOut } from 'aws-amplify/auth';
 import { InvokeCommandOutput, Lambda } from '@aws-sdk/client-lambda';
-import { TestConstants } from "../../__dev__/db/DBTestConstants"
+import { TestConstants, TestTimestamps } from "../../__dev__/db/DBTestConstants"
 const awsExports = require('../../../../src/aws-exports').default
 
 const ENV_SUFFIX = '-alpha'
@@ -133,8 +133,8 @@ describe('Amplify Tests', () => {
             Payload: JSON.stringify({
                 borrower: TestConstants.BORROWER,
                 ids: [itemId],
-                startTime: TestConstants.START_DATE,
-                endTime: TestConstants.END_DATE,
+                startTime: TestTimestamps.START_DATE,
+                endTime: TestTimestamps.END_DATE,
                 notes: TestConstants.NOTES
             })
         })

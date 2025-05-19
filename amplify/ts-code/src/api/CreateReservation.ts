@@ -11,7 +11,6 @@ import { emitAPIMetrics } from "../metrics/MetricsHelper"
  */
 export class CreateReservation {
     public static NAME: string = "create reservation"
-    private static VALID_DATE: RegExp = new RegExp(/^\d{4}(-)(((0)[0-9])|((1)[0-2]))(-)([0-2][0-9]|(3)[0-1])(-)([0-1][0-9]|(2)[0-4])(-)([0-5][0-9])$/)
 
     private readonly scheduleTable: ScheduleTable
     private readonly itemTable: ItemTable
@@ -56,7 +55,7 @@ export class CreateReservation {
      * Required params in scratch object:
      * @param borrower Name of borrower
      * @param ids IDs of Items
-     * @param startTime: string,
+     * @param startTime: number,
      * @param endTime: string,
      * @param notes Notes about this action
      */
@@ -103,11 +102,11 @@ export class CreateReservation {
                 reject(new Error("Missing required field 'ids'"))
             } else if (input.startTime == undefined) {
                 reject(new Error("Missing required field 'startTime'"))
-            } else if (!CreateReservation.VALID_DATE.test(input.startTime)) {
+            } else if (Number.isNaN(input.startTime)) {
                 reject(new Error(`Date format incorrect for 'startTime' ${input.startTime}`))
             } else if (input.endTime == undefined) {
                 reject(new Error("Missing required field 'endTime'"))
-            } else if (!CreateReservation.VALID_DATE.test(input.endTime)) {
+            } else if (Number.isNaN(input.endTime)) {
                 reject(new Error(`Date format incorrect for 'endTime' ${input.endTime}`))
             }
             resolve()
@@ -118,7 +117,7 @@ export class CreateReservation {
 export interface CreateReservationInput {
     borrower?:string,
     ids?: string[],
-    startTime?: string,
-    endTime?: string,
+    startTime?: number,
+    endTime?: number,
     notes?: string
 }

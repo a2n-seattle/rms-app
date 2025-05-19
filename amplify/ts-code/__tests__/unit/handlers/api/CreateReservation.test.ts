@@ -1,7 +1,7 @@
 import { CreateReservation } from "../../../../src/api/CreateReservation"
 import getClients from "../../../../src/handlers/api/APIHelper"
 import { handler } from "../../../../src/handlers/api/CreateReservation"
-import { DBSeed, TestConstants} from "../../../../__dev__/db/DBTestConstants"
+import { DBSeed, TestConstants, TestTimestamps} from "../../../../__dev__/db/DBTestConstants"
 import { LocalDBClient } from "../../../../__dev__/db/LocalDBClient"
 import { LocalMetricsClient } from "../../../../__dev__/metrics/LocalMetricsClient"
 
@@ -19,8 +19,8 @@ test('will create reservation correctly when using handler', async () => {
         handler({
             borrower: TestConstants.BORROWER,
             ids: [TestConstants.ITEM_ID, TestConstants.ITEM_ID_2],
-            startTime: TestConstants.START_DATE,
-            endTime: TestConstants.END_DATE,
+            startTime: TestTimestamps.START_DATE,
+            endTime: TestTimestamps.END_DATE,
             notes: TestConstants.NOTES
         }, null, null)
     ).resolves.toEqual(TestConstants.RESERVATION_ID)

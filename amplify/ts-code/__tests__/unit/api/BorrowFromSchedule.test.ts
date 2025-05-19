@@ -11,7 +11,6 @@ test('will borrow item correctly when schedule id exists', async () => {
     Date.now = jest.fn(() => TestTimestamps.BORROW_BATCH)
 
     let scheduleId: string = TestConstants.RESERVATION_ID
-    let borrower: string = TestConstants.BORROWER
 
     await expect(
         api.execute({

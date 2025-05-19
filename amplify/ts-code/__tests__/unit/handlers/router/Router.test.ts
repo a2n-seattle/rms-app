@@ -373,10 +373,10 @@ test('will create reservation correctly when using router', async () => {
             return router.processRequest(TestConstants.BORROWER, TestConstants.NUMBER)
         }).then((output: string) => {
             expect(output).toEqual("Start time of reservation in yyyy-mm-dd-hr-min (Ex: 2022-23-02-20-30 for 2022 Feb 23 8:30PM)")
-            return router.processRequest(TestConstants.START_DATE, TestConstants.NUMBER)
+            return router.processRequest(TestTimestamps.START_DATE, TestConstants.NUMBER)
         }).then((output: string) => {
             expect(output).toEqual("End time of reservation in yyyy-mm-dd-hr-min (Ex: 2022-23-02-20-30 for 2022 Feb 23 8:30PM)")
-            return router.processRequest(TestConstants.END_DATE, TestConstants.NUMBER)
+            return router.processRequest(TestTimestamps.END_DATE, TestConstants.NUMBER)
         }).then((output: string) => {
             expect(output).toEqual("Optional notes to leave about this action:")
             return router.processRequest(TestConstants.NOTES, TestConstants.NUMBER)
@@ -394,8 +394,8 @@ test('will get reservation correctly when using router', async () => {
         id: TestConstants.RESERVATION_ID,
         borrower: TestConstants.BORROWER,
         itemIds: [TestConstants.ITEM_ID, TestConstants.ITEM_ID_2],
-        startTime: TestConstants.START_DATE,
-        endTime: TestConstants.END_DATE,
+        startTime: TestTimestamps.START_DATE,
+        endTime: TestTimestamps.END_DATE,
         notes: TestConstants.NOTES
     }
 

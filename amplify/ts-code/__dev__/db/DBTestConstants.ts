@@ -46,17 +46,20 @@ export enum TestConstants {
     NOTES_2 = "test note 2",
 
     RESERVATION_ID = "123-12345",
-    RESERVATION_ID_2 = "321-54321",
-    START_DATE = "2022-02-23-08-30",
-    END_DATE = "2022-02-25-08-30",
-    START_DATE_2 = "2022-02-24-10-30",
-    END_DATE_2 = "2022-02-25-05-30",
-    START_DATE_3 = "2022-02-22-05-30"
+    RESERVATION_ID_2 = "321-54321"
 }
 
 export enum TestTimestamps {
+    BAD_REQUEST = NaN,
+
     BORROW_ITEM = 1000000000000,
     RETURN_ITEM = 1000000000001,
     BORROW_BATCH = 1000000000010,
-    RETURN_BATCH = 1000000000011
+    RETURN_BATCH = 1000000000011,
+
+    START_DATE = new Date("2022-02-23 08:30").getTime(),
+    END_DATE = new Date("2022-02-25 08:30").getTime(),
+    START_DATE_2 = new Date("2022-02-24 10:30").getTime(),
+    END_DATE_2 = new Date("2022-02-25 05:30").getTime(),
+    START_DATE_3 = new Date("2022-02-22 05:30").getTime()
 }
