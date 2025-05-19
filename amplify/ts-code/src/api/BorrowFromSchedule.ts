@@ -37,8 +37,8 @@ export class BorrowFromSchedule {
                         schedule.itemIds.map((id: string) =>
                             this.itemTable.changeBorrower(id, schedule.borrower, "borrow", input.notes)
                         )
-                        this.scheduleTable.delete(input.scheduleId)
-                    }).then(() => {
+                    }).then(() => this.scheduleTable.delete(input.scheduleId))
+                    .then(() => {
                         return `Successfully borrowed items from schedule '${input.scheduleId}'.`
                     });
             },

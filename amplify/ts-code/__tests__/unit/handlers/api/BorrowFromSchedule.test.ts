@@ -22,7 +22,7 @@ test('will borrow item correctly with handler when schedule id exists', async ()
             scheduleId: scheduleId, 
             notes: TestConstants.NOTES
         }, null, null)
-    ).resolves.toEqual(`Successfully borrowed items from schedule '${scheduleId}' for '${borrower}'.`)
+    ).resolves.toEqual(`Successfully borrowed items from schedule '${scheduleId}'.`)
     expect(dbClient.getDB()).toEqual(DBSeed.TWO_NAMES_ONE_BATCH_BORROWED)
     metricsClient.assureState(0)
 })
