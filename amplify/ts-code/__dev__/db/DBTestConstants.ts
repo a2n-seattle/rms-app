@@ -54,6 +54,18 @@ export enum TestConstants {
     START_DATE_3 = "2022-02-22-05-30"
 }
 
+export const TestHistory = [
+    {
+        action: "borrow",
+        borrower: "test borrower",
+        id: "1000000000000-123",
+        itemId: "123",
+        name: "test name",
+        notes: "test note",
+        timestamp: 1000000000000
+    }
+];
+
 export enum TestTimestamps {
     BORROW_ITEM = 1000000000000,
     RETURN_ITEM = 1000000000001,

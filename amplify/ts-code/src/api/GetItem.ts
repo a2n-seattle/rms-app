@@ -82,7 +82,7 @@ export class ReturnObject {
     }
 }
 
-interface ScratchInterface {
+export interface ScratchInterface {
     key?: string
 }
 
