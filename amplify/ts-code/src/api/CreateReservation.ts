@@ -1,5 +1,4 @@
 import { ScheduleTable } from "../db/ScheduleTable"
-import { ItemTable } from "../db/ItemTable"
 import { TransactionsTable } from "../db/TransactionsTable"
 import { ScheduleSchema } from "../db/Schemas"
 import { DBClient } from "../injection/db/DBClient"
@@ -13,13 +12,11 @@ export class CreateReservation {
     public static NAME: string = "create reservation"
 
     private readonly scheduleTable: ScheduleTable
-    private readonly itemTable: ItemTable
     private readonly transactionsTable: TransactionsTable
     private readonly metrics?: MetricsClient
 
     public constructor(client: DBClient, metrics?: MetricsClient) {
         this.scheduleTable = new ScheduleTable(client)
-        this.itemTable = new ItemTable(client)
         this.transactionsTable = new TransactionsTable(client)
         this.metrics = metrics
     }
