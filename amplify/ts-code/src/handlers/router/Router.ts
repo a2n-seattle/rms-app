@@ -73,7 +73,6 @@ export class Router {
      * @param number Corresponding unique number, which is used to identify transactions from a given source.
      */
     public processRequest(request: string | number, number: string): Promise<string> {
-
         let processedRequest = request.toString().trim()
         processedRequest = (processedRequest === "none") ? "" : processedRequest
 
