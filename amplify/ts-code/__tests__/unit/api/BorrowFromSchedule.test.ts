@@ -11,14 +11,13 @@ test('will borrow item correctly when schedule id exists', async () => {
     Date.now = jest.fn(() => TestTimestamps.BORROW_BATCH)
 
     let scheduleId: string = TestConstants.RESERVATION_ID
-    let borrower: string = TestConstants.BORROWER
 
     await expect(
         api.execute({
             scheduleId: scheduleId,
             notes: TestConstants.NOTES
         })
-    ).resolves.toEqual(`Successfully borrowed items from schedule '${scheduleId}' for '${borrower}'.`)
+    ).resolves.toEqual(`Successfully borrowed items from schedule '${scheduleId}'.`)
     expect(dbClient.getDB()).toEqual(DBSeed.TWO_NAMES_ONE_BATCH_BORROWED)
 })
 

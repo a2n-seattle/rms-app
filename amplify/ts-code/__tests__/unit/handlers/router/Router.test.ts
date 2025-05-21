@@ -1,5 +1,4 @@
 import { AddItem } from "../../../../src/api/AddItem"
-import { BorrowBatch } from "../../../../src/api/BorrowBatch"
 import { BorrowItem } from "../../../../src/api/BorrowItem"
 import { CreateBatch } from "../../../../src/api/CreateBatch"
 import { CreateReservation } from "../../../../src/api/CreateReservation"
@@ -10,12 +9,8 @@ import { GetBatch, getBatchItem } from "../../../../src/api/GetBatch"
 import { GetItem, getItemHeader, getItemItem } from "../../../../src/api/GetItem"
 import { GetReservation, formatSchedule } from "../../../../src/api/GetReservation"
 import { PrintTable } from "../../../../src/api/internal/PrintTable"
-import { ReturnBatch } from "../../../../src/api/ReturnBatch"
 import { ReturnItem } from "../../../../src/api/ReturnItem"
 import { SearchItem, searchItemItem } from "../../../../src/api/SearchItem"
-import { UpdateDescription } from "../../../../src/api/UpdateDescription"
-import { UpdateItemNotes } from "../../../../src/api/UpdateItemNotes"
-import { UpdateItemOwner } from "../../../../src/api/UpdateItemOwner"
 import { UpdateTags } from "../../../../src/api/UpdateTags"
 import { ItemsSchema, MainSchema, ScheduleSchema } from "../../../../src/db/Schemas"
 import { ADVANCED_HELP_MENU, BASIC_HELP_MENU, HELP_MENU, Router } from "../../../../src/handlers/router/Router"
@@ -203,60 +198,6 @@ test('will get item correctly when given valid id', async () => {
         })
 })
 
-test('will update description correctly when using router', async () => {
-    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.ONE_NAME)
-    const router: Router = new Router(dbClient)
-
-    await router.processRequest(UpdateDescription.NAME, TestConstants.NUMBER)
-        .then((output: string) => {
-            expect(output).toEqual("Name of item:")
-            return router.processRequest(TestConstants.NAME, TestConstants.NUMBER)
-        }).then((output: string) => {
-            expect(output).toEqual("New Description:")
-            return router.processRequest(TestConstants.DESCRIPTION_2, TestConstants.NUMBER)
-        }).then((output: string) => {
-            expect(output).toEqual(`Successfully updated description of '${TestConstants.NAME}'`)
-            expect(dbClient.getDB()).toEqual(DBSeed.ONE_NAME_CHANGE_DESCRIPTION)
-        })
-})
-
-test('will update item notes correctly when using router', async () => {
-    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.ONE_NAME)
-    const router: Router = new Router(dbClient)
-
-    await router.processRequest(UpdateItemNotes.NAME, TestConstants.NUMBER)
-        .then((output: string) => {
-            expect(output).toEqual("ID of item:")
-            return router.processRequest(TestConstants.ITEM_ID, TestConstants.NUMBER)
-        }).then((output: string) => {
-            expect(output).toEqual("New Note:")
-            return router.processRequest(TestConstants.NOTES_2, TestConstants.NUMBER)
-        }).then((output: string) => {
-            expect(output).toEqual(`Successfully updated notes about item '${TestConstants.ITEM_ID}'`)
-            expect(dbClient.getDB()).toEqual(DBSeed.ONE_NAME_CHANGE_NOTE)
-        })
-})
-
-test('will update item owner correctly when using router', async () => {
-    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.ONE_NAME)
-    const router: Router = new Router(dbClient)
-
-    await router.processRequest(UpdateItemOwner.NAME, TestConstants.NUMBER)
-        .then((output: string) => {
-            expect(output).toEqual("ID of item:")
-            return router.processRequest(TestConstants.ITEM_ID, TestConstants.NUMBER)
-        }).then((output: string) => {
-            expect(output).toEqual("Current Owner (or location where it's stored if church owned):")
-            return router.processRequest(TestConstants.OWNER, TestConstants.NUMBER)
-        }).then((output: string) => {
-            expect(output).toEqual("New Owner (or location where it's stored if church owned):")
-            return router.processRequest(TestConstants.OWNER_2, TestConstants.NUMBER)
-        }).then((output: string) => {
-            expect(output).toEqual(`Successfully updated owner for item '${TestConstants.ITEM_ID}'`)
-            expect(dbClient.getDB()).toEqual(DBSeed.ONE_NAME_CHANGE_OWNER)
-        })
-})
-
 test('will update tags correctly when using router', async () => {
     const dbClient: LocalDBClient = new LocalDBClient(DBSeed.ONE_NAME)
     const router: Router = new Router(dbClient)
@@ -372,11 +313,11 @@ test('will create reservation correctly when using router', async () => {
             expect(output).toEqual("Name of intended borrower:")
             return router.processRequest(TestConstants.BORROWER, TestConstants.NUMBER)
         }).then((output: string) => {
-            expect(output).toEqual("Start time of reservation in yyyy-mm-dd-hr-min (Ex: 2022-23-02-20-30 for 2022 Feb 23 8:30PM)")
-            return router.processRequest(TestConstants.START_DATE, TestConstants.NUMBER)
+            expect(output).toEqual("Start time of reservation in timestamp numbers (Ex: 1747756966 for 2025 May 20 9:02:51AM)")
+            return router.processRequest(TestTimestamps.START_DATE, TestConstants.NUMBER)
         }).then((output: string) => {
-            expect(output).toEqual("End time of reservation in yyyy-mm-dd-hr-min (Ex: 2022-23-02-20-30 for 2022 Feb 23 8:30PM)")
-            return router.processRequest(TestConstants.END_DATE, TestConstants.NUMBER)
+            expect(output).toEqual("End time of reservation in timestamp numbers (Ex: 1747756966 for 2025 May 20 9:02:51AM)")
+            return router.processRequest(TestTimestamps.END_DATE, TestConstants.NUMBER)
         }).then((output: string) => {
             expect(output).toEqual("Optional notes to leave about this action:")
             return router.processRequest(TestConstants.NOTES, TestConstants.NUMBER)
@@ -394,8 +335,8 @@ test('will get reservation correctly when using router', async () => {
         id: TestConstants.RESERVATION_ID,
         borrower: TestConstants.BORROWER,
         itemIds: [TestConstants.ITEM_ID, TestConstants.ITEM_ID_2],
-        startTime: TestConstants.START_DATE,
-        endTime: TestConstants.END_DATE,
+        startTime: TestTimestamps.START_DATE,
+        endTime: TestTimestamps.END_DATE,
         notes: TestConstants.NOTES
     }
 
@@ -460,52 +401,6 @@ test('will get batch correctly when using router', async () => {
                 + getBatchItem(TestConstants.ITEM_ID_2, TestConstants.NAME_2, TestConstants.OWNER_2, "")
             )
         })
-})
-
-test('will borrow batch correctly when using router', async () => {
-    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.TWO_NAMES_ONE_BATCH)
-    const router: Router = new Router(dbClient)
-
-    // Mock Date
-    Date.now = jest.fn(() => TestTimestamps.BORROW_BATCH)
-
-    await router.processRequest(BorrowBatch.NAME, TestConstants.NUMBER)
-        .then((output: string) => {
-            expect(output).toEqual("Name of Batch:")
-            return router.processRequest(TestConstants.BATCH, TestConstants.NUMBER)
-        }).then((output: string) => {
-            expect(output).toEqual("Name of intended borrower:")
-            return router.processRequest(TestConstants.BORROWER, TestConstants.NUMBER)
-        }).then((output: string) => {
-            expect(output).toEqual("Optional notes to leave about this action:")
-            return router.processRequest(TestConstants.NOTES, TestConstants.NUMBER)
-        }).then((output: string) => {
-            expect(output).toEqual(`Successfully borrowed items in batch '${TestConstants.BATCH}'`)
-            expect(dbClient.getDB()).toEqual(DBSeed.TWO_NAMES_ONE_BATCH_BORROWED)
-        })
-})
-
-test('will return batch correctly when using router', async () => {
-    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.TWO_NAMES_ONE_BATCH_BORROWED)
-    const router: Router = new Router(dbClient)
-
-    // Mock Date
-    Date.now = jest.fn(() => TestTimestamps.RETURN_BATCH)
-
-    await router.processRequest(ReturnBatch.NAME, TestConstants.NUMBER)
-    .then((output: string) => {
-        expect(output).toEqual("Name of Batch:")
-        return router.processRequest(TestConstants.BATCH, TestConstants.NUMBER)
-    }).then((output: string) => {
-        expect(output).toEqual("Name of current borrower:")
-        return router.processRequest(TestConstants.BORROWER, TestConstants.NUMBER)
-    }).then((output: string) => {
-        expect(output).toEqual("Optional notes to leave about this action:")
-        return router.processRequest(TestConstants.NOTES_2, TestConstants.NUMBER)
-    }).then((output: string) => {
-        expect(output).toEqual(`Successfully returned items in batch '${TestConstants.BATCH}'`)
-        expect(dbClient.getDB()).toEqual(DBSeed.TWO_NAMES_ONE_BATCH_RETURNED)
-    })
 })
 
 test('will delete batch correctly when using router', async () => {
