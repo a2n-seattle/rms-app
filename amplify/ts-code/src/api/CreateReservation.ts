@@ -1,5 +1,4 @@
 import { ScheduleTable } from "../db/ScheduleTable"
-import { ItemTable } from "../db/ItemTable"
 import { TransactionsTable } from "../db/TransactionsTable"
 import { ScheduleSchema } from "../db/Schemas"
 import { DBClient } from "../injection/db/DBClient"
@@ -11,16 +10,13 @@ import { emitAPIMetrics } from "../metrics/MetricsHelper"
  */
 export class CreateReservation {
     public static NAME: string = "create reservation"
-    private static VALID_DATE: RegExp = new RegExp(/^\d{4}(-)(((0)[0-9])|((1)[0-2]))(-)([0-2][0-9]|(3)[0-1])(-)([0-1][0-9]|(2)[0-4])(-)([0-5][0-9])$/)
 
     private readonly scheduleTable: ScheduleTable
-    private readonly itemTable: ItemTable
     private readonly transactionsTable: TransactionsTable
     private readonly metrics?: MetricsClient
 
     public constructor(client: DBClient, metrics?: MetricsClient) {
         this.scheduleTable = new ScheduleTable(client)
-        this.itemTable = new ItemTable(client)
         this.transactionsTable = new TransactionsTable(client)
         this.metrics = metrics
     }
@@ -37,12 +33,12 @@ export class CreateReservation {
                 .then(() => "Name of intended borrower:")
         } else if (scratch.borrower === undefined) {
             return this.transactionsTable.appendToScratch(number, "borrower", request)
-                .then(() => "Start time of reservation in yyyy-mm-dd-hr-min (Ex: 2022-23-02-20-30 for 2022 Feb 23 8:30PM)")
+                .then(() => "Start time of reservation in timestamp numbers (Ex: 1747756966 for 2025 May 20 9:02:51AM)")
         } else if (scratch.startTime === undefined) {
-            return this.transactionsTable.appendToScratch(number, "startTime", request)
-                .then(() => "End time of reservation in yyyy-mm-dd-hr-min (Ex: 2022-23-02-20-30 for 2022 Feb 23 8:30PM)")
+            return this.transactionsTable.appendToScratch(number, "startTime", parseInt(request))
+                .then(() => "End time of reservation in timestamp numbers (Ex: 1747756966 for 2025 May 20 9:02:51AM)")
         } else if (scratch.endTime === undefined) {
-            return this.transactionsTable.appendToScratch(number, "endTime", request)
+            return this.transactionsTable.appendToScratch(number, "endTime", parseInt(request))
                 .then(() => "Optional notes to leave about this action:")
         } else {
             scratch.notes = request
@@ -56,8 +52,8 @@ export class CreateReservation {
      * Required params in scratch object:
      * @param borrower Name of borrower
      * @param ids IDs of Items
-     * @param startTime: string,
-     * @param endTime: string,
+     * @param startTime: number,
+     * @param endTime: number,
      * @param notes Notes about this action
      */
      public execute(input: CreateReservationInput): Promise<string> {
@@ -103,11 +99,11 @@ export class CreateReservation {
                 reject(new Error("Missing required field 'ids'"))
             } else if (input.startTime == undefined) {
                 reject(new Error("Missing required field 'startTime'"))
-            } else if (!CreateReservation.VALID_DATE.test(input.startTime)) {
+            } else if (Number.isNaN(new Date (input.startTime).getTime())) {
                 reject(new Error(`Date format incorrect for 'startTime' ${input.startTime}`))
             } else if (input.endTime == undefined) {
                 reject(new Error("Missing required field 'endTime'"))
-            } else if (!CreateReservation.VALID_DATE.test(input.endTime)) {
+            } else if (Number.isNaN(new Date (input.endTime).getTime())) {
                 reject(new Error(`Date format incorrect for 'endTime' ${input.endTime}`))
             }
             resolve()
@@ -118,7 +114,7 @@ export class CreateReservation {
 export interface CreateReservationInput {
     borrower?:string,
     ids?: string[],
-    startTime?: string,
-    endTime?: string,
+    startTime?: number,
+    endTime?: number,
     notes?: string
 }
