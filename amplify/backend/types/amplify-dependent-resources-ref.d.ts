@@ -26,6 +26,12 @@ export type AmplifyDependentResourcesAttributes = {
       "Name": "string",
       "Region": "string"
     },
+    "BorrowFromSchedule": {
+      "Arn": "string",
+      "LambdaExecutionRole": "string",
+      "Name": "string",
+      "Region": "string"
+    },
     "BorrowItem": {
       "Arn": "string",
       "LambdaExecutionRole": "string",
