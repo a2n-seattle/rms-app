@@ -11,18 +11,13 @@ const MASTER_PATH = path.join(__dirname, "amplify")
 
 const API_NAMES = [
                     "AddItem",
-                    "BorrowBatch",
                     "BorrowItem",
                     "CreateBatch",
                     "CreateReservation",
                     "DeleteBatch",
                     "DeleteItem",
                     "DeleteReservation",
-                    "ReturnBatch",
                     "ReturnItem",
-                    "UpdateDescription",
-                    "UpdateItemOwner",
-                    "UpdateItemNotes",
                     "UpdateTags"
 ]
 

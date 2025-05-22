@@ -11,15 +11,10 @@ import { BorrowItem } from "../../api/BorrowItem"
 import { ReturnItem } from "../../api/ReturnItem"
 import { AddItem } from "../../api/AddItem"
 import { UpdateTags } from "../../api/UpdateTags"
-import { UpdateDescription } from "../../api/UpdateDescription"
-import { UpdateItemNotes } from "../../api/UpdateItemNotes"
-import { UpdateItemOwner } from "../../api/UpdateItemOwner"
 import { DeleteItem } from "../../api/DeleteItem"
 import { CreateBatch } from "../../api/CreateBatch"
 import { GetBatch } from "../../api/GetBatch"
 import { DeleteBatch } from "../../api/DeleteBatch"
-import { BorrowBatch } from "../../api/BorrowBatch"
-import { ReturnBatch } from "../../api/ReturnBatch"
 import { CreateReservation } from "../../api/CreateReservation"
 import { DeleteReservation } from "../../api/DeleteReservation"
 import { GetReservation } from "../../api/GetReservation"
@@ -111,22 +106,12 @@ export class Router {
             return new ReturnItem(this.client, this.metrics).router(number, request, scratch)
         } else if (type === AddItem.NAME) {
             return new AddItem(this.client, this.metrics).router(number, request, scratch)
-        } else if (type === UpdateDescription.NAME) {
-            return new UpdateDescription(this.client, this.metrics).router(number, request, scratch)
         } else if (type === UpdateTags.NAME) {
             return new UpdateTags(this.client, this.metrics).router(number, request, scratch)
-        } else if (type === UpdateItemNotes.NAME) {
-            return new UpdateItemNotes(this.client, this.metrics).router(number, request, scratch)
-        } else if (type === UpdateItemOwner.NAME) {
-            return new UpdateItemOwner(this.client, this.metrics).router(number, request, scratch)
         } else if (type === DeleteItem.NAME) {
             return new DeleteItem(this.client, this.metrics).router(number, request, scratch)
         } else if (type === GetBatch.NAME) {
             return new GetBatch(this.client, this.metrics).router(number, request, scratch)
-        } else if (type === BorrowBatch.NAME) {
-            return new BorrowBatch(this.client, this.metrics).router(number, request, scratch)
-        } else if (type === ReturnBatch.NAME) {
-            return new ReturnBatch(this.client, this.metrics).router(number, request, scratch)
         } else if (type === CreateBatch.NAME) {
             return new CreateBatch(this.client, this.metrics).router(number, request, scratch)
         } else if (type === DeleteBatch.NAME) {
