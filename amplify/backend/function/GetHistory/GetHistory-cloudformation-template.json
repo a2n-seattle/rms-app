@@ -1,0 +1,284 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Lambda Function resource stack creation using Amplify CLI",
+    "Parameters": {
+        "CloudWatchRule": {
+            "Type": "String",
+            "Default" : "NONE",
+            "Description" : " Schedule Expression"
+        },
+        "deploymentBucketName": {
+            "Type": "String"
+        },
+        "env": {
+            "Type": "String"
+        },
+        "s3Key": {
+            "Type": "String"
+        }
+        ,
+    
+    
+    
+        "storagebatchName": {
+            "Type": "String",
+            "Default": "storagebatchName"
+            },
+        
+        "storagebatchArn": {
+            "Type": "String",
+            "Default": "storagebatchArn"
+            },
+        
+        "storagebatchStreamArn": {
+            "Type": "String",
+            "Default": "storagebatchStreamArn"
+            },
+        
+    
+        
+    
+        "storagehistoryName": {
+            "Type": "String",
+            "Default": "storagehistoryName"
+            },
+        
+        "storagehistoryArn": {
+            "Type": "String",
+            "Default": "storagehistoryArn"
+            },
+        
+        "storagehistoryStreamArn": {
+            "Type": "String",
+            "Default": "storagehistoryStreamArn"
+            },
+        
+    
+        
+    
+        "storageitemsName": {
+            "Type": "String",
+            "Default": "storageitemsName"
+            },
+        
+        "storageitemsArn": {
+            "Type": "String",
+            "Default": "storageitemsArn"
+            },
+        
+        "storageitemsStreamArn": {
+            "Type": "String",
+            "Default": "storageitemsStreamArn"
+            },
+        
+    
+        
+    
+        "storagemainName": {
+            "Type": "String",
+            "Default": "storagemainName"
+            },
+        
+        "storagemainArn": {
+            "Type": "String",
+            "Default": "storagemainArn"
+            },
+        
+        "storagemainStreamArn": {
+            "Type": "String",
+            "Default": "storagemainStreamArn"
+            },
+        
+    
+        
+    
+        "storagescheduleName": {
+            "Type": "String",
+            "Default": "storagescheduleName"
+            },
+        
+        "storagescheduleArn": {
+            "Type": "String",
+            "Default": "storagescheduleArn"
+            },
+        
+        "storagescheduleStreamArn": {
+            "Type": "String",
+            "Default": "storagescheduleStreamArn"
+            },
+        
+    
+        
+    
+        "storagetagsName": {
+            "Type": "String",
+            "Default": "storagetagsName"
+            },
+        
+        "storagetagsArn": {
+            "Type": "String",
+            "Default": "storagetagsArn"
+            },
+        
+        "storagetagsStreamArn": {
+            "Type": "String",
+            "Default": "storagetagsStreamArn"
+            }
+        
+    
+        
+    
+    },
+    "Conditions": {
+        "ShouldNotCreateEnvResources": {
+            "Fn::Equals": [
+                {
+                    "Ref": "env"
+                },
+                "NONE"
+            ]
+        }
+    },
+    "Resources": {
+        "LambdaFunction": {
+          "Type": "AWS::Lambda::Function",
+          "Metadata": {
+            "aws:asset:path": "./src",
+            "aws:asset:property": "Code"
+          },
+          "Properties": {
+            "Code": {
+                "S3Bucket": {
+                    "Ref": "deploymentBucketName"
+                },
+                "S3Key": {
+                    "Ref": "s3Key"
+                }
+            },
+            "Handler": "./ts-output/handlers/api/GetHistory.handler",
+            "FunctionName": {
+                "Fn::If": [
+                    "ShouldNotCreateEnvResources",
+                    "GetHistory",
+                    {
+
+                        "Fn::Join": [
+                            "",
+                            [
+                                "GetHistory",
+                                "-",
+                                {
+                                    "Ref": "env"
+                                }
+                            ]
+                        ]
+                    }
+                ]
+            },
+            "Environment": {
+                "Variables" : {"ENV":{"Ref":"env"},"REGION":{"Ref":"AWS::Region"},"STORAGE_BATCH_NAME":{"Ref":"storagebatchName"},"STORAGE_BATCH_ARN":{"Ref":"storagebatchArn"},"STORAGE_BATCH_STREAMARN":{"Ref":"storagebatchStreamArn"},"STORAGE_HISTORY_NAME":{"Ref":"storagehistoryName"},"STORAGE_HISTORY_ARN":{"Ref":"storagehistoryArn"},"STORAGE_HISTORY_STREAMARN":{"Ref":"storagehistoryStreamArn"},"STORAGE_ITEMS_NAME":{"Ref":"storageitemsName"},"STORAGE_ITEMS_ARN":{"Ref":"storageitemsArn"},"STORAGE_ITEMS_STREAMARN":{"Ref":"storageitemsStreamArn"},"STORAGE_MAIN_NAME":{"Ref":"storagemainName"},"STORAGE_MAIN_ARN":{"Ref":"storagemainArn"},"STORAGE_MAIN_STREAMARN":{"Ref":"storagemainStreamArn"},"STORAGE_SCHEDULE_NAME":{"Ref":"storagescheduleName"},"STORAGE_SCHEDULE_ARN":{"Ref":"storagescheduleArn"},"STORAGE_SCHEDULE_STREAMARN":{"Ref":"storagescheduleStreamArn"},"STORAGE_TAGS_NAME":{"Ref":"storagetagsName"},"STORAGE_TAGS_ARN":{"Ref":"storagetagsArn"},"STORAGE_TAGS_STREAMARN":{"Ref":"storagetagsStreamArn"}}
+            },
+            "Role": { "Fn::GetAtt": ["LambdaExecutionRole", "Arn"] },
+            "Runtime": "nodejs22.x",
+            "Layers": [],
+            "Timeout": 25
+          }
+        },
+        "LambdaExecutionRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "RoleName": {
+                    "Fn::If": [
+                        "ShouldNotCreateEnvResources",
+                        "rmsLambdaRole8a020ca0",
+                        {
+
+                            "Fn::Join": [
+                                "",
+                                [
+                                    "rmsLambdaRole8a020ca0",
+                                    "-",
+                                    {
+                                        "Ref": "env"
+                                    }
+                                ]
+                            ]
+                        }
+                    ]
+                },
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                }
+            }
+        }
+        ,"lambdaexecutionpolicy": {
+            "DependsOn": ["LambdaExecutionRole"],
+            "Type": "AWS::IAM::Policy",
+            "Properties": {
+                "PolicyName": "lambda-execution-policy",
+                "Roles": [{ "Ref": "LambdaExecutionRole" }],
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": ["logs:CreateLogGroup",
+                            "logs:CreateLogStream",
+                            "logs:PutLogEvents"],
+                            "Resource": { "Fn::Sub": [ "arn:aws:logs:${region}:${account}:log-group:/aws/lambda/${lambda}:log-stream:*", { "region": {"Ref": "AWS::Region"}, "account": {"Ref": "AWS::AccountId"}, "lambda": {"Ref": "LambdaFunction"}} ]}
+                        }
+                    ]
+                }
+            }
+        }
+        ,"AmplifyResourcesPolicy": {
+            "DependsOn": ["LambdaExecutionRole"],
+            "Type": "AWS::IAM::Policy",
+            "Properties": {
+                "PolicyName": "amplify-lambda-execution-policy",
+                "Roles": [{ "Ref": "LambdaExecutionRole" }],
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [{"Effect":"Allow","Action":["dynamodb:Put*","dynamodb:Create*","dynamodb:BatchWriteItem","dynamodb:PartiQLInsert","dynamodb:Get*","dynamodb:BatchGetItem","dynamodb:List*","dynamodb:Describe*","dynamodb:Scan","dynamodb:Query","dynamodb:PartiQLSelect","dynamodb:Update*","dynamodb:RestoreTable*","dynamodb:PartiQLUpdate","dynamodb:Delete*","dynamodb:PartiQLDelete"],"Resource":[{"Ref":"storagebatchArn"},{"Fn::Join":["/",[{"Ref":"storagebatchArn"},"index/*"]]}]},{"Effect":"Allow","Action":["dynamodb:Put*","dynamodb:Create*","dynamodb:BatchWriteItem","dynamodb:PartiQLInsert","dynamodb:Get*","dynamodb:BatchGetItem","dynamodb:List*","dynamodb:Describe*","dynamodb:Scan","dynamodb:Query","dynamodb:PartiQLSelect","dynamodb:Update*","dynamodb:RestoreTable*","dynamodb:PartiQLUpdate","dynamodb:Delete*","dynamodb:PartiQLDelete"],"Resource":[{"Ref":"storagehistoryArn"},{"Fn::Join":["/",[{"Ref":"storagehistoryArn"},"index/*"]]}]},{"Effect":"Allow","Action":["dynamodb:Put*","dynamodb:Create*","dynamodb:BatchWriteItem","dynamodb:PartiQLInsert","dynamodb:Get*","dynamodb:BatchGetItem","dynamodb:List*","dynamodb:Describe*","dynamodb:Scan","dynamodb:Query","dynamodb:PartiQLSelect","dynamodb:Update*","dynamodb:RestoreTable*","dynamodb:PartiQLUpdate","dynamodb:Delete*","dynamodb:PartiQLDelete"],"Resource":[{"Ref":"storageitemsArn"},{"Fn::Join":["/",[{"Ref":"storageitemsArn"},"index/*"]]}]},{"Effect":"Allow","Action":["dynamodb:Put*","dynamodb:Create*","dynamodb:BatchWriteItem","dynamodb:PartiQLInsert","dynamodb:Get*","dynamodb:BatchGetItem","dynamodb:List*","dynamodb:Describe*","dynamodb:Scan","dynamodb:Query","dynamodb:PartiQLSelect","dynamodb:Update*","dynamodb:RestoreTable*","dynamodb:PartiQLUpdate","dynamodb:Delete*","dynamodb:PartiQLDelete"],"Resource":[{"Ref":"storagemainArn"},{"Fn::Join":["/",[{"Ref":"storagemainArn"},"index/*"]]}]},{"Effect":"Allow","Action":["dynamodb:Put*","dynamodb:Create*","dynamodb:BatchWriteItem","dynamodb:PartiQLInsert","dynamodb:Get*","dynamodb:BatchGetItem","dynamodb:List*","dynamodb:Describe*","dynamodb:Scan","dynamodb:Query","dynamodb:PartiQLSelect","dynamodb:Update*","dynamodb:RestoreTable*","dynamodb:PartiQLUpdate","dynamodb:Delete*","dynamodb:PartiQLDelete"],"Resource":[{"Ref":"storagescheduleArn"},{"Fn::Join":["/",[{"Ref":"storagescheduleArn"},"index/*"]]}]},{"Effect":"Allow","Action":["dynamodb:Put*","dynamodb:Create*","dynamodb:BatchWriteItem","dynamodb:PartiQLInsert","dynamodb:Get*","dynamodb:BatchGetItem","dynamodb:List*","dynamodb:Describe*","dynamodb:Scan","dynamodb:Query","dynamodb:PartiQLSelect","dynamodb:Update*","dynamodb:RestoreTable*","dynamodb:PartiQLUpdate","dynamodb:Delete*","dynamodb:PartiQLDelete"],"Resource":[{"Ref":"storagetagsArn"},{"Fn::Join":["/",[{"Ref":"storagetagsArn"},"index/*"]]}]}]
+                }
+            }
+        }
+        
+        
+        
+    },
+    "Outputs": {
+        "Name": {
+            "Value": {
+                "Ref": "LambdaFunction"
+            }
+        },
+        "Arn": {
+            "Value": {"Fn::GetAtt": ["LambdaFunction", "Arn"]}
+        },
+        "Region": {
+            "Value": {
+                "Ref": "AWS::Region"
+            }
+        },
+        "LambdaExecutionRole": {
+            "Value": {
+                "Ref": "LambdaExecutionRole"
+            }
+        }
+        
+    }
+}
