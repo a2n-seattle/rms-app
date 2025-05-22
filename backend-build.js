@@ -17,6 +17,7 @@ const API_NAMES = [
                     "DeleteBatch",
                     "DeleteItem",
                     "DeleteReservation",
+                    "GetReservation",
                     "ReturnItem",
                     "UpdateTags"
 ]
