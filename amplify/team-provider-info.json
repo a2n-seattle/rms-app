@@ -53,7 +53,8 @@
         "DeleteReservation": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
           "s3Key": "amplify-builds/DeleteReservation-6e366747305846505a35-build.zip"
-        }
+        },
+        "GetItem": {}
       },
       "auth": {
         "rms3d290491": {}
