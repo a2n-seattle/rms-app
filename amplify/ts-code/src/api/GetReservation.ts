@@ -66,7 +66,7 @@ export class GetReservation {
     }
 }
 
-interface GetReservationInput{
+export interface GetReservationInput{
     id?: string
 }
 
