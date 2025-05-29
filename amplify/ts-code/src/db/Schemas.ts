@@ -80,8 +80,8 @@ export interface ScheduleSchema {
     id: string,
     borrower: string,
     itemIds: string[],
-    startTime: number,
-    endTime: number,
+    startTime: string,
+    endTime: string,
     notes?: string
 }
 

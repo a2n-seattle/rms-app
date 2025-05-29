@@ -16,8 +16,8 @@ export class ScheduleTable {
         id: string,
         borrower: string,
         itemIds: string[],
-        startTime: number,
-        endTime: number,
+        startTime: string,
+        endTime: string,
         notes: string,
     ): Promise<string> {
         return this.get(id)
@@ -184,18 +184,22 @@ export class ScheduleTable {
 
     /**
      * Validates if the given date ranges conflict
-     * @param startDate1 starting date of the first time range. Given in timestamp (number) fomat
-     * @param endDate1 end date of the first time range. Given in timestamp (number) fomat
-     * @param startDate2 starting date of the second time range. Given in timestamp (number) fomat
-     * @param endDate2 end date of the second time range. Given in timestamp (number) fomat
+     * @param startDate1 starting date of the first time range. Given in yyyy-mm-dd-hr-min fomat
+     * @param endDate1 end date of the first time range. Given in yyyy-mm-dd-hr-min fomat
+     * @param startDate2 starting date of the second time range. Given in yyyy-mm-dd-hr-min fomat
+     * @param endDate2 end date of the second time range. Given in yyyy-mm-dd-hr-min fomat
      * @returns Returns true if (startDate1, endDate1) overlaps with the date range of (startDate2, endDate2). Returns false otherwise
      */
-         private validateDate(startDate1: number, endDate1:number, startDate2: number, endDate2: number): boolean {
-            // convert timestamp numbers to date objects
-            const oldStartTime = new Date(startDate1)
-            const oldEndTime = new Date(endDate1)
-            const newStartTime = new Date(startDate2)
-            const newEndTime = new Date(endDate2)
+         private validateDate(startDate1: string, endDate1:string, startDate2: string, endDate2: string): boolean {
+            // Arrays split into: year = [0], month = [1], day = [2], hour = [3], minute = [4]
+            const oldStartTimeArr = startDate1.split("-").map((num) => parseInt(num, 10))
+            const oldStartTime = new Date(oldStartTimeArr[0], oldStartTimeArr[1], oldStartTimeArr[2], oldStartTimeArr[3], oldStartTimeArr[4], 0)
+            const oldEndTimeArr = endDate1.split("-").map((num) => parseInt(num, 10))
+            const oldEndTime = new Date(oldEndTimeArr[0], oldEndTimeArr[1], oldEndTimeArr[2], oldEndTimeArr[3], oldEndTimeArr[4], 0)
+            const newStartTimeArr = startDate2.split("-").map((num) => parseInt(num, 10))
+            const newStartTime = new Date(newStartTimeArr[0], newStartTimeArr[1], newStartTimeArr[2], newStartTimeArr[3], newStartTimeArr[4], 0)
+            const newEndTimeArr = endDate2.split("-").map((num) => parseInt(num, 10))
+            const newEndTime = new Date(newEndTimeArr[0], newEndTimeArr[1], newEndTimeArr[2], newEndTimeArr[3], newEndTimeArr[4], 0)
             return (newStartTime >= oldStartTime && newStartTime <= oldEndTime) || (newEndTime >= oldStartTime && newEndTime <= oldEndTime)
     }
 }
