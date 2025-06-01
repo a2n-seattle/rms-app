@@ -85,6 +85,16 @@ describe('Amplify Tests', () => {
         })
         expect(borrowItemResponse.Payload.transformToString()).toEqual(`"Successfully borrowed items '${itemId}'."`)
 
+        // Borrow From Schedule
+        const borrowFromScheduleResponse: InvokeCommandOutput = await lambda.invoke({
+            FunctionName: `BorrowFromSchedule${ENV_SUFFIX}`,
+            Payload: JSON.stringify({
+                scheduleId: TestConstants.RESERVATION_ID,
+                notes: TestConstants.NOTES
+            })
+        })
+        expect(borrowFromScheduleResponse.Payload.transformToString()).toEqual(`"Successfully borrowed items from schedule '${TestConstants.RESERVATION_ID}'"`)
+
         // Return Item
         const returnItemResponse: InvokeCommandOutput = await lambda.invoke({
             FunctionName: `ReturnItem${ENV_SUFFIX}`,
