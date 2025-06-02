@@ -135,6 +135,61 @@
       "providerPlugin": "awscloudformation",
       "service": "Lambda"
     },
+    "BorrowFromSchedule": {
+      "build": true,
+      "dependsOn": [
+        {
+          "attributes": [
+            "Name",
+            "Arn"
+          ],
+          "category": "storage",
+          "resourceName": "main"
+        },
+        {
+          "attributes": [
+            "Name",
+            "Arn"
+          ],
+          "category": "storage",
+          "resourceName": "items"
+        },
+        {
+          "attributes": [
+            "Name",
+            "Arn"
+          ],
+          "category": "storage",
+          "resourceName": "tags"
+        },
+        {
+          "attributes": [
+            "Name",
+            "Arn"
+          ],
+          "category": "storage",
+          "resourceName": "batch"
+        },
+        {
+          "attributes": [
+            "Name",
+            "Arn"
+          ],
+          "category": "storage",
+          "resourceName": "history"
+        },
+        {
+          "attributes": [
+            "Name",
+            "Arn"
+          ],
+          "category": "storage",
+          "resourceName": "schedule"
+        }
+      ],
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    },
     "CreateBatch": {
       "build": true,
       "dependsOn": [
@@ -614,6 +669,22 @@
         {
           "category": "function",
           "resourceName": "BorrowItem"
+        }
+      ]
+    },
+    "AMPLIFY_function_BorrowFromSchedule_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "BorrowFromSchedule"
+        }
+      ]
+    },
+    "AMPLIFY_function_BorrowFromSchedule_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "BorrowFromSchedule"
         }
       ]
     },
