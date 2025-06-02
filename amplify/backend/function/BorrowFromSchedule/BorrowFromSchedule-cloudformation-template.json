@@ -194,7 +194,7 @@
                     "Ref": "s3Key"
                 }
             },
-            "Handler": "index.handler",
+            "Handler": "./ts-output/handlers/api/BorrowFromSchedule.handler",
             "FunctionName": {
                 "Fn::If": [
                     "ShouldNotCreateEnvResources",
