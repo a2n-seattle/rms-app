@@ -108,14 +108,6 @@
       "dependsOn": [
         {
           "attributes": [
-            "GraphQLAPIIdOutput",
-            "GraphQLAPIEndpointOutput"
-          ],
-          "category": "api",
-          "resourceName": "rms"
-        },
-        {
-          "attributes": [
             "Name",
             "Arn",
             "StreamArn"
@@ -183,6 +175,13 @@
           ],
           "category": "storage",
           "resourceName": "transactions"
+        },
+        {
+          "attributes": [
+            "GraphQLAPIIdOutput"
+          ],
+          "category": "api",
+          "resourceName": "rms"
         }
       ],
       "providerPlugin": "awscloudformation",
@@ -690,168 +689,6 @@
       ],
       "providerPlugin": "awscloudformation",
       "service": "Lambda"
-    }
-  },
-  "parameters": {
-    "AMPLIFY_function_AddItem_deploymentBucketName": {
-      "usedBy": [
-        {
-          "category": "function",
-          "resourceName": "AddItem"
-        }
-      ]
-    },
-    "AMPLIFY_function_AddItem_s3Key": {
-      "usedBy": [
-        {
-          "category": "function",
-          "resourceName": "AddItem"
-        }
-      ]
-    },
-    "AMPLIFY_function_BorrowItem_deploymentBucketName": {
-      "usedBy": [
-        {
-          "category": "function",
-          "resourceName": "BorrowItem"
-        }
-      ]
-    },
-    "AMPLIFY_function_BorrowItem_s3Key": {
-      "usedBy": [
-        {
-          "category": "function",
-          "resourceName": "BorrowItem"
-        }
-      ]
-    },
-    "AMPLIFY_function_CreateBatch_deploymentBucketName": {
-      "usedBy": [
-        {
-          "category": "function",
-          "resourceName": "CreateBatch"
-        }
-      ]
-    },
-    "AMPLIFY_function_CreateBatch_s3Key": {
-      "usedBy": [
-        {
-          "category": "function",
-          "resourceName": "CreateBatch"
-        }
-      ]
-    },
-    "AMPLIFY_function_CreateReservation_deploymentBucketName": {
-      "usedBy": [
-        {
-          "category": "function",
-          "resourceName": "CreateReservation"
-        }
-      ]
-    },
-    "AMPLIFY_function_CreateReservation_s3Key": {
-      "usedBy": [
-        {
-          "category": "function",
-          "resourceName": "CreateReservation"
-        }
-      ]
-    },
-    "AMPLIFY_function_DeleteBatch_deploymentBucketName": {
-      "usedBy": [
-        {
-          "category": "function",
-          "resourceName": "DeleteBatch"
-        }
-      ]
-    },
-    "AMPLIFY_function_DeleteBatch_s3Key": {
-      "usedBy": [
-        {
-          "category": "function",
-          "resourceName": "DeleteBatch"
-        }
-      ]
-    },
-    "AMPLIFY_function_DeleteItem_deploymentBucketName": {
-      "usedBy": [
-        {
-          "category": "function",
-          "resourceName": "DeleteItem"
-        }
-      ]
-    },
-    "AMPLIFY_function_DeleteItem_s3Key": {
-      "usedBy": [
-        {
-          "category": "function",
-          "resourceName": "DeleteItem"
-        }
-      ]
-    },
-    "AMPLIFY_function_DeleteReservation_deploymentBucketName": {
-      "usedBy": [
-        {
-          "category": "function",
-          "resourceName": "DeleteReservation"
-        }
-      ]
-    },
-    "AMPLIFY_function_DeleteReservation_s3Key": {
-      "usedBy": [
-        {
-          "category": "function",
-          "resourceName": "DeleteReservation"
-        }
-      ]
-    },
-    "AMPLIFY_function_ReturnItem_deploymentBucketName": {
-      "usedBy": [
-        {
-          "category": "function",
-          "resourceName": "ReturnItem"
-        }
-      ]
-    },
-    "AMPLIFY_function_ReturnItem_s3Key": {
-      "usedBy": [
-        {
-          "category": "function",
-          "resourceName": "ReturnItem"
-        }
-      ]
-    },
-    "AMPLIFY_function_UpdateTags_deploymentBucketName": {
-      "usedBy": [
-        {
-          "category": "function",
-          "resourceName": "UpdateTags"
-        }
-      ]
-    },
-    "AMPLIFY_function_UpdateTags_s3Key": {
-      "usedBy": [
-        {
-          "category": "function",
-          "resourceName": "UpdateTags"
-        }
-      ]
-    },
-    "AMPLIFY_function_smsrouter_deploymentBucketName": {
-      "usedBy": [
-        {
-          "category": "function",
-          "resourceName": "smsrouter"
-        }
-      ]
-    },
-    "AMPLIFY_function_smsrouter_s3Key": {
-      "usedBy": [
-        {
-          "category": "function",
-          "resourceName": "smsrouter"
-        }
-      ]
     }
   },
   "storage": {

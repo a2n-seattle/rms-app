@@ -32,10 +32,6 @@
       "Type": "String",
       "Default": "storagebatchArn"
     },
-    "storagebatchStreamArn": {
-      "Type": "String",
-      "Default": "storagebatchStreamArn"
-    },
     "storagehistoryName": {
       "Type": "String",
       "Default": "storagehistoryName"
@@ -43,10 +39,6 @@
     "storagehistoryArn": {
       "Type": "String",
       "Default": "storagehistoryArn"
-    },
-    "storagehistoryStreamArn": {
-      "Type": "String",
-      "Default": "storagehistoryStreamArn"
     },
     "storageitemsName": {
       "Type": "String",
@@ -56,10 +48,6 @@
       "Type": "String",
       "Default": "storageitemsArn"
     },
-    "storageitemsStreamArn": {
-      "Type": "String",
-      "Default": "storageitemsStreamArn"
-    },
     "storagemainName": {
       "Type": "String",
       "Default": "storagemainName"
@@ -67,10 +55,6 @@
     "storagemainArn": {
       "Type": "String",
       "Default": "storagemainArn"
-    },
-    "storagemainStreamArn": {
-      "Type": "String",
-      "Default": "storagemainStreamArn"
     },
     "storagermsBucketName": {
       "Type": "String",
@@ -84,10 +68,6 @@
       "Type": "String",
       "Default": "storagescheduleArn"
     },
-    "storagescheduleStreamArn": {
-      "Type": "String",
-      "Default": "storagescheduleStreamArn"
-    },
     "storagetagsName": {
       "Type": "String",
       "Default": "storagetagsName"
@@ -96,10 +76,6 @@
       "Type": "String",
       "Default": "storagetagsArn"
     },
-    "storagetagsStreamArn": {
-      "Type": "String",
-      "Default": "storagetagsStreamArn"
-    },
     "storagetransactionsName": {
       "Type": "String",
       "Default": "storagetransactionsName"
@@ -107,10 +83,6 @@
     "storagetransactionsArn": {
       "Type": "String",
       "Default": "storagetransactionsArn"
-    },
-    "storagetransactionsStreamArn": {
-      "Type": "String",
-      "Default": "storagetransactionsStreamArn"
     }
   },
   "Conditions": {
@@ -178,17 +150,11 @@
             "STORAGE_BATCH_ARN": {
               "Ref": "storagebatchArn"
             },
-            "STORAGE_BATCH_STREAMARN": {
-              "Ref": "storagebatchStreamArn"
-            },
             "STORAGE_HISTORY_NAME": {
               "Ref": "storagehistoryName"
             },
             "STORAGE_HISTORY_ARN": {
               "Ref": "storagehistoryArn"
-            },
-            "STORAGE_HISTORY_STREAMARN": {
-              "Ref": "storagehistoryStreamArn"
             },
             "STORAGE_ITEMS_NAME": {
               "Ref": "storageitemsName"
@@ -196,17 +162,11 @@
             "STORAGE_ITEMS_ARN": {
               "Ref": "storageitemsArn"
             },
-            "STORAGE_ITEMS_STREAMARN": {
-              "Ref": "storageitemsStreamArn"
-            },
             "STORAGE_MAIN_NAME": {
               "Ref": "storagemainName"
             },
             "STORAGE_MAIN_ARN": {
               "Ref": "storagemainArn"
-            },
-            "STORAGE_MAIN_STREAMARN": {
-              "Ref": "storagemainStreamArn"
             },
             "STORAGE_RMS_BUCKETNAME": {
               "Ref": "storagermsBucketName"
@@ -217,26 +177,17 @@
             "STORAGE_SCHEDULE_ARN": {
               "Ref": "storagescheduleArn"
             },
-            "STORAGE_SCHEDULE_STREAMARN": {
-              "Ref": "storagescheduleStreamArn"
-            },
             "STORAGE_TAGS_NAME": {
               "Ref": "storagetagsName"
             },
             "STORAGE_TAGS_ARN": {
               "Ref": "storagetagsArn"
             },
-            "STORAGE_TAGS_STREAMARN": {
-              "Ref": "storagetagsStreamArn"
-            },
             "STORAGE_TRANSACTIONS_NAME": {
               "Ref": "storagetransactionsName"
             },
             "STORAGE_TRANSACTIONS_ARN": {
               "Ref": "storagetransactionsArn"
-            },
-            "STORAGE_TRANSACTIONS_STREAMARN": {
-              "Ref": "storagetransactionsStreamArn"
             },
             "API_RMS_MAINTABLE_NAME": {
               "Fn::ImportValue": {

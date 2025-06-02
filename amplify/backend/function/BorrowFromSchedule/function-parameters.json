@@ -1,12 +1,5 @@
 {
   "permissions": {
-    "api": {
-      "rms": [
-        "Query",
-        "Mutation",
-        "Subscription"
-      ]
-    },
     "storage": {
       "batch": [
         "create",
