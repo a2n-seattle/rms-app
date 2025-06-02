@@ -110,6 +110,16 @@ describe('Amplify Tests', () => {
         const reservationId = createReservationResponse.Payload.transformToString().substring(1, createReservationResponse.Payload.transformToString().length - 1)
         expect(reservationId).toContain("-test_name-")
 
+        // Borrow From Reservation
+        const borrowFromScheduleResponse: InvokeCommandOutput = await lambda.invoke({
+            FunctionName: `BorrowFromSchedule${ENV_SUFFIX}`,
+            Payload: JSON.stringify({
+                scheduleId: reservationId,
+                notes: TestConstants.NOTES
+            })
+        })
+        expect(borrowFromScheduleResponse.Payload.transformToString()).toEqual(`"Successfully borrowed items from schedule '${reservationId}'."`)
+
         // Delete Reservation
         const deleteReservationResponse: InvokeCommandOutput = await lambda.invoke({
             FunctionName: `DeleteReservation${ENV_SUFFIX}`,
