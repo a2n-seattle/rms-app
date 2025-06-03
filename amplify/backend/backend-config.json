@@ -4,26 +4,14 @@
       "output": {
         "authConfig": {
           "additionalAuthenticationProviders": [],
-          "defaultAuthentication": {
-            "authenticationType": "AMAZON_COGNITO_USER_POOLS",
-            "userPoolConfig": {
-              "userPoolId": "authrms3d290491"
-            }
-          }
+          "defaultAuthentication": {}
         }
       },
       "providerPlugin": "awscloudformation",
       "service": "AppSync"
     }
   },
-  "auth": {
-    "rms3d290491": {
-      "customAuth": false,
-      "dependsOn": [],
-      "providerPlugin": "awscloudformation",
-      "service": "Cognito"
-    }
-  },
+  "auth": {},
   "function": {
     "AddItem": {
       "build": true,
@@ -83,14 +71,6 @@
     "BorrowFromSchedule": {
       "build": true,
       "dependsOn": [
-        {
-          "attributes": [
-            "GraphQLAPIIdOutput",
-            "GraphQLAPIEndpointOutput"
-          ],
-          "category": "api",
-          "resourceName": "rms"
-        },
         {
           "attributes": [
             "Name",
@@ -154,12 +134,10 @@
         },
         {
           "attributes": [
-            "Name",
-            "Arn",
-            "StreamArn"
+            "GraphQLAPIIdOutput"
           ],
-          "category": "storage",
-          "resourceName": "transactions"
+          "category": "api",
+          "resourceName": "rms"
         }
       ],
       "providerPlugin": "awscloudformation",
@@ -683,6 +661,22 @@
         {
           "category": "function",
           "resourceName": "AddItem"
+        }
+      ]
+    },
+    "AMPLIFY_function_BorrowFromSchedule_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "BorrowFromSchedule"
+        }
+      ]
+    },
+    "AMPLIFY_function_BorrowFromSchedule_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "BorrowFromSchedule"
         }
       ]
     },

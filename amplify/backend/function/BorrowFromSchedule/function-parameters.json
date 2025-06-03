@@ -1,12 +1,5 @@
 {
   "permissions": {
-    "api": {
-      "rms": [
-        "Query",
-        "Mutation",
-        "Subscription"
-      ]
-    },
     "storage": {
       "batch": [
         "create",
@@ -45,12 +38,6 @@
         "delete"
       ],
       "tags": [
-        "create",
-        "read",
-        "update",
-        "delete"
-      ],
-      "transactions": [
         "create",
         "read",
         "update",
