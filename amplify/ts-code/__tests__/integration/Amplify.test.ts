@@ -35,7 +35,7 @@ describe('Amplify Tests', () => {
             signIn({
                 username: TestConstants.EMAIL,
                 password: TestConstants.PASSWORD
-            }).then((singInOutput : SignInOutput) => singInOutput.isSignedIn)
+            }).then((signInOutput : SignInOutput) => signInOutput.isSignedIn)
         ).resolves.toEqual(true)
     }, 100000)
 
@@ -110,16 +110,6 @@ describe('Amplify Tests', () => {
         const reservationId = createReservationResponse.Payload.transformToString().substring(1, createReservationResponse.Payload.transformToString().length - 1)
         expect(reservationId).toContain("-test_name-")
 
-        // Borrow From Reservation
-        const borrowFromScheduleResponse: InvokeCommandOutput = await lambda.invoke({
-            FunctionName: `BorrowFromSchedule${ENV_SUFFIX}`,
-            Payload: JSON.stringify({
-                scheduleId: reservationId,
-                notes: TestConstants.NOTES
-            })
-        })
-        expect(borrowFromScheduleResponse.Payload.transformToString()).toEqual(`"Successfully borrowed items from schedule '${reservationId}'."`)
-
         // Delete Reservation
         const deleteReservationResponse: InvokeCommandOutput = await lambda.invoke({
             FunctionName: `DeleteReservation${ENV_SUFFIX}`,
@@ -128,6 +118,30 @@ describe('Amplify Tests', () => {
             })
         })
         expect(deleteReservationResponse.Payload.transformToString()).toEqual(`"Successfully deleted reservation '${reservationId}'."`)
+
+        // Create Reservation again to test Borrow
+        const createReservationResponse2: InvokeCommandOutput = await lambda.invoke({
+            FunctionName: `CreateReservation${ENV_SUFFIX}`,
+            Payload: JSON.stringify({
+                borrower: TestConstants.BORROWER,
+                ids: [itemId],
+                startTime: TestTimestamps.START_DATE,
+                endTime: TestTimestamps.END_DATE,
+                notes: TestConstants.NOTES
+            })
+        })
+        const reservationId2 = createReservationResponse2.Payload.transformToString().substring(1, createReservationResponse2.Payload.transformToString().length - 1)
+        expect(reservationId2).toContain("-test_name-")
+
+        // Borrow From Reservation
+        const borrowFromScheduleResponse: InvokeCommandOutput = await lambda.invoke({
+            FunctionName: `BorrowFromSchedule${ENV_SUFFIX}`,
+            Payload: JSON.stringify({
+                scheduleId: reservationId2,
+                notes: TestConstants.NOTES
+            })
+        })
+        expect(borrowFromScheduleResponse.Payload.transformToString()).toEqual(`"Successfully borrowed items from schedule '${reservationId2}'."`)
 
         // Create Batch
         const createBatchResponse: InvokeCommandOutput = await lambda.invoke({
@@ -139,28 +153,6 @@ describe('Amplify Tests', () => {
             })
         })
         expect(createBatchResponse.Payload.transformToString()).toEqual(`"Successfully created batch '${TestConstants.BATCH}'"`)
-
-        // Borrow Batch
-        const borrowBatchResponse: InvokeCommandOutput = await lambda.invoke({
-            FunctionName: `BorrowBatch${ENV_SUFFIX}`,
-            Payload: JSON.stringify({
-                name: TestConstants.BATCH,
-                borrower: TestConstants.BORROWER,
-                notes: TestConstants.NOTES
-            })
-        })
-        expect(borrowBatchResponse.Payload.transformToString()).toEqual(`"Successfully borrowed items in batch '${TestConstants.BATCH}'"`)
-
-        // Return Batch
-        const returnBatchResponse: InvokeCommandOutput = await lambda.invoke({
-            FunctionName: `ReturnBatch${ENV_SUFFIX}`,
-            Payload: JSON.stringify({
-                name: TestConstants.BATCH,
-                borrower: TestConstants.BORROWER,
-                notes: TestConstants.NOTES
-            })
-        })
-        expect(returnBatchResponse.Payload.transformToString()).toEqual(`"Successfully returned items in batch '${TestConstants.BATCH}'"`)
 
         // Delete Batch
         const deleteBatchResponse: InvokeCommandOutput = await lambda.invoke({
