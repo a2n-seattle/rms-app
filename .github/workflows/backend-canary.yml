@@ -33,7 +33,7 @@ jobs:
         with:
           amplify_command: configure
           amplify_env: alpha
-          amplify_arguments: --categories {"auth":{"googleAppIdUserPool":"${{ secrets.AMPLIFY_GOOGLE_CLIENT_ID }}","googleAppSecretUserPool":"${{ secrets.AMPLIFY_GOOGLE_CLIENT_SECRET }}"}}
+          amplify_cli_version: 13.0.1
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
