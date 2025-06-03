@@ -5,6 +5,18 @@ export type AmplifyDependentResourcesAttributes = {
       "GraphQLAPIIdOutput": "string"
     }
   },
+  "auth": {
+    "rms42689182": {
+      "AppClientID": "string",
+      "AppClientIDWeb": "string",
+      "CreatedSNSRole": "string",
+      "IdentityPoolId": "string",
+      "IdentityPoolName": "string",
+      "UserPoolArn": "string",
+      "UserPoolId": "string",
+      "UserPoolName": "string"
+    }
+  },
   "function": {
     "AddItem": {
       "Arn": "string",

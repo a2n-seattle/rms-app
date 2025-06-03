@@ -24,7 +24,7 @@
         },
         "BorrowItem": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/BorrowItem-2b51324174314f645651-build.zip"
+          "s3Key": "amplify-builds/BorrowItem-3445624f5261594a2b52-build.zip"
         },
         "DeleteBatch": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
@@ -56,7 +56,7 @@
         },
         "BorrowFromSchedule": {
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
-          "s3Key": "amplify-builds/BorrowFromSchedule-796c58765a346f797377-build.zip"
+          "s3Key": "amplify-builds/BorrowFromSchedule-32384b67427764367041-build.zip"
         }
       },
       "storage": {
@@ -71,6 +71,10 @@
       },
       "api": {
         "rms": {}
+      },
+      "auth": {
+        "rms": {},
+        "rms42689182": {}
       }
     }
   }
