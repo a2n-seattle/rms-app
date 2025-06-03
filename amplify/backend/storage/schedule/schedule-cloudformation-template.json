@@ -51,7 +51,7 @@
                     "WriteCapacityUnits": "1"
                 },
                 "StreamSpecification": {
-                    "StreamViewType": "NEW_IMAGE"
+                    "StreamViewType": "NEW_AND_OLD_IMAGES"
                 },
                 "TableName": {
                     "Fn::If": [
@@ -91,6 +91,14 @@
                 "Fn::GetAtt": [
                     "DynamoDBTable",
                     "Arn"
+                ]
+            }
+        },
+        "StreamArn": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "DynamoDBTable",
+                    "StreamArn"
                 ]
             }
         },

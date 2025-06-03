@@ -76,13 +76,29 @@
       "Type": "String",
       "Default": "storagetagsArn"
     },
-    "storagetransactionsName": {
+    "storagebatchStreamArn": {
       "Type": "String",
-      "Default": "storagetransactionsName"
+      "Default": "storagebatchStreamArn"
     },
-    "storagetransactionsArn": {
+    "storagehistoryStreamArn": {
       "Type": "String",
-      "Default": "storagetransactionsArn"
+      "Default": "storagehistoryStreamArn"
+    },
+    "storageitemsStreamArn": {
+      "Type": "String",
+      "Default": "storageitemsStreamArn"
+    },
+    "storagemainStreamArn": {
+      "Type": "String",
+      "Default": "storagemainStreamArn"
+    },
+    "storagescheduleStreamArn": {
+      "Type": "String",
+      "Default": "storagescheduleStreamArn"
+    },
+    "storagetagsStreamArn": {
+      "Type": "String",
+      "Default": "storagetagsStreamArn"
     }
   },
   "Conditions": {
@@ -182,12 +198,6 @@
             },
             "STORAGE_TAGS_ARN": {
               "Ref": "storagetagsArn"
-            },
-            "STORAGE_TRANSACTIONS_NAME": {
-              "Ref": "storagetransactionsName"
-            },
-            "STORAGE_TRANSACTIONS_ARN": {
-              "Ref": "storagetransactionsArn"
             },
             "API_RMS_MAINTABLE_NAME": {
               "Fn::ImportValue": {
@@ -344,6 +354,24 @@
                   }
                 ]
               ]
+            },
+            "STORAGE_BATCH_STREAMARN": {
+              "Ref": "storagebatchStreamArn"
+            },
+            "STORAGE_HISTORY_STREAMARN": {
+              "Ref": "storagehistoryStreamArn"
+            },
+            "STORAGE_ITEMS_STREAMARN": {
+              "Ref": "storageitemsStreamArn"
+            },
+            "STORAGE_MAIN_STREAMARN": {
+              "Ref": "storagemainStreamArn"
+            },
+            "STORAGE_SCHEDULE_STREAMARN": {
+              "Ref": "storagescheduleStreamArn"
+            },
+            "STORAGE_TAGS_STREAMARN": {
+              "Ref": "storagetagsStreamArn"
             }
           }
         },
@@ -455,74 +483,6 @@
         "PolicyDocument": {
           "Version": "2012-10-17",
           "Statement": [
-            {
-              "Effect": "Allow",
-              "Action": [
-                "appsync:GraphQL"
-              ],
-              "Resource": [
-                {
-                  "Fn::Join": [
-                    "",
-                    [
-                      "arn:aws:appsync:",
-                      {
-                        "Ref": "AWS::Region"
-                      },
-                      ":",
-                      {
-                        "Ref": "AWS::AccountId"
-                      },
-                      ":apis/",
-                      {
-                        "Ref": "apirmsGraphQLAPIIdOutput"
-                      },
-                      "/types/Query/*"
-                    ]
-                  ]
-                },
-                {
-                  "Fn::Join": [
-                    "",
-                    [
-                      "arn:aws:appsync:",
-                      {
-                        "Ref": "AWS::Region"
-                      },
-                      ":",
-                      {
-                        "Ref": "AWS::AccountId"
-                      },
-                      ":apis/",
-                      {
-                        "Ref": "apirmsGraphQLAPIIdOutput"
-                      },
-                      "/types/Mutation/*"
-                    ]
-                  ]
-                },
-                {
-                  "Fn::Join": [
-                    "",
-                    [
-                      "arn:aws:appsync:",
-                      {
-                        "Ref": "AWS::Region"
-                      },
-                      ":",
-                      {
-                        "Ref": "AWS::AccountId"
-                      },
-                      ":apis/",
-                      {
-                        "Ref": "apirmsGraphQLAPIIdOutput"
-                      },
-                      "/types/Subscription/*"
-                    ]
-                  ]
-                }
-              ]
-            },
             {
               "Effect": "Allow",
               "Action": [
@@ -777,43 +737,6 @@
                     [
                       {
                         "Ref": "storagetagsArn"
-                      },
-                      "index/*"
-                    ]
-                  ]
-                }
-              ]
-            },
-            {
-              "Effect": "Allow",
-              "Action": [
-                "dynamodb:Put*",
-                "dynamodb:Create*",
-                "dynamodb:BatchWriteItem",
-                "dynamodb:PartiQLInsert",
-                "dynamodb:Get*",
-                "dynamodb:BatchGetItem",
-                "dynamodb:List*",
-                "dynamodb:Describe*",
-                "dynamodb:Scan",
-                "dynamodb:Query",
-                "dynamodb:PartiQLSelect",
-                "dynamodb:Update*",
-                "dynamodb:RestoreTable*",
-                "dynamodb:PartiQLUpdate",
-                "dynamodb:Delete*",
-                "dynamodb:PartiQLDelete"
-              ],
-              "Resource": [
-                {
-                  "Ref": "storagetransactionsArn"
-                },
-                {
-                  "Fn::Join": [
-                    "/",
-                    [
-                      {
-                        "Ref": "storagetransactionsArn"
                       },
                       "index/*"
                     ]

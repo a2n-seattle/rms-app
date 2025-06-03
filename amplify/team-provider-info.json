@@ -54,7 +54,10 @@
           "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
           "s3Key": "amplify-builds/DeleteReservation-617a4c4e4e576d74736d-build.zip"
         },
-        "BorrowFromSchedule": {}
+        "BorrowFromSchedule": {
+          "deploymentBucketName": "amplify-rms-alpha-233046-deployment",
+          "s3Key": "amplify-builds/BorrowFromSchedule-796c58765a346f797377-build.zip"
+        }
       },
       "storage": {
         "batch": {},
@@ -65,6 +68,9 @@
         "schedule": {},
         "tags": {},
         "transactions": {}
+      },
+      "api": {
+        "rms": {}
       }
     }
   }

@@ -90,28 +90,32 @@ export type AmplifyDependentResourcesAttributes = {
       "Name": "string",
       "PartitionKeyName": "string",
       "PartitionKeyType": "string",
-      "Region": "string"
+      "Region": "string",
+      "StreamArn": "string"
     },
     "history": {
       "Arn": "string",
       "Name": "string",
       "PartitionKeyName": "string",
       "PartitionKeyType": "string",
-      "Region": "string"
+      "Region": "string",
+      "StreamArn": "string"
     },
     "items": {
       "Arn": "string",
       "Name": "string",
       "PartitionKeyName": "string",
       "PartitionKeyType": "string",
-      "Region": "string"
+      "Region": "string",
+      "StreamArn": "string"
     },
     "main": {
       "Arn": "string",
       "Name": "string",
       "PartitionKeyName": "string",
       "PartitionKeyType": "string",
-      "Region": "string"
+      "Region": "string",
+      "StreamArn": "string"
     },
     "rms": {
       "BucketName": "string",
@@ -122,14 +126,16 @@ export type AmplifyDependentResourcesAttributes = {
       "Name": "string",
       "PartitionKeyName": "string",
       "PartitionKeyType": "string",
-      "Region": "string"
+      "Region": "string",
+      "StreamArn": "string"
     },
     "tags": {
       "Arn": "string",
       "Name": "string",
       "PartitionKeyName": "string",
       "PartitionKeyType": "string",
-      "Region": "string"
+      "Region": "string",
+      "StreamArn": "string"
     },
     "transactions": {
       "Arn": "string",
