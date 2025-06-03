@@ -12,7 +12,7 @@
     }
   },
   "auth": {
-    "rms": {
+    "rms42689182": {
       "customAuth": false,
       "dependsOn": [],
       "frontendAuthConfig": {
