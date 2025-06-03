@@ -56,9 +56,6 @@
         },
         "BorrowFromSchedule": {}
       },
-      "auth": {
-        "rms3d290491": {}
-      },
       "storage": {
         "batch": {},
         "history": {},
