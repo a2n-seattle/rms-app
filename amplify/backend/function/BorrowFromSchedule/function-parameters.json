@@ -25,12 +25,6 @@
         "update",
         "delete"
       ],
-      "rms": [
-        "create",
-        "read",
-        "update",
-        "delete"
-      ],
       "schedule": [
         "create",
         "read",
@@ -38,42 +32,6 @@
         "delete"
       ],
       "tags": [
-        "create",
-        "read",
-        "update",
-        "delete"
-      ],
-      "Main:@model(appsync)": [
-        "create",
-        "read",
-        "update",
-        "delete"
-      ],
-      "Items:@model(appsync)": [
-        "create",
-        "read",
-        "update",
-        "delete"
-      ],
-      "Batch:@model(appsync)": [
-        "create",
-        "read",
-        "update",
-        "delete"
-      ],
-      "Tags:@model(appsync)": [
-        "create",
-        "read",
-        "update",
-        "delete"
-      ],
-      "History:@model(appsync)": [
-        "create",
-        "read",
-        "update",
-        "delete"
-      ],
-      "Schedule:@model(appsync)": [
         "create",
         "read",
         "update",

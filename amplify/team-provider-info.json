@@ -69,9 +69,6 @@
         "tags": {},
         "transactions": {}
       },
-      "api": {
-        "rms": {}
-      },
       "auth": {
         "rms": {},
         "rms42689182": {}

@@ -1,16 +1,5 @@
 {
-  "api": {
-    "rms": {
-      "output": {
-        "authConfig": {
-          "additionalAuthenticationProviders": [],
-          "defaultAuthentication": {}
-        }
-      },
-      "providerPlugin": "awscloudformation",
-      "service": "AppSync"
-    }
-  },
+  "api": {},
   "auth": {
     "rms42689182": {
       "customAuth": false,
@@ -137,13 +126,6 @@
         },
         {
           "attributes": [
-            "BucketName"
-          ],
-          "category": "storage",
-          "resourceName": "rms"
-        },
-        {
-          "attributes": [
             "Name",
             "Arn",
             "StreamArn"
@@ -159,13 +141,6 @@
           ],
           "category": "storage",
           "resourceName": "tags"
-        },
-        {
-          "attributes": [
-            "GraphQLAPIIdOutput"
-          ],
-          "category": "api",
-          "resourceName": "rms"
         }
       ],
       "providerPlugin": "awscloudformation",
