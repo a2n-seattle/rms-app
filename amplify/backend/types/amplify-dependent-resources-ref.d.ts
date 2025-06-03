@@ -5,20 +5,6 @@ export type AmplifyDependentResourcesAttributes = {
       "GraphQLAPIIdOutput": "string"
     }
   },
-  "auth": {
-    "rms3d290491": {
-      "AppClientID": "string",
-      "AppClientIDWeb": "string",
-      "CreatedSNSRole": "string",
-      "HostedUIDomain": "string",
-      "IdentityPoolId": "string",
-      "IdentityPoolName": "string",
-      "OAuthMetadata": "string",
-      "UserPoolArn": "string",
-      "UserPoolId": "string",
-      "UserPoolName": "string"
-    }
-  },
   "function": {
     "AddItem": {
       "Arn": "string",
@@ -104,32 +90,28 @@ export type AmplifyDependentResourcesAttributes = {
       "Name": "string",
       "PartitionKeyName": "string",
       "PartitionKeyType": "string",
-      "Region": "string",
-      "StreamArn": "string"
+      "Region": "string"
     },
     "history": {
       "Arn": "string",
       "Name": "string",
       "PartitionKeyName": "string",
       "PartitionKeyType": "string",
-      "Region": "string",
-      "StreamArn": "string"
+      "Region": "string"
     },
     "items": {
       "Arn": "string",
       "Name": "string",
       "PartitionKeyName": "string",
       "PartitionKeyType": "string",
-      "Region": "string",
-      "StreamArn": "string"
+      "Region": "string"
     },
     "main": {
       "Arn": "string",
       "Name": "string",
       "PartitionKeyName": "string",
       "PartitionKeyType": "string",
-      "Region": "string",
-      "StreamArn": "string"
+      "Region": "string"
     },
     "rms": {
       "BucketName": "string",
@@ -140,16 +122,14 @@ export type AmplifyDependentResourcesAttributes = {
       "Name": "string",
       "PartitionKeyName": "string",
       "PartitionKeyType": "string",
-      "Region": "string",
-      "StreamArn": "string"
+      "Region": "string"
     },
     "tags": {
       "Arn": "string",
       "Name": "string",
       "PartitionKeyName": "string",
       "PartitionKeyType": "string",
-      "Region": "string",
-      "StreamArn": "string"
+      "Region": "string"
     },
     "transactions": {
       "Arn": "string",

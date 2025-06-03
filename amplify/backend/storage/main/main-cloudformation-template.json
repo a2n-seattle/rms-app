@@ -94,14 +94,6 @@
                 ]
             }
         },
-        "StreamArn": {
-            "Value": {
-                "Fn::GetAtt": [
-                    "DynamoDBTable",
-                    "StreamArn"
-                ]
-            }
-        },
         "PartitionKeyName": {
             "Value": {
                 "Ref": "partitionKeyName"

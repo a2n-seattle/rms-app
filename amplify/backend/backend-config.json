@@ -4,12 +4,7 @@
       "output": {
         "authConfig": {
           "additionalAuthenticationProviders": [],
-          "defaultAuthentication": {
-            "authenticationType": "AMAZON_COGNITO_USER_POOLS",
-            "userPoolConfig": {
-              "userPoolId": "authrms3d290491"
-            }
-          }
+          "defaultAuthentication": {}
         }
       },
       "providerPlugin": "awscloudformation",
@@ -79,8 +74,7 @@
         {
           "attributes": [
             "Name",
-            "Arn",
-            "StreamArn"
+            "Arn"
           ],
           "category": "storage",
           "resourceName": "batch"
@@ -88,8 +82,7 @@
         {
           "attributes": [
             "Name",
-            "Arn",
-            "StreamArn"
+            "Arn"
           ],
           "category": "storage",
           "resourceName": "history"
@@ -97,8 +90,7 @@
         {
           "attributes": [
             "Name",
-            "Arn",
-            "StreamArn"
+            "Arn"
           ],
           "category": "storage",
           "resourceName": "items"
@@ -106,8 +98,7 @@
         {
           "attributes": [
             "Name",
-            "Arn",
-            "StreamArn"
+            "Arn"
           ],
           "category": "storage",
           "resourceName": "main"
@@ -122,8 +113,7 @@
         {
           "attributes": [
             "Name",
-            "Arn",
-            "StreamArn"
+            "Arn"
           ],
           "category": "storage",
           "resourceName": "schedule"
@@ -131,8 +121,7 @@
         {
           "attributes": [
             "Name",
-            "Arn",
-            "StreamArn"
+            "Arn"
           ],
           "category": "storage",
           "resourceName": "tags"
@@ -140,8 +129,7 @@
         {
           "attributes": [
             "Name",
-            "Arn",
-            "StreamArn"
+            "Arn"
           ],
           "category": "storage",
           "resourceName": "transactions"
