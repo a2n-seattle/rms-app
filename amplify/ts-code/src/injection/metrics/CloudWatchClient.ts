@@ -27,7 +27,7 @@ export class CloudWatchClient implements MetricsClient {
                             .then(() => response)
                     },
                     (reason: any) => {
-                        throw this.emitErrors(namespace, name, 1)
+                        return this.emitErrors(namespace, name, 1)
                             .then(() => { throw reason })
                     }
                 )
