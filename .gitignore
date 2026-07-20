@@ -25,6 +25,7 @@ amplifytools.xcconfig
 
 # Backend ts builds
 ts-output/
+ts-output-gen2/
 report.json
 
 # Amplify Gen 2

@@ -7,6 +7,7 @@ const path = require("path")
 const { exec } = require("child_process")
 
 const MASTER_PATH = path.join(__dirname, "amplify")
+const REPO_ROOT = __dirname
 
 
 const API_NAMES = [
@@ -60,8 +61,8 @@ function copySingleFile(sourceDir, targetDir, filename) {
 
 deleteTsOutput(MASTER_PATH)
 
-// Compile Typescript
-exec("tsc", { cwd: MASTER_PATH },
+// Compile Typescript (ts-code/ lives at repo root, shared by Gen 1 and Gen 2 builds)
+exec("tsc --project tsconfig.gen1.json", { cwd: REPO_ROOT },
     (error, stdout, stderr) => {
         if (stderr) {
             console.error(`stderr: ${stderr}`);
