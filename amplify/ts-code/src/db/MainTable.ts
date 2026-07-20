@@ -1,6 +1,6 @@
 import { MAIN_TABLE,  MainSchema } from "./Schemas"
 import { DBClient } from "../injection/db/DBClient"
-import { DocumentClient } from "aws-sdk/clients/dynamodb"
+import { DeleteCommandInput, DeleteCommandOutput, GetCommandInput, GetCommandOutput, PutCommandInput, PutCommandOutput, UpdateCommandInput, UpdateCommandOutput } from "@aws-sdk/lib-dynamodb"
 
 export class MainTable {
     private readonly client: DBClient
@@ -17,7 +17,7 @@ export class MainTable {
     public create(
         name: string,
         description: string
-    ): Promise<DocumentClient.PutItemOutput> {
+    ): Promise<PutCommandOutput> {
         const item: MainSchema = {
             id: name.toLowerCase(),
             displayName: name,
@@ -25,7 +25,7 @@ export class MainTable {
             tags: [],
             items: []
         }
-        const params: DocumentClient.PutItemInput = {
+        const params: PutCommandInput = {
             TableName: MAIN_TABLE,
             Item: item
         }
@@ -39,7 +39,7 @@ export class MainTable {
      */
     public delete(
         name: string
-    ): Promise<DocumentClient.DeleteItemOutput> {
+    ): Promise<DeleteCommandOutput> {
         return this.getConsistent(name)
             .then((entry: MainSchema) => {
                 if (entry.items.length !== 0) {
@@ -47,7 +47,7 @@ export class MainTable {
                 } else if (entry.tags.length !== 0) {
                     throw Error(`Entry '${name}' still contains tags.`)
                 } else {
-                    const params: DocumentClient.DeleteItemInput = {
+                    const params: DeleteCommandInput = {
                         TableName: MAIN_TABLE,
                         Key: {
                             "id": name.toLowerCase()
@@ -64,14 +64,14 @@ export class MainTable {
     public get(
         name: string
     ): Promise<MainSchema> {
-        const params: DocumentClient.GetItemInput = {
+        const params: GetCommandInput = {
             TableName: MAIN_TABLE,
             Key: {
                 "id": name.toLowerCase()
             }
         }
         return this.client.get(params)
-            .then((output: DocumentClient.GetItemOutput) => output.Item as MainSchema)
+            .then((output: GetCommandOutput) => output.Item as MainSchema)
     }
 
     /**
@@ -80,7 +80,7 @@ export class MainTable {
      public getConsistent(
         name: string
     ): Promise<MainSchema> {
-        const params: DocumentClient.GetItemInput = {
+        const params: GetCommandInput = {
             TableName: MAIN_TABLE,
             Key: {
                 "id": name.toLowerCase()
@@ -88,7 +88,7 @@ export class MainTable {
             ConsistentRead: true
         }
         return this.client.get(params)
-            .then((output: DocumentClient.GetItemOutput) => output.Item as MainSchema)
+            .then((output: GetCommandOutput) => output.Item as MainSchema)
     }
 
     /**
@@ -98,8 +98,8 @@ export class MainTable {
         name: string,
         key: string,
         val: string
-    ): Promise<DocumentClient.UpdateItemOutput> {
-        const params: DocumentClient.UpdateItemInput = {
+    ): Promise<UpdateCommandOutput> {
+        const params: UpdateCommandInput = {
             TableName: MAIN_TABLE,
             Key: {
                 "id": name.toLowerCase()

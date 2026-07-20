@@ -12,7 +12,7 @@ test('will print item correctly when main table is empty', async () => {
             tableName: MAIN_TABLE
         })
     ).resolves.toEqual({
-        "$response": null,
+        "$metadata": {},
         Items: [],
         Count: 0,
         ScannedCount: 0

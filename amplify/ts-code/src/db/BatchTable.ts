@@ -1,6 +1,6 @@
 import { BATCH_TABLE, BatchSchema, ITEMS_TABLE, ItemsSchema } from "./Schemas"
 import { DBClient } from "../injection/db/DBClient"
-import { DocumentClient } from "aws-sdk/clients/dynamodb"
+import { DeleteCommandInput, GetCommandInput, GetCommandOutput, PutCommandInput, UpdateCommandInput } from "@aws-sdk/lib-dynamodb"
 
 export class BatchTable {
     private readonly client: DBClient
@@ -28,7 +28,7 @@ export class BatchTable {
                     groups: groups
                 }
 
-                const params: DocumentClient.PutItemInput = {
+                const params: PutCommandInput = {
                     TableName: BATCH_TABLE,
                     Item: item
                 }
@@ -51,13 +51,13 @@ export class BatchTable {
         batchName: string,
         id: string
     ): Promise<any> {
-        const getParams: DocumentClient.GetItemInput = {
+        const getParams: GetCommandInput = {
             TableName: ITEMS_TABLE,
             Key: {
                 "id": id
             }
         }
-        const updateParams: DocumentClient.UpdateItemInput = {
+        const updateParams: UpdateCommandInput = {
             TableName: ITEMS_TABLE,
             Key: {
                 "id": id
@@ -71,7 +71,7 @@ export class BatchTable {
             }
         }
         return this.client.get(getParams)
-            .then((entry: DocumentClient.GetItemOutput) => {
+            .then((entry: GetCommandOutput) => {
                 if (entry.Item !== undefined) {
                     return this.client.update(updateParams)
                 } else {
@@ -94,7 +94,7 @@ export class BatchTable {
                 if (entry) {
                     return entry.val.reduce((prev: Promise<any>, id: string) => prev.then(() => this.detachBatchFromItem(name, id)), Promise.resolve())
                         .then(() => {
-                            const params: DocumentClient.DeleteItemInput = {
+                            const params: DeleteCommandInput = {
                                 TableName: BATCH_TABLE,
                                 Key: {
                                     "id": name.toLowerCase()
@@ -113,7 +113,7 @@ export class BatchTable {
         batchName: string,
         id: string
     ): Promise<any> {
-        const getParams: DocumentClient.GetItemInput = {
+        const getParams: GetCommandInput = {
             TableName: ITEMS_TABLE,
             Key: {
                 "id": id
@@ -121,7 +121,7 @@ export class BatchTable {
         }
         
         return this.client.get(getParams)
-            .then((output: DocumentClient.GetItemOutput) => {
+            .then((output: GetCommandOutput) => {
                 const item: ItemsSchema = output.Item as ItemsSchema
                 if (item) {
                     const idx: number = item.batch.indexOf(batchName)
@@ -130,7 +130,7 @@ export class BatchTable {
                         throw Error(`Unable to find batch ${batchName} in item`)
                     }
 
-                    const deleteParams: DocumentClient.UpdateItemInput = {
+                    const deleteParams: UpdateCommandInput = {
                         TableName: ITEMS_TABLE,
                         Key: {
                             "id": id
@@ -153,13 +153,13 @@ export class BatchTable {
     public get(
         name: string
     ): Promise<BatchSchema> {
-        const params: DocumentClient.GetItemInput = {
+        const params: GetCommandInput = {
             TableName: BATCH_TABLE,
             Key: {
                 "id": name.toLowerCase()
             }
         }
         return this.client.get(params)
-            .then((output: DocumentClient.GetItemOutput) => output.Item as BatchSchema)
+            .then((output: GetCommandOutput) => output.Item as BatchSchema)
     }
 }

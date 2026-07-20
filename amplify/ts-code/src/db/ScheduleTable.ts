@@ -1,6 +1,6 @@
 import { SCHEDULE_TABLE, ScheduleSchema, ITEMS_TABLE, ItemsSchema } from "./Schemas";
 import { DBClient } from "../injection/db/DBClient"
-import { DocumentClient } from "aws-sdk/clients/dynamodb"
+import { DeleteCommandInput, GetCommandInput, GetCommandOutput, PutCommandInput, UpdateCommandInput } from "@aws-sdk/lib-dynamodb"
 
 export class ScheduleTable {
     private readonly client: DBClient
@@ -34,7 +34,7 @@ export class ScheduleTable {
                         notes: notes
                     }
 
-                    const indexParams: DocumentClient.PutItemInput = {
+                    const indexParams: PutCommandInput = {
                         TableName: SCHEDULE_TABLE,
                         Item: reservation
                     }
@@ -44,14 +44,14 @@ export class ScheduleTable {
                     }
 
                     return Promise.all((itemIds.map((itemId: string) => {
-                        const getItemsParams: DocumentClient.GetItemInput = {
+                        const getItemsParams: GetCommandInput = {
                             TableName: ITEMS_TABLE,
                             Key: {
                                 "id": itemId
                             }
                         }
                         return this.client.get(getItemsParams)
-                        .then((output: DocumentClient.GetItemOutput) => {
+                        .then((output: GetCommandOutput) => {
                             const item: ItemsSchema = output.Item as ItemsSchema
                             if (item) {
                                 return Promise.all((item.schedule.map((reservationId: string) => {
@@ -70,17 +70,17 @@ export class ScheduleTable {
                     })))
                     .then(() => this.client.put(indexParams))
                     .then(() => Promise.all((itemIds.map((itemId: string) => {
-                        const getItemsParams: DocumentClient.GetItemInput = {
+                        const getItemsParams: GetCommandInput = {
                             TableName: ITEMS_TABLE,
                             Key: {
                                 "id": itemId
                             }
                         }
                         return this.client.get(getItemsParams)
-                        .then((output: DocumentClient.GetItemOutput) => {
+                        .then((output: GetCommandOutput) => {
                             const item: ItemsSchema = output.Item as ItemsSchema
                             if (item) {
-                                const itemsParams: DocumentClient.UpdateItemInput = {
+                                const itemsParams: UpdateCommandInput = {
                                     TableName: ITEMS_TABLE,
                                     Key: {
                                         "id": itemId
@@ -115,7 +115,7 @@ export class ScheduleTable {
             .then((entry: ScheduleSchema) => {
                 if (entry) {
 
-                    const scheduleParams: DocumentClient.DeleteItemInput = {
+                    const scheduleParams: DeleteCommandInput = {
                         TableName: SCHEDULE_TABLE,
                         Key: {
                             "id": id
@@ -124,7 +124,7 @@ export class ScheduleTable {
 
                     return this.client.delete(scheduleParams)
                         .then(() => entry.itemIds.reduce((prev: Promise<any>, itemId: string) => {
-                            const getItemsParams: DocumentClient.GetItemInput = {
+                            const getItemsParams: GetCommandInput = {
                                 TableName: ITEMS_TABLE,
                                 Key: {
                                     "id": itemId
@@ -132,11 +132,11 @@ export class ScheduleTable {
                             }
                             return prev
                                 .then(() => this.client.get(getItemsParams))
-                                .then((output: DocumentClient.GetItemOutput) => {
+                                .then((output: GetCommandOutput) => {
                                     const item: ItemsSchema = output.Item as ItemsSchema
                                     
                                     if (item) {
-                                        const updateItemsParams: DocumentClient.UpdateItemInput = {
+                                        const updateItemsParams: UpdateCommandInput = {
                                             TableName: ITEMS_TABLE,
                                             Key: {
                                                 "id": itemId
@@ -166,14 +166,14 @@ export class ScheduleTable {
     public get(
         id: string
     ): Promise<ScheduleSchema> {
-        const params: DocumentClient.GetItemInput = {
+        const params: GetCommandInput = {
             TableName: SCHEDULE_TABLE,
             Key: {
                 "id": id
             }
         }
         return this.client.get(params)
-            .then((output: DocumentClient.GetItemOutput) => {
+            .then((output: GetCommandOutput) => {
                 if (output) {
                     return output.Item as ScheduleSchema
                 } else {

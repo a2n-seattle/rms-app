@@ -1,6 +1,6 @@
 import { MAIN_TABLE, MainSchema, TAGS_TABLE, TagsSchema } from "./Schemas"
 import { DBClient } from "../injection/db/DBClient"
-import { DocumentClient } from "aws-sdk/clients/dynamodb"
+import { DeleteCommandInput, GetCommandInput, GetCommandOutput, PutCommandInput, UpdateCommandInput } from "@aws-sdk/lib-dynamodb"
 
 export class TagTable {
     private readonly client: DBClient
@@ -30,7 +30,7 @@ export class TagTable {
                     // Contains tag already. Do nothing.
                     return
                 } else {
-                    const mainParams: DocumentClient.UpdateItemInput = {
+                    const mainParams: UpdateCommandInput = {
                         TableName: MAIN_TABLE,
                         Key: {
                             "id": name
@@ -48,7 +48,7 @@ export class TagTable {
                         .then(() => {
                             if (tagEntry) {
                                 // Index exists, so update
-                                const updateParam: DocumentClient.UpdateItemInput = {
+                                const updateParam: UpdateCommandInput = {
                                     TableName: TAGS_TABLE,
                                     Key: {
                                         "id": tag
@@ -68,7 +68,7 @@ export class TagTable {
                                     id: tag,
                                     val: [name.toLowerCase()]
                                 }
-                                const putParam: DocumentClient.PutItemInput = {
+                                const putParam: PutCommandInput = {
                                     TableName: TAGS_TABLE,
                                     Item: putItem
                                 }
@@ -96,7 +96,7 @@ export class TagTable {
         return this.getConsistent(tag)
             .then((tagEntry: TagsSchema) => {
                 if (tagEntry && tagEntry.val.includes(name)) {
-                    const mainGetParams: DocumentClient.GetItemInput = {
+                    const mainGetParams: GetCommandInput = {
                         TableName: MAIN_TABLE,
                         Key: {
                             "id": name.toLowerCase()
@@ -104,7 +104,7 @@ export class TagTable {
                     }
 
                     return this.client.get(mainGetParams)
-                        .then((output: DocumentClient.GetItemOutput) => {
+                        .then((output: GetCommandOutput) => {
                             const item: MainSchema = output.Item as MainSchema
                             
                             if (item) {
@@ -115,7 +115,7 @@ export class TagTable {
                                 }
 
                                 
-                                const updateMainParams: DocumentClient.UpdateItemInput = {
+                                const updateMainParams: UpdateCommandInput = {
                                     TableName: MAIN_TABLE,
                                     Key: {
                                         "id": name.toLowerCase()
@@ -131,7 +131,7 @@ export class TagTable {
                             }
                         }).then(() => {
                             if (tagEntry.val.length === 1) {
-                                const tagDeleteParams: DocumentClient.DeleteItemInput = {
+                                const tagDeleteParams: DeleteCommandInput = {
                                     TableName: TAGS_TABLE,
                                     Key: {
                                         "id": tag
@@ -145,7 +145,7 @@ export class TagTable {
                                     throw Error(`Unable to find id ${tag} in main`)
                                 }
 
-                                const tagUpdateParams: DocumentClient.UpdateItemInput = {
+                                const tagUpdateParams: UpdateCommandInput = {
                                     TableName: TAGS_TABLE,
                                     Key: {
                                         "id": tag
@@ -169,14 +169,14 @@ export class TagTable {
         name: string,
         tags: string[]
     ): Promise<any> {
-        const mainParam: DocumentClient.GetItemInput = {
+        const mainParam: GetCommandInput = {
             TableName: MAIN_TABLE,
             Key: {
                 "id": name.toLowerCase()
             }
         }
         return this.client.get(mainParam)
-            .then((data: DocumentClient.GetItemOutput) => {
+            .then((data: GetCommandOutput) => {
                 if (data.Item) {
                     const entry: MainSchema = data.Item as MainSchema
                     const createTags = tags.filter((newTag: string) => !entry.tags.includes(newTag))
@@ -195,14 +195,14 @@ export class TagTable {
     public get(
         tag: string
     ): Promise<TagsSchema> {
-        const params: DocumentClient.GetItemInput = {
+        const params: GetCommandInput = {
             TableName: TAGS_TABLE,
             Key: {
                 "id": tag
             }
         }
         return this.client.get(params)
-            .then((output: DocumentClient.GetItemOutput) => output.Item as TagsSchema)
+            .then((output: GetCommandOutput) => output.Item as TagsSchema)
     }
 
     /**
@@ -211,7 +211,7 @@ export class TagTable {
      public getConsistent(
         tag: string
     ): Promise<TagsSchema> {
-        const params: DocumentClient.GetItemInput = {
+        const params: GetCommandInput = {
             TableName: TAGS_TABLE,
             Key: {
                 "id": tag
@@ -219,6 +219,6 @@ export class TagTable {
             ConsistentRead: true
         }
         return this.client.get(params)
-            .then((output: DocumentClient.GetItemOutput) => output.Item as TagsSchema)
+            .then((output: GetCommandOutput) => output.Item as TagsSchema)
     }
 }

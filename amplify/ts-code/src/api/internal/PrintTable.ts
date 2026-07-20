@@ -3,7 +3,7 @@ import { MAIN_TABLE, ITEMS_TABLE, TAGS_TABLE, BATCH_TABLE, HISTORY_TABLE, SCHEDU
 import { DBClient } from "../../injection/db/DBClient"
 import { MetricsClient } from "../../injection/metrics/MetricsClient"
 import { emitAPIMetrics } from "../../metrics/MetricsHelper"
-import { DocumentClient } from "aws-sdk/clients/dynamodb"
+import { NativeAttributeValue, ScanCommandInput, ScanCommandOutput } from "@aws-sdk/lib-dynamodb"
 
 /**
  * Scan entire table.
@@ -32,13 +32,13 @@ export class PrintTable {
             return this.transactionsTable.appendToScratch(number, "tableName", request)
                 .then(() => this.execute(scratch))
                 .then(
-                    (output: DocumentClient.ScanOutput) => this.processSuccess(output, number),
+                    (output: ScanCommandOutput) => this.processSuccess(output, number),
                     (reason: any) => this.processFailure(reason, number)
                 )
         } else if (request === "y") {
             return this.execute(scratch)
                 .then(
-                    (output: DocumentClient.ScanOutput) => this.processSuccess(output, number),
+                    (output: ScanCommandOutput) => this.processSuccess(output, number),
                     (reason: any) => this.processFailure(reason, number)
                 )
         } else {
@@ -47,7 +47,7 @@ export class PrintTable {
         }
     }
 
-    private processSuccess(output: DocumentClient.ScanOutput, number: string): Promise<string> {
+    private processSuccess(output: ScanCommandOutput, number: string): Promise<string> {
         if (output.LastEvaluatedKey) {
             return this.transactionsTable.appendToScratch(number, "ExclusiveStartKey", output.LastEvaluatedKey)
                 .then(() => JSON.stringify(output.Items, null, 1) + "\nCONTINUE?")
@@ -72,10 +72,10 @@ export class PrintTable {
      * @param ExclusiveStartKey The primary key of the first item that this operation will evaluate. Use the value that was returned for LastEvaluatedKey in the previous operation.
      * @param FilterExpression A string that contains conditions that DynamoDB applies after the Scan operation, but before the data is returned to you. Items that do not satisfy the FilterExpression criteria are not returned. A FilterExpression is applied after the items have already been read.
      */
-    public execute(scratch: ScratchInterface): Promise<DocumentClient.ScanOutput> {
+    public execute(scratch: ScratchInterface): Promise<ScanCommandOutput> {
         return emitAPIMetrics(
             () => {
-                const params: DocumentClient.ScanInput = {
+                const params: ScanCommandInput = {
                     TableName: this.getTableName(scratch.tableName),
                     Limit: scratch.Limit,
                     ExclusiveStartKey: scratch.ExclusiveStartKey,
@@ -111,6 +111,6 @@ export class PrintTable {
 interface ScratchInterface {
     tableName?: string
     Limit?: number
-    ExclusiveStartKey?: DocumentClient.Key
+    ExclusiveStartKey?: Record<string, NativeAttributeValue>
     FilterExpression?: string
 }

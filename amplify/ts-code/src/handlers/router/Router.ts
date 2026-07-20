@@ -2,7 +2,7 @@ import { TransactionsTable } from "../../db/TransactionsTable"
 import { TransactionsSchema } from "../../db/Schemas"
 import { DBClient } from "../../injection/db/DBClient"
 import { MetricsClient } from "../../injection/metrics/MetricsClient"
-import { DocumentClient } from "aws-sdk/clients/dynamodb"
+import { GetCommandOutput } from "@aws-sdk/lib-dynamodb"
 
 import { PrintTable } from "../../api/internal/PrintTable"
 import { GetItem } from "../../api/GetItem"
@@ -72,7 +72,7 @@ export class Router {
         processedRequest = (processedRequest === "none") ? "" : processedRequest
 
         return this.transactionsTable.get(number)
-            .then((data: DocumentClient.GetItemOutput) => {
+            .then((data: GetCommandOutput) => {
                 if (data.Item) {
                     const entry: TransactionsSchema = data.Item as TransactionsSchema
                     return this.routeRequest(number, processedRequest, entry.type, entry.scratch)

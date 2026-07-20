@@ -1,8 +1,12 @@
 import { DBSeed } from "./DBTestConstants";
 import { DBClient } from "../../src/injection/db/DBClient";
-import { AWSError } from "aws-sdk"
-import { DocumentClient } from "aws-sdk/clients/dynamodb"
-import { PromiseResult } from "aws-sdk/lib/request"
+import {
+    DeleteCommandInput, DeleteCommandOutput,
+    GetCommandInput, GetCommandOutput,
+    PutCommandInput, PutCommandOutput,
+    UpdateCommandInput, UpdateCommandOutput,
+    ScanCommandInput, ScanCommandOutput
+} from "@aws-sdk/lib-dynamodb"
 import {
     MAIN_TABLE, MainSchema,
     ITEMS_TABLE, ItemsSchema,
@@ -12,6 +16,13 @@ import {
     HISTORY_TABLE, HistorySchema,
     SCHEDULE_TABLE, ScheduleSchema
 } from "../../src/db/Schemas"
+
+// Mimics the shape of aws-sdk v2's StringSet, since this local mock
+// doesn't perform real DynamoDB set marshalling.
+interface StringSet {
+    type: "String"
+    values: string[]
+}
 
 interface LocalDB {
     main: { [key: string]: MainSchema },
@@ -41,20 +52,20 @@ export class LocalDBClient implements DBClient {
         return this.db
     }
 
-    public delete(params: DocumentClient.DeleteItemInput): Promise<PromiseResult<DocumentClient.DeleteItemOutput, AWSError>> {
+    public delete(params: DeleteCommandInput): Promise<DeleteCommandOutput> {
         return this.newPromise(() => {
             delete this.getTable(params.TableName)[Object.values(params.Key)[0]]
             return {}
         })
     }
-    
-    public get(params: DocumentClient.GetItemInput): Promise<PromiseResult<DocumentClient.GetItemOutput, AWSError>> {
+
+    public get(params: GetCommandInput): Promise<GetCommandOutput> {
         return this.newPromise(() => {
             return { Item: this.getTable(params.TableName)[Object.values(params.Key)[0]] }
         })
     }
 
-    public put(params: DocumentClient.PutItemInput): Promise<PromiseResult<DocumentClient.PutItemOutput, AWSError>> {
+    public put(params: PutCommandInput): Promise<PutCommandOutput> {
         return this.newPromise(() => {
             if (params.TableName === MAIN_TABLE) {
                 const val: MainSchema = params.Item as MainSchema
@@ -91,7 +102,7 @@ export class LocalDBClient implements DBClient {
         })
     }
 
-    public update(params: DocumentClient.UpdateItemInput): Promise<PromiseResult<DocumentClient.UpdateItemOutput, AWSError>> {
+    public update(params: UpdateCommandInput): Promise<UpdateCommandOutput> {
         // TODO: Update list append updates, since using sets now.
         return this.newPromise(() => {
             if (params.UpdateExpression === "SET #key = list_append(#key, :val)") {
@@ -125,7 +136,7 @@ export class LocalDBClient implements DBClient {
                 this.getTable(params.TableName)[Object.values(params.Key)[0]][key].splice(idx, 1)
             } else if (params.UpdateExpression === "ADD #key :val") {
                 const key: string = params.ExpressionAttributeNames["#key"]
-                const val: DocumentClient.StringSet = params.ExpressionAttributeValues[":val"]
+                const val: StringSet = params.ExpressionAttributeValues[":val"]
                 if (this.getTable(params.TableName)[Object.values(params.Key)[0]][key]) {
                     this.getTable(params.TableName)[Object.values(params.Key)[0]][key].values
                         = val.values.concat(this.getTable(params.TableName)[Object.values(params.Key)[0]][key].values).sort()
@@ -136,7 +147,7 @@ export class LocalDBClient implements DBClient {
                 const attr1: string = params.ExpressionAttributeNames["#attr1"]
                 const attr2: string = params.ExpressionAttributeNames["#attr2"]
                 const key: string = params.ExpressionAttributeNames["#key"]
-                const val: DocumentClient.StringSet = params.ExpressionAttributeValues[":val"]
+                const val: StringSet = params.ExpressionAttributeValues[":val"]
                 if (this.getTable(params.TableName)[Object.values(params.Key)[0]][attr1][attr2][key]) {
                     this.getTable(params.TableName)[Object.values(params.Key)[0]][attr1][attr2][key].values
                         = val.values.concat(this.getTable(params.TableName)[Object.values(params.Key)[0]][attr1][attr2][key].values).sort()
@@ -145,7 +156,7 @@ export class LocalDBClient implements DBClient {
                 }
             } else if (params.UpdateExpression === "DELETE #key :val") {
                 const key: string = params.ExpressionAttributeNames["#key"]
-                const val: DocumentClient.StringSet = params.ExpressionAttributeValues[":val"]
+                const val: StringSet = params.ExpressionAttributeValues[":val"]
                 this.getTable(params.TableName)[Object.values(params.Key)[0]][key].values =
                         this.getTable(params.TableName)[Object.values(params.Key)[0]][key].values
                             .filter((el: string) => !val.values.includes(el))
@@ -156,7 +167,7 @@ export class LocalDBClient implements DBClient {
                 const attr1: string = params.ExpressionAttributeNames["#attr1"]
                 const attr2: string = params.ExpressionAttributeNames["#attr2"]
                 const key: string = params.ExpressionAttributeNames["#key"]
-                const val: DocumentClient.StringSet = params.ExpressionAttributeValues[":val"]
+                const val: StringSet = params.ExpressionAttributeValues[":val"]
                 this.getTable(params.TableName)[Object.values(params.Key)[0]][attr1][attr2][key].values =
                         this.getTable(params.TableName)[Object.values(params.Key)[0]][attr1][attr2][key].values
                             .filter((el: string) => !val.values.includes(el))
@@ -172,7 +183,7 @@ export class LocalDBClient implements DBClient {
     }
     
     // Default to full table scan for now.
-    public scan(params: DocumentClient.ScanInput): Promise<PromiseResult<DocumentClient.ScanOutput, AWSError>> {
+    public scan(params: ScanCommandInput): Promise<ScanCommandOutput> {
         return this.newPromise(() => {
             const table: any[] = Object.values(this.getTable(params.TableName))
             return {
@@ -203,11 +214,11 @@ export class LocalDBClient implements DBClient {
         }
     }
 
-    private newPromise<T>(runnable: () => T): Promise<PromiseResult<T, AWSError>> {
-        return new Promise((resolve: (value: PromiseResult<T, AWSError>) => void, reject: (reason?: any) => void) => {
+    private newPromise<T>(runnable: () => T): Promise<T & { $metadata: {} }> {
+        return new Promise((resolve: (value: T & { $metadata: {} }) => void, reject: (reason?: any) => void) => {
             try {
                 const response: T = runnable()
-                resolve({...response, ...{ $response: null }})
+                resolve({ ...response, $metadata: {} })
             } catch (err) {
                 reject(err)
             }

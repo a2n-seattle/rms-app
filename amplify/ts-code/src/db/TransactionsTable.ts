@@ -1,6 +1,6 @@
 import { TRANSACTIONS_TABLE } from "./Schemas"
 import { DBClient } from "../injection/db/DBClient"
-import { DocumentClient } from "aws-sdk/clients/dynamodb"
+import { DeleteCommandInput, DeleteCommandOutput, GetCommandInput, GetCommandOutput, PutCommandInput, PutCommandOutput, UpdateCommandInput, UpdateCommandOutput } from "@aws-sdk/lib-dynamodb"
 
 export class TransactionsTable {
     private readonly client: DBClient
@@ -20,8 +20,8 @@ export class TransactionsTable {
         number: string,
         key: string,
         val: any
-    ): Promise<DocumentClient.UpdateItemOutput> {
-        const param: DocumentClient.UpdateItemInput = {
+    ): Promise<UpdateCommandOutput> {
+        const param: UpdateCommandInput = {
             TableName: TRANSACTIONS_TABLE,
             Key: {
                 "number": number
@@ -48,8 +48,8 @@ export class TransactionsTable {
     public create(
         number: string,
         type: string
-    ): Promise<DocumentClient.PutItemOutput> {
-        const params: DocumentClient.PutItemInput = {
+    ): Promise<PutCommandOutput> {
+        const params: PutCommandInput = {
             TableName: TRANSACTIONS_TABLE,
             Item: {
                 "number": number,
@@ -67,8 +67,8 @@ export class TransactionsTable {
      */
     public delete(
         number: string
-    ): Promise<DocumentClient.DeleteItemOutput> {
-        const params: DocumentClient.DeleteItemInput = {
+    ): Promise<DeleteCommandOutput> {
+        const params: DeleteCommandInput = {
             TableName: TRANSACTIONS_TABLE,
             Key: {
                 "number": number
@@ -84,8 +84,8 @@ export class TransactionsTable {
      */
     public get(
         number: string
-    ): Promise<DocumentClient.GetItemOutput> {
-        const params: DocumentClient.GetItemInput = {
+    ): Promise<GetCommandOutput> {
+        const params: GetCommandInput = {
             TableName: TRANSACTIONS_TABLE,
             Key: {
                 "number": number

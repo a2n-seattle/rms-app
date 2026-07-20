@@ -1,32 +1,38 @@
 import { DBClient } from "./DBClient"
-import { AWSError, DynamoDB } from "aws-sdk"
-import { DocumentClient } from "aws-sdk/clients/dynamodb"
-import { PromiseResult } from "aws-sdk/lib/request"
+import { DynamoDBClient, DynamoDBClientConfig } from "@aws-sdk/client-dynamodb"
+import {
+    DynamoDBDocumentClient, TranslateConfig,
+    DeleteCommand, DeleteCommandInput, DeleteCommandOutput,
+    GetCommand, GetCommandInput, GetCommandOutput,
+    PutCommand, PutCommandInput, PutCommandOutput,
+    UpdateCommand, UpdateCommandInput, UpdateCommandOutput,
+    ScanCommand, ScanCommandInput, ScanCommandOutput
+} from "@aws-sdk/lib-dynamodb"
 
 export class DDBClient implements DBClient {
-    private readonly docClient: DocumentClient
+    private readonly docClient: DynamoDBDocumentClient
 
-    public constructor(options?: DocumentClient.DocumentClientOptions & DynamoDB.Types.ClientConfiguration) {
-        this.docClient = new DocumentClient(options)
+    public constructor(options?: DynamoDBClientConfig, translateConfig?: TranslateConfig) {
+        this.docClient = DynamoDBDocumentClient.from(new DynamoDBClient(options ?? {}), translateConfig)
     }
 
-    public delete(params: DocumentClient.DeleteItemInput): Promise<PromiseResult<DocumentClient.DeleteItemOutput, AWSError>> {
-        return this.docClient.delete(params).promise()
-    }
-    
-    public get(params: DocumentClient.GetItemInput): Promise<PromiseResult<DocumentClient.GetItemOutput, AWSError>> {
-        return this.docClient.get(params).promise()
+    public delete(params: DeleteCommandInput): Promise<DeleteCommandOutput> {
+        return this.docClient.send(new DeleteCommand(params))
     }
 
-    public put(params: DocumentClient.PutItemInput): Promise<PromiseResult<DocumentClient.PutItemOutput, AWSError>> {
-        return this.docClient.put(params).promise()
+    public get(params: GetCommandInput): Promise<GetCommandOutput> {
+        return this.docClient.send(new GetCommand(params))
     }
 
-    public update(params: DocumentClient.UpdateItemInput): Promise<PromiseResult<DocumentClient.UpdateItemOutput, AWSError>> {
-        return this.docClient.update(params).promise()
+    public put(params: PutCommandInput): Promise<PutCommandOutput> {
+        return this.docClient.send(new PutCommand(params))
     }
 
-    public scan(params: DynamoDB.DocumentClient.ScanInput): Promise<PromiseResult<DynamoDB.DocumentClient.ScanOutput, AWSError>> {
-        return this.docClient.scan(params).promise()
+    public update(params: UpdateCommandInput): Promise<UpdateCommandOutput> {
+        return this.docClient.send(new UpdateCommand(params))
+    }
+
+    public scan(params: ScanCommandInput): Promise<ScanCommandOutput> {
+        return this.docClient.send(new ScanCommand(params))
     }
 }

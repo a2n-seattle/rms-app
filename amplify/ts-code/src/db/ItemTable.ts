@@ -1,6 +1,6 @@
 import { MAIN_TABLE, ITEMS_TABLE, ItemsSchema, HistorySchema, HISTORY_TABLE, MainSchema } from "./Schemas";
 import { DBClient } from "../injection/db/DBClient"
-import { DocumentClient } from "aws-sdk/clients/dynamodb"
+import { DeleteCommandInput, GetCommandInput, GetCommandOutput, PutCommandInput, PutCommandOutput, UpdateCommandInput } from "@aws-sdk/lib-dynamodb"
 
 export class ItemTable {
     private readonly client: DBClient
@@ -17,13 +17,13 @@ export class ItemTable {
         name: string,
         owner: string,
         notes: string
-    ): Promise<DocumentClient.PutItemOutput> {
+    ): Promise<PutCommandOutput> {
         return this.get(id)
             .then((entry: ItemsSchema) => {
                 if (entry) {
                     throw Error(`RMS ID ${id} is not unique.`)
                 } else {
-                    const mainParams: DocumentClient.UpdateItemInput = {
+                    const mainParams: UpdateCommandInput = {
                         TableName: MAIN_TABLE,
                         Key: {
                             "id": name.toLowerCase()
@@ -48,7 +48,7 @@ export class ItemTable {
                         schedule: []
                     }
 
-                    const indexParams: DocumentClient.PutItemInput = {
+                    const indexParams: PutCommandInput = {
                         TableName: ITEMS_TABLE,
                         Item: item
                     }
@@ -72,14 +72,14 @@ export class ItemTable {
                         throw Error(`Item ${id} still belongs to batches. Need to remove item from batch before proceeding with removal.`)
                     }
 
-                    const itemsParams: DocumentClient.DeleteItemInput = {
+                    const itemsParams: DeleteCommandInput = {
                         TableName: ITEMS_TABLE,
                         Key: {
                             "id": id
                         }
                     }
 
-                    const getMainParams: DocumentClient.GetItemInput = {
+                    const getMainParams: GetCommandInput = {
                         TableName: MAIN_TABLE,
                         Key: {
                             "id": entry.name
@@ -88,7 +88,7 @@ export class ItemTable {
 
                     return this.client.delete(itemsParams)
                         .then(() => this.client.get(getMainParams))
-                        .then((output: DocumentClient.GetItemOutput) => {
+                        .then((output: GetCommandOutput) => {
                             const item: MainSchema = output.Item as MainSchema
                             
                             if (item) {
@@ -98,7 +98,7 @@ export class ItemTable {
                                     throw Error(`Unable to find id ${id} in main`)
                                 }
 
-                                const updateMainParams: DocumentClient.UpdateItemInput = {
+                                const updateMainParams: UpdateCommandInput = {
                                     TableName: MAIN_TABLE,
                                     Key: {
                                         "id": entry.name
@@ -125,14 +125,14 @@ export class ItemTable {
     public get(
         id: string
     ): Promise<ItemsSchema> {
-        const params: DocumentClient.GetItemInput = {
+        const params: GetCommandInput = {
             TableName: ITEMS_TABLE,
             Key: {
                 "id": id
             }
         }
         return this.client.get(params)
-            .then((output: DocumentClient.GetItemOutput) => output.Item as ItemsSchema)
+            .then((output: GetCommandOutput) => output.Item as ItemsSchema)
     }
 
     /**
@@ -143,15 +143,15 @@ export class ItemTable {
         key: "owner" | "notes",
         val: string,
         expectedValue?: string
-    ): Promise<DocumentClient.GetItemOutput> {
-        const itemSearchParams: DocumentClient.GetItemInput = {
+    ): Promise<GetCommandOutput> {
+        const itemSearchParams: GetCommandInput = {
             TableName: ITEMS_TABLE,
             Key: {
                 "id": id
             }
         }
         return this.client.get(itemSearchParams)
-            .then((data: DocumentClient.GetItemOutput) => {
+            .then((data: GetCommandOutput) => {
                 if (data.Item) {
                     const entry: ItemsSchema = data.Item as ItemsSchema
 
@@ -159,7 +159,7 @@ export class ItemTable {
                         throw Error(`'${key}' is currently '${entry[key]}', `
                             + `which isn't equal to the expected value of '${expectedValue}'.`)
                     } else {
-                        const updateParams: DocumentClient.UpdateItemInput = {
+                        const updateParams: UpdateCommandInput = {
                             TableName: ITEMS_TABLE,
                             Key: {
                                 "id": id
@@ -201,14 +201,14 @@ export class ItemTable {
         const expectedBorrower: string = (action === "borrow") ? "" : borrower
         const nextBorrower: string = (action === "borrow") ? borrower : ""
 
-        const itemSearchParams: DocumentClient.GetItemInput = {
+        const itemSearchParams: GetCommandInput = {
             TableName: ITEMS_TABLE,
             Key: {
                 "id": id
             }
         }
         return this.client.get(itemSearchParams)
-            .then((data: DocumentClient.GetItemOutput) => {
+            .then((data: GetCommandOutput) => {
                 if (data.Item) {
                     const entry: ItemsSchema = data.Item as ItemsSchema
                     
@@ -222,7 +222,7 @@ export class ItemTable {
                                 + `which isn't equal to the specified borrower of '${expectedBorrower}'.`)
                         }
                     } else {
-                        const updateParams: DocumentClient.UpdateItemInput = {
+                        const updateParams: UpdateCommandInput = {
                             TableName: ITEMS_TABLE,
                             Key: {
                                 "id": id
@@ -253,7 +253,7 @@ export class ItemTable {
         borrower: string,
         action: "borrow" | "return",
         notes: string
-    ): Promise<DocumentClient.PutItemOutput> {
+    ): Promise<PutCommandOutput> {
         const curEpochMs: number = Date.now()
         const key: string = `${curEpochMs}-${id}`
         const item: HistorySchema = {
@@ -265,12 +265,12 @@ export class ItemTable {
             notes: notes,
             timestamp: curEpochMs
         }
-        const addHistoryParams: DocumentClient.PutItemInput = {
+        const addHistoryParams: PutCommandInput = {
             TableName: HISTORY_TABLE,
             Item: item
         }
 
-        const updateMainParams: DocumentClient.UpdateItemInput = {
+        const updateMainParams: UpdateCommandInput = {
             TableName: ITEMS_TABLE,
             Key: {
                 "id": id
