@@ -27,6 +27,10 @@ amplifytools.xcconfig
 ts-output/
 report.json
 
+# Amplify Gen 2
+amplify_outputs.json
+.amplify/
+
 #amplify-do-not-edit-begin
 amplify/\#current-cloud-backend
 amplify/.config/local-*
