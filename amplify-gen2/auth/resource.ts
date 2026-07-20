@@ -1,24 +1,27 @@
-import { referenceAuth } from "@aws-amplify/backend"
+import { defineAuth } from "@aws-amplify/backend"
 
 /**
- * References the existing Gen 1 Cognito User Pool + Identity Pool
- * (amplify/backend/auth/rms42689182) rather than migrating/recreating them.
- * Zero user-data risk: the pool is treated as unmanaged external
- * infrastructure Gen 2 can grant permissions to, never modified.
+ * Fresh Cognito User Pool, replacing the Gen 1 pool
+ * (amplify/backend/auth/rms42689182), which was deleted from the alpha
+ * account with no users left to preserve — referenceAuth no longer applies,
+ * so this defines a brand new pool instead of pointing at an old one.
  *
- * The Identity Pool is kept referenced (not dropped) — see the migration
- * plan's auth section for why: the integration test and possibly the
- * current frontend still depend on its authenticated role for direct
- * Lambda invocation. Retiring it is separate follow-up work.
- *
- * TODO: replace the REPLACE_WITH_* placeholders with the real values from
- * the alpha CloudFormation stack (amplify-rms-alpha-233046) before any
- * sandbox deploy that needs real auth (Phase 1 of the migration plan).
+ * Mirrors the Gen 1 config from
+ * amplify/backend/auth/rms42689182/cli-inputs.json as closely as Gen 2's
+ * API allows: email/password login, email + name required attributes,
+ * MFA off. Since this is a fresh pool, all users will need to sign up
+ * again — there is no data to migrate.
  */
-export const auth = referenceAuth({
-    userPoolId: "REPLACE_WITH_USER_POOL_ID",
-    identityPoolId: "REPLACE_WITH_IDENTITY_POOL_ID",
-    userPoolClientId: "REPLACE_WITH_USER_POOL_CLIENT_ID",
-    authRoleArn: "arn:aws:iam::801118485191:role/amplify-rms-alpha-233046-authRole",
-    unauthRoleArn: "arn:aws:iam::801118485191:role/amplify-rms-alpha-233046-unauthRole",
+export const auth = defineAuth({
+    loginWith: {
+        email: true,
+    },
+    userAttributes: {
+        fullname: {
+            required: true,
+        },
+    },
+    multifactor: {
+        mode: "OFF",
+    },
 })
