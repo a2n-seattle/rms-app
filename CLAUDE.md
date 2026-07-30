@@ -10,6 +10,10 @@ RMS ("Reservation Management System") tracks borrowable/reservable items: item i
 - Frontend (`web/`, once it exists — see below): add/update Jest + React Testing Library tests (`**/*.test.tsx`) for components and utilities, and Playwright e2e tests (`web/e2e/`) for any new user-facing flow (e.g. a new page or a change to an existing golden path like login → borrow → return).
 - This applies to bug fixes too: a bug fix without a regression test that fails on the old code and passes on the new code doesn't demonstrate the bug is actually fixed.
 
+## CI checks policy (standing rule)
+
+**A coding task on this repo isn't done until every check on its PR is green.** After pushing, run `gh pr checks <N>` (or `gh pr checks <N> --watch` to block until they resolve) and treat a red or pending check the same as a failing test — investigate and fix it before reporting the work as complete, don't just note it and move on. This includes third-party checks like CodeFactor, not only `backend-ci.yml`'s build/test/coverage gate. If a check's failure reason isn't visible from `gh` output (e.g. CodeFactor's dashboard requires login to view details), infer the likely cause from the diff itself — e.g. duplicated code across near-identical files is CodeFactor's most common complaint on this repo's "one file per Lambda" CDK pattern (see `amplify-gen2/functions/apiFunction.ts`, a shared helper extracted for exactly this reason) — fix it, push, and re-check rather than leaving it red.
+
 ## Backend: AWS Amplify (Cognito + Lambda + DynamoDB)
 
 **Migration in progress: Gen 1 (CLI/CloudFormation) → Gen 2 (code-first `ampx`/CDK).** See `.claude/plans/can-you-make-a-shimmying-crane.md` for the full plan. `amplify/` is currently the Gen 1 tree (still live, still deployed to the `alpha` environment); `amplify-gen2/` is the Gen 2 rebuild in progress, not yet deployed to `alpha`. Until the migration's Phase 6 completes, treat `amplify/backend/*` as the source of truth for what's actually running.
