@@ -1,0 +1,66 @@
+name: Mark issue ready for testing on merge
+
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  mark-ready-for-testing:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Find merged branch and extract issue number
+        id: find_issue
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.event.after }}
+        run: |
+          set -euo pipefail
+
+          # Only makes sense for an actual merge commit (two parents).
+          PARENTS=$(git log -1 --format=%P "$AFTER_SHA" | wc -w | tr -d ' ')
+          if [ "$PARENTS" -lt 2 ]; then
+            echo "Not a merge commit, nothing to do."
+            echo "issue_number=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # The second parent is the tip of the branch that got merged in.
+          MERGED_SHA=$(git log -1 --format=%P "$AFTER_SHA" | awk '{print $2}')
+
+          # Find a branch name (local or remote-tracking) pointing at that commit.
+          BRANCH_NAME=$(git branch -a --contains "$MERGED_SHA" \
+            | sed 's/^[* ]*//; s#^remotes/origin/##' \
+            | grep -E '^GH-[0-9]+/' \
+            | head -n1 || true)
+
+          if [ -z "$BRANCH_NAME" ]; then
+            echo "No GH-<issue>/... branch found for merge commit, nothing to do."
+            echo "issue_number=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          ISSUE_NUMBER=$(echo "$BRANCH_NAME" | sed -E 's#^GH-([0-9]+)/.*#\1#')
+          echo "Merged branch: $BRANCH_NAME -> issue #$ISSUE_NUMBER"
+          echo "issue_number=$ISSUE_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "merge_sha=$AFTER_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Comment and label the issue
+        if: steps.find_issue.outputs.issue_number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ steps.find_issue.outputs.issue_number }}
+          MERGE_SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body \
+            "Merged to \`master\` at ${MERGE_SHA} — ready for testing. This issue stays open until manually verified and closed."
+          gh issue edit "$ISSUE_NUMBER" --repo "$REPO" --add-label "ready-for-testing"

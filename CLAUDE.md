@@ -76,3 +76,111 @@ None of these currently touch a frontend — there is no frontend build/deploy s
 An old React Native/Expo app lives at `frontend/` but hasn't been touched since 2021 and is not built or deployed by CI — treat it as abandoned reference material, not living code.
 
 A new Node.js web frontend (Next.js) is planned under `web/`, authenticating via Google Workspace SSO (Cognito federated with Google, restricted to the Acts2 Network org) and calling the backend through a new API Gateway REST layer. See the project plan for the phased rollout. This section will be filled in as `web/` is built out.
+
+## GitHub issue pipeline
+
+Issues filed on this repo flow through three workflow skills in
+`.claude/skills/` (`issue-create`, `issue-triage`, and `issue-list`), plus
+one plain GitHub Action. These deliberately run as interactive Claude Code
+sessions on the user's existing subscription, not `anthropics/claude-code-action`
+with a separate `ANTHROPIC_API_KEY`.
+
+Any plan-mode session for work that will likely lead to a code change
+should go through `/issue-create` rather than starting plan mode cold —
+that's what gets the work tracked as an issue and kept in sync as the plan
+iterates. Work that won't produce a code change (answering a question,
+explaining existing behavior) skips the pipeline entirely.
+
+**Always branch from `origin/master`, never from whatever branch happens
+to be checked out.** This repo's default branch is `master`, not `main` —
+double-check before scripting anything that assumes otherwise. A prior
+session may have left an unrelated issue's branch checked out; branching
+from that instead of `master` silently drags its commits into the new
+branch's history. Always `git fetch origin master` first, then
+`git checkout -b <new-branch> origin/master`.
+
+- **`/issue-create <text>`** — turns a raw chunk of text (notes, a plan
+  draft, a bug description) into a GitHub issue. First checks open issues
+  for close overlap — a narrow bar: only if an *existing* issue's plan/scope
+  would cover the new text with just a small addition, not merely "related."
+  If no overlap, creates a new issue. If there's overlap, rewrites that
+  issue's body to incorporate the new scope and posts a comment noting what
+  was iterated, rather than creating a duplicate. Either way, hands off to
+  `/issue-triage <N>` on the resulting issue in the same session —
+  prioritization (`bug`/`idea` + `priority-*` label) happens once, at that
+  triage step, not repeated on later plan iterations.
+- **`/issue-triage [N]`** — with no issue number, sweeps all open issues:
+  classifies `bug`/`idea` (this repo's existing labels — `idea` is the
+  feature-request label, not `enhancement`) + a `priority-*` label, and
+  posts a feedback/implementation-sketch comment (marked with
+  `<!-- issue-triage:v1 -->` so re-runs can detect "already triaged" vs.
+  "user replied, needs a revision" vs. "needs first-pass triage").
+  Read/comment/label only in this mode — never touches code, never enters
+  plan mode. **With an issue number**, it's a two-phase call in the same
+  session: first ensures that one issue is triaged (same logic as the
+  sweep, scoped to it), then continues straight into plan mode pre-seeded
+  with the issue + triage comment (same Explore → Plan → Review → Final
+  Plan → ExitPlanMode flow as any other plan-mode session, and the plan
+  must account for this repo's testing policy above). As the plan
+  iterates, syncs the current draft back to the issue at each phase
+  boundary (Review, Final Plan) — updating the issue body and editing a
+  single rolling `<!-- issue-plan:v1 -->` comment in place, rather than
+  posting a new comment each time — so the session can be paused and picked
+  up again later by running `/issue-triage <N>` again in a fresh session
+  (it'll skip re-triaging and pick the draft back up), no separate
+  "checkpoint" command needed. On approval, creates a branch named
+  `GH-<issue-number>/<github-username>/v<n>` (e.g. `GH-42/yauj/v1` — the
+  `v<n>` suffix increments per new attempt on the same issue, so a redo
+  doesn't collide with or silently overwrite a prior branch) and
+  implements, running `npm run build` + `npm run test:unit` before
+  considering the work done. Every commit on that branch carries a
+  trailing `Refs #<N>` line — deliberately the **non-closing** form
+  (GitHub only auto-closes/auto-links on `Fixes`/`Closes`/`Resolves`), so
+  merging doesn't auto-close the issue.
+- **`/issue-list [N]`** — read-only. No argument lists open issues (number,
+  title, labels, last-updated); an issue number shows that issue's body and
+  labels only, without fetching the comment thread — for the full
+  triage/plan history use `/issue-triage <N>` instead.
+- **`.github/workflows/issue-branch-merged.yml`** — triggers on push to
+  `master`, no Claude/API involved (pure shell + `gh`). Detects a
+  just-merged `GH-<N>/...` branch by name, comments "ready for testing" on
+  issue `N`, and applies the `ready-for-testing` label. It does **not**
+  close the issue — the user verifies manually and closes it themselves.
+
+`.github/workflows/backend-ci.yml` already runs build + `test:unit` + an
+80% coverage gate on every PR to `master` — PR + green CI before merging is
+this repo's convention for issue-pipeline branches (`/issue-triage`'s
+"Pushing/merging" step), same as it is for any other PR.
+
+**Small fixes that don't warrant a tracked issue** (a docs tweak, a small
+bug fix, a one-off cleanup) skip `/issue-create`/`/issue-triage`/plan mode
+entirely — make the change directly (including its test, per the testing
+policy above), then open the PR with `gh pr create` and a detailed
+description of what changed and why. Since there's no pre-existing issue
+number to name the branch after, **pre-compute the next PR number before
+creating anything**: issues and PRs on a repo share one monotonic counter
+(`gh api "repos/<owner>/<repo>/issues?state=all&per_page=1&sort=created&direction=desc" --jq '.[0].number'`
+returns the highest number across *both* issues and PRs — GitHub's
+`/issues` endpoint includes PRs), so the next number is that value **+ 1**,
+as long as nothing else creates an issue/PR in the gap between checking and
+creating (a real but narrow race — if it happens, just redo the
+rename/PR once more against the actual number). **Always branch from
+`origin/master`** (`git fetch origin master` then `git checkout -b ...
+origin/master`), never from whatever branch happens to be checked out —
+see the callout above. Name and push the branch as
+`GH-<predicted-number>/<github-username>/v1` **first**, then run
+`gh pr create` from it, and confirm the returned PR number matches.
+
+**Do NOT create the PR first and rename the branch after** — a GitHub PR's
+head/source branch is fixed at creation and cannot be retargeted via `gh`
+or the API (only the base branch can change). `git branch -m` +
+`git push -u origin <new-name>` after the fact just creates a second,
+disconnected branch with identical content; the PR keeps pointing at the
+old name. If this happens, it forces closing and reopening the PR (which
+bumps the number again, so the branch name is now off-by-one from the
+*new* PR too) and leaves stray dead branches to clean up
+(`git push origin --delete <name>`, after confirming via `gh pr list
+--state all --json number,headRefName` that nothing references it).
+
+Commits on a small-fix branch don't need a `Refs #N` trailer (there's no
+issue to reference).
