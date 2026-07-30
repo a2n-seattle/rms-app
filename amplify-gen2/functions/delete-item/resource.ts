@@ -1,40 +1,22 @@
-import * as path from "path"
-import { Stack, Duration } from "aws-cdk-lib"
-import { Function, Runtime, Code } from "aws-cdk-lib/aws-lambda"
+import { Stack } from "aws-cdk-lib"
+import { Function } from "aws-cdk-lib/aws-lambda"
 import { RmsTables } from "../../storage/tables"
+import { defineApiFunction } from "../apiFunction"
 
 /**
- * "Custom function" CDK construct for DeleteItem, following the AddItem
- * proof-of-concept pattern (see functions/add-item/resource.ts). Uses a
- * plain lambda.Function (not NodejsFunction) pointed at
- * backend-build-gen2.js's pre-compiled output.
+ * "Custom function" CDK construct for DeleteItem. See
+ * functions/apiFunction.ts for the shared construct shape.
  *
  * Table grants mirror amplify/backend/backend-config.json's dependsOn list
  * for DeleteItem exactly: main, items, tags, batch, history, schedule.
  */
 export function defineDeleteItemFunction(stack: Stack, tables: RmsTables): Function {
-    const fn = new Function(stack, "DeleteItemFunction", {
-        functionName: "DeleteItem-alpha",
-        runtime: Runtime.NODEJS_22_X,
-        handler: "handlers/api/DeleteItem.handler",
-        code: Code.fromAsset(path.join(__dirname, "build")),
-        timeout: Duration.seconds(25),
-        environment: {
-            STORAGE_MAIN_NAME: tables.main.tableName,
-            STORAGE_ITEMS_NAME: tables.items.tableName,
-            STORAGE_TAGS_NAME: tables.tags.tableName,
-            STORAGE_BATCH_NAME: tables.batch.tableName,
-            STORAGE_HISTORY_NAME: tables.history.tableName,
-            STORAGE_SCHEDULE_NAME: tables.schedule.tableName,
-        },
-    })
-
-    tables.main.grantReadWriteData(fn)
-    tables.items.grantReadWriteData(fn)
-    tables.tags.grantReadWriteData(fn)
-    tables.batch.grantReadWriteData(fn)
-    tables.history.grantReadWriteData(fn)
-    tables.schedule.grantReadWriteData(fn)
-
-    return fn
+    return defineApiFunction(
+        stack,
+        "delete-item",
+        "DeleteItem",
+        "handlers/api/DeleteItem.handler",
+        tables,
+        ["main", "items", "tags", "batch", "history", "schedule"]
+    )
 }
