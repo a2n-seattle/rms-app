@@ -17,6 +17,7 @@ test('will add item correctly when using handler', async () => {
 
     await expect(
         handler({
+            body: JSON.stringify({
             id: TestConstants.ITEM_ID,
             name: TestConstants.DISPLAYNAME,
             description: TestConstants.DESCRIPTION,
@@ -24,8 +25,9 @@ test('will add item correctly when using handler', async () => {
             owner: TestConstants.OWNER,
             location: TestConstants.LOCATION,
             notes: TestConstants.NOTES
-        }, null, null)
-    ).resolves.toEqual(`${TestConstants.ITEM_ID}`)
+        })
+        } as any, null, null)
+    ).resolves.toEqual({ statusCode: 200, body: JSON.stringify(`${TestConstants.ITEM_ID}`) })
     expect(dbClient.getDB()).toEqual(DBSeed.ONE_NAME)
     metricsClient.assureState(0)
 })

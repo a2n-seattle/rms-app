@@ -17,13 +17,15 @@ test('will create reservation correctly when using handler', async () => {
 
     await expect(
         handler({
+            body: JSON.stringify({
             borrower: TestConstants.BORROWER,
             ids: [TestConstants.ITEM_ID, TestConstants.ITEM_ID_2],
             startTime: TestTimestamps.START_DATE,
             endTime: TestTimestamps.END_DATE,
             notes: TestConstants.NOTES
-        }, null, null)
-    ).resolves.toEqual(TestConstants.RESERVATION_ID)
+        })
+        } as any, null, null)
+    ).resolves.toEqual({ statusCode: 200, body: JSON.stringify(TestConstants.RESERVATION_ID) })
     expect(dbClient.getDB()).toEqual(DBSeed.TWO_NAMES_ONE_BATCH_RESERVED)
     metricsClient.assureState(0)
 })

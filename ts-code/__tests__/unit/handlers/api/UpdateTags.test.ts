@@ -13,10 +13,12 @@ test('will update tags correctly when using handler', async () => {
 
     await expect(
         handler({
+            body: JSON.stringify({
             name: TestConstants.NAME,
             tags: [ TestConstants.TAG_2 ]
-        }, null, null)
-    ).resolves.toEqual(`Successfully updated tags for '${TestConstants.NAME}'`)
+        })
+        } as any, null, null)
+    ).resolves.toEqual({ statusCode: 200, body: JSON.stringify(`Successfully updated tags for '${TestConstants.NAME}'`) })
     expect(dbClient.getDB()).toEqual(DBSeed.ONE_NAME_CHANGE_TAGS)
     metricsClient.assureState(0)
 })

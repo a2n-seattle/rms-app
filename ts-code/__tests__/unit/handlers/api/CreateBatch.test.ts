@@ -13,11 +13,13 @@ test('will create batch correctly when using handler', async () => {
 
     await expect(
         handler({
+            body: JSON.stringify({
             name: TestConstants.BATCH,
             ids: [ TestConstants.ITEM_ID, TestConstants.ITEM_ID_2 ],
             groups: [ TestConstants.GROUP ]
-        }, null, null)
-    ).resolves.toEqual(`Successfully created batch '${TestConstants.BATCH}'`)
+        })
+        } as any, null, null)
+    ).resolves.toEqual({ statusCode: 200, body: JSON.stringify(`Successfully created batch '${TestConstants.BATCH}'`) })
     expect(dbClient.getDB()).toEqual(DBSeed.TWO_NAMES_ONE_BATCH)
     metricsClient.assureState(0)
 })
