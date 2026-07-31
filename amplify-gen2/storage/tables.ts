@@ -1,52 +1,58 @@
 import { Stack } from "aws-cdk-lib"
-import { AttributeType, BillingMode, StreamViewType, Table } from "aws-cdk-lib/aws-dynamodb"
-import { RemovalPolicy } from "aws-cdk-lib"
+import { ITable, Table } from "aws-cdk-lib/aws-dynamodb"
 
 /**
- * Mirrors the 7 DynamoDB tables from amplify/backend/storage/*.
+ * References the 7 existing DynamoDB tables (created by Gen 1's Amplify
+ * CLI / CloudFormation, already holding live production data) by ARN,
+ * rather than declaring them as new CDK-managed `Table` constructs.
  *
- * Six tables (main, items, tags, batch, history, schedule) share an identical
- * shape: partition key "id" (String), streams enabled (NEW_AND_OLD_IMAGES).
- * transactions is the outlier: partition key "number", no streams.
+ * This is the AWS-documented pattern for connecting a Gen 2 backend to
+ * pre-existing DynamoDB tables (see "Connect to external Amazon DynamoDB
+ * data sources" in the Amplify docs) — the same pattern AWS's own
+ * official Gen 1 -> Gen 2 migration tooling uses for DynamoDB tables
+ * specifically. `cdk import`/CloudFormation's IMPORT change-set flow was
+ * evaluated and rejected: Amplify Gen 2's `ampx` tooling exposes no
+ * `cdk.json`/CDK CLI app and no synth-only escape hatch, so `cdk import`
+ * isn't reachable without hand-rolling unofficial scaffolding around it —
+ * not an acceptable risk against tables holding live data. Referencing by
+ * ARN means CloudFormation never issues Create/Update/Delete against the
+ * physical tables: the Gen 2 stack can be safely redeployed or even torn
+ * down without any risk to table data. The tradeoff is these tables stay
+ * unmanaged by CDK (no drift detection, no declarative schema changes),
+ * which matches this project's existing schemaless-DynamoDB approach
+ * (see ts-code/src/db/Schemas.ts) — TypeScript interfaces, not CDK/CFN,
+ * are already the source of truth for table shape here.
  *
- * RemovalPolicy.RETAIN on every table is non-negotiable — this is live data.
+ * Six tables (main, items, tags, batch, history, schedule) share an
+ * identical shape: partition key "id" (String), streams enabled
+ * (NEW_AND_OLD_IMAGES). transactions is the outlier: partition key
+ * "number", no streams. (Both facts are informational only now — the
+ * live tables already have this shape; nothing here declares it.)
  */
 export interface RmsTables {
-    main: Table
-    items: Table
-    tags: Table
-    batch: Table
-    history: Table
-    schedule: Table
-    transactions: Table
+    main: ITable
+    items: ITable
+    tags: ITable
+    batch: ITable
+    history: ITable
+    schedule: ITable
+    transactions: ITable
 }
 
 const UNIFORM_TABLE_NAMES = ["main", "items", "tags", "batch", "history", "schedule"] as const
 
-export function defineTables(stack: Stack, envSuffix: string): RmsTables {
+export function defineTables(stack: Stack, awsAccountId: string, awsRegion: string, envSuffix: string): RmsTables {
+    const tableArn = (name: string) =>
+        `arn:aws:dynamodb:${awsRegion}:${awsAccountId}:table/${name}-${envSuffix}`
+
     const uniformTables = Object.fromEntries(
         UNIFORM_TABLE_NAMES.map((name) => [
             name,
-            new Table(stack, `${capitalize(name)}Table`, {
-                tableName: `${name}-${envSuffix}`,
-                partitionKey: { name: "id", type: AttributeType.STRING },
-                stream: StreamViewType.NEW_AND_OLD_IMAGES,
-                billingMode: BillingMode.PROVISIONED,
-                readCapacity: 1,
-                writeCapacity: 1,
-                removalPolicy: RemovalPolicy.RETAIN,
-            }),
+            Table.fromTableArn(stack, `${capitalize(name)}Table`, tableArn(name)),
         ])
-    ) as Record<(typeof UNIFORM_TABLE_NAMES)[number], Table>
+    ) as Record<(typeof UNIFORM_TABLE_NAMES)[number], ITable>
 
-    const transactions = new Table(stack, "TransactionsTable", {
-        tableName: `transactions-${envSuffix}`,
-        partitionKey: { name: "number", type: AttributeType.STRING },
-        billingMode: BillingMode.PROVISIONED,
-        readCapacity: 1,
-        writeCapacity: 1,
-        removalPolicy: RemovalPolicy.RETAIN,
-    })
+    const transactions = Table.fromTableArn(stack, "TransactionsTable", tableArn("transactions"))
 
     return { ...uniformTables, transactions }
 }
