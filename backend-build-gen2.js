@@ -2,16 +2,16 @@
  * Compile Backend Typescript Code for the Amplify Gen 2 rebuild.
  *
  * Mirrors backend-build.js's compile-once/fan-out-copy logic exactly, but
- * targets <gen2 dir>/functions/<kebab-name>/build/ instead of Gen 1's
- * amplify/backend/function/<Name>/src/ts-output/. Kept as a separate script
- * (not a modification of backend-build.js) so Gen 1 stays fully buildable
- * and deployable for the duration of the parallel-build migration window.
+ * targets amplify/functions/<kebab-name>/build/ instead of Gen 1's
+ * amplify-gen1/backend/function/<Name>/src/ts-output/. Kept as a separate
+ * script (not a modification of backend-build.js) so Gen 1 stays fully
+ * buildable for as long as amplify-gen1/ sticks around (Gen 1 is no longer
+ * deployed from CI — ampx's tooling requires the Gen 2 backend to live at
+ * amplify/backend.*, hardcoded with no override, which is why amplify/ is
+ * Gen 2's directory now and Gen 1 was moved to amplify-gen1/).
  *
- * The Gen 2 directory defaults to "amplify-gen2" (this repo's staging name,
- * used from the main checkout) but can be overridden via the GEN2_DIR env
- * var — e.g. GEN2_DIR=amplify when run from a worktree where amplify-gen2/
- * has already been renamed to amplify/ (since Gen 1's amplify/backend/*
- * doesn't exist in that worktree, there's no name collision there).
+ * GEN2_DIR remains overridable via env var for any ad hoc/worktree use
+ * that wants a different target directory, but defaults to "amplify".
  */
 
 const fs = require("fs");
@@ -20,7 +20,7 @@ const { exec } = require("child_process")
 
 const REPO_ROOT = __dirname
 const TS_OUTPUT_PATH = path.join(REPO_ROOT, "ts-output-gen2")
-const GEN2_DIR = process.env.GEN2_DIR || "amplify-gen2"
+const GEN2_DIR = process.env.GEN2_DIR || "amplify"
 const GEN2_FUNCTIONS_PATH = path.join(REPO_ROOT, GEN2_DIR, "functions")
 
 const API_NAMES = [

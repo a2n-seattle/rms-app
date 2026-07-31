@@ -32,7 +32,7 @@ jobs:
 
       - name: typecheck gen2
         run: |
-          npx tsc --noEmit -p amplify-gen2/tsconfig.json
+          npx tsc --noEmit -p amplify/tsconfig.json
 
       - name: code coverage
         uses: artiomtr/jest-coverage-report-action@v2

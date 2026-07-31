@@ -6,7 +6,7 @@ const fs = require("fs");
 const path = require("path")
 const { exec } = require("child_process")
 
-const MASTER_PATH = path.join(__dirname, "amplify")
+const MASTER_PATH = path.join(__dirname, "amplify-gen1")
 const REPO_ROOT = __dirname
 
 
