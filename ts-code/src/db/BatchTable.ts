@@ -114,51 +114,57 @@ export class BatchTable {
         batchName: string,
         id: string
     ): Promise<any> {
+        return this.getItemName(id)
+            .then((name: string) => this.removeBatchFromMain(batchName, name))
+    }
+
+    private getItemName(id: string): Promise<string> {
         const getItemParams: GetCommandInput = {
             TableName: ITEMS_TABLE,
             Key: {
                 "id": id
             }
         }
-
         return this.client.get(getItemParams)
             .then((itemOutput: GetCommandOutput) => {
                 const item: ItemsSchema = itemOutput.Item as ItemsSchema
-                if (item) {
-                    const getMainParams: GetCommandInput = {
-                        TableName: MAIN_TABLE,
-                        Key: {
-                            "id": item.name
-                        }
-                    }
-                    return this.client.get(getMainParams)
-                        .then((mainOutput: GetCommandOutput) => {
-                            const main: MainSchema = mainOutput.Item as MainSchema
-                            if (main) {
-                                const idx: number = main.batch.indexOf(batchName)
-
-                                if (idx < 0 || idx >= main.batch.length) {
-                                    throw Error(`Unable to find batch ${batchName} in item`)
-                                }
-
-                                const deleteParams: UpdateCommandInput = {
-                                    TableName: MAIN_TABLE,
-                                    Key: {
-                                        "id": item.name
-                                    },
-                                    UpdateExpression: `REMOVE #key[${idx}]`,
-                                    ExpressionAttributeNames: {
-                                        "#key": "batch"
-                                    }
-                                }
-                                return this.client.update(deleteParams)
-                            } else {
-                                throw Error(`Unable to find name ${item.name}`)
-                            }
-                        })
-                } else {
+                if (!item) {
                     throw Error(`Unable to find item ${id}`)
                 }
+                return item.name
+            })
+    }
+
+    private removeBatchFromMain(batchName: string, name: string): Promise<any> {
+        const getMainParams: GetCommandInput = {
+            TableName: MAIN_TABLE,
+            Key: {
+                "id": name
+            }
+        }
+        return this.client.get(getMainParams)
+            .then((mainOutput: GetCommandOutput) => {
+                const main: MainSchema = mainOutput.Item as MainSchema
+                if (!main) {
+                    throw Error(`Unable to find name ${name}`)
+                }
+
+                const idx: number = main.batch.indexOf(batchName)
+                if (idx < 0 || idx >= main.batch.length) {
+                    throw Error(`Unable to find batch ${batchName} in item`)
+                }
+
+                const deleteParams: UpdateCommandInput = {
+                    TableName: MAIN_TABLE,
+                    Key: {
+                        "id": name
+                    },
+                    UpdateExpression: `REMOVE #key[${idx}]`,
+                    ExpressionAttributeNames: {
+                        "#key": "batch"
+                    }
+                }
+                return this.client.update(deleteParams)
             })
     }
 
