@@ -16,9 +16,9 @@ RMS ("Reservation Management System") tracks borrowable/reservable items: item i
 
 ## Backend: AWS Amplify (Cognito + Lambda + DynamoDB)
 
-**Migration in progress: Gen 1 (CLI/CloudFormation) → Gen 2 (code-first `ampx`/CDK).** See `.claude/plans/can-you-make-a-shimmying-crane.md` for the full plan. `amplify/` is currently the Gen 1 tree (still live, still deployed to the `alpha` environment); `amplify-gen2/` is the Gen 2 rebuild in progress, not yet deployed to `alpha`. Until the migration's Phase 6 completes, treat `amplify/backend/*` as the source of truth for what's actually running.
+**Gen 1 → Gen 2 migration complete.** The backend runs on Amplify Gen 2 (code-first `ampx`/CDK), live in the `alpha` environment. `amplify/` is the single, current backend tree — there is no separate Gen 1 tree anymore (it was decommissioned; its live per-function CloudFormation stacks were deleted directly in AWS, and the local `amplify-gen1/` tree was removed from the repo). `.claude/plans/can-you-make-a-shimmying-crane.md` has historical detail on how the migration happened, if useful, but `amplify/backend.ts` is simply the source of truth for what's running now — no "which tree is live" ambiguity to track.
 
-No traditional server framework or ORM — auth via Cognito, compute via Lambda, storage via DynamoDB (raw AWS SDK v3 calls). Business logic lives in a **shared `ts-code/` directory at the repo root** (moved out of `amplify/` since it's consumed by both the Gen 1 and Gen 2 builds, not specific to either):
+No traditional server framework or ORM — auth via Cognito, compute via Lambda, storage via DynamoDB (raw AWS SDK v3 calls, tables referenced by ARN from CDK rather than CDK-managed — see below). Business logic lives in a **shared `ts-code/` directory at the repo root**:
 
 ```
 ts-code/
@@ -31,46 +31,47 @@ ts-code/
     metrics/      CloudWatch metrics helper
   __tests__/
     unit/          mirrors src/ — one *.test.ts per source file
-    integration/   Amplify.test.ts (runs against a deployed env)
+    integration/   Amplify.test.ts (runs against the deployed alpha env)
   __dev__/        local mocks/fixtures for running against a fake DB (not the test suite itself)
 
-amplify/                   # Gen 1 (live, deployed to alpha)
-  backend/
-    auth/rms42689182/       Cognito User Pool config (CFN) — pool itself has been deleted from alpha
-    function/<Name>/        one dir per deployed Lambda (generated/copied output, not hand-edited)
-    storage/{main,items,tags,batch,history,schedule,transactions}/   DynamoDB tables (CFN)
-    storage/rms/             S3 bucket (CFN)
-    backend-config.json      resource wiring / dependency graph
+resources/seeds/            JSON fixtures used by ts-code/__dev__/db/DBTestConstants.ts
 
-amplify-gen2/               # Gen 2 rebuild (in progress, not yet deployed)
+amplify/
   backend.ts                 entry point: defineBackend({ auth, ...functions })
-  auth/resource.ts            defineAuth (fresh pool — Gen 1's pool was deleted, nothing to reference)
-  storage/tables.ts           plain CDK dynamodb.Table constructs for all 7 tables
-  functions/<kebab-name>/resource.ts   one CDK Lambda construct per function
+  auth/resource.ts            defineAuth (fresh Cognito pool — Gen 1's pool was deleted, nothing to reference)
+  storage/tables.ts           references the 7 live DynamoDB tables by ARN (Table.fromTableArn) — NOT
+                               CDK-owned/created. cdk import isn't reachable through ampx's tooling (no
+                               cdk.json/CDK CLI app exposed), so this project follows AWS's own pattern
+                               for connecting Gen 2 to pre-existing tables rather than trying to import
+                               them under CloudFormation management. CloudFormation can't Create/Update/
+                               Delete these tables as a result — safe by design, but also means table
+                               schema changes (new GSIs, etc.) happen out-of-band, not via this code.
+  functions/apiFunction.ts     shared "custom function" CDK construct builder (plain lambda.Function,
+                               not NodejsFunction/defineFunction — ts-code is compiled once outside CDK
+                               by backend-build-gen2.js, not per-function via esbuild)
+  functions/<kebab-name>/resource.ts   one thin wrapper per function calling apiFunction.ts's builder
 ```
 
-**`ts-code/src/` is the real source of truth** for both trees. Nothing under `amplify/backend/function/*/src/` or `amplify-gen2/functions/*/build/` should be hand-edited — both are generated output:
-- `backend-build.js` compiles `ts-code` (via `tsconfig.gen1.json`) and distributes output into each Gen 1 Lambda's folder.
-- `backend-build-gen2.js` compiles the same `ts-code` and distributes output into each Gen 2 function's `build/` directory (used by `amplify-gen2/functions/*/resource.ts`'s `lambda.Code.fromAsset(...)`).
+**`ts-code/src/` is the real source of truth.** Nothing under `amplify/functions/*/build/` should be hand-edited — it's generated output, produced by `backend-build-gen2.js` (compiles `ts-code` and fans it out into each function's `build/` directory, consumed by that function's `resource.ts` via `lambda.Code.fromAsset(...)`). `backend-build.js` is a separate, smaller script that compiles the same `ts-code` into repo-root `ts-output/` purely so `npm run test:unit` has compiled JS to run against — it no longer fans output out anywhere (that fan-out was Gen 1-specific, for `amplify push`, which no longer runs).
 
-**Data model**: see `ts-code/src/db/Schemas.ts` for `MainSchema`, `ItemsSchema`, `TagsSchema`, `BatchSchema`, `HistorySchema`, `ScheduleSchema`, `TransactionsSchema`. DynamoDB is schemaless — these TypeScript interfaces are the *only* schema enforcement that exists, so keeping them accurate and keeping every read/write site in sync with them matters more than it would with a real DB schema. Note: 6 of 7 tables share an identical shape (partition key `id`, streams enabled); `transactions` is the outlier (partition key `number`, no streams) — any table-definition code must special-case it.
+**Data model**: see `ts-code/src/db/Schemas.ts` for `MainSchema`, `ItemsSchema`, `TagsSchema`, `BatchSchema`, `HistorySchema`, `ScheduleSchema`, `TransactionsSchema`. DynamoDB is schemaless — these TypeScript interfaces are the *only* schema enforcement that exists, so keeping them accurate and keeping every read/write site in sync with them matters more than it would with a real DB schema. Note: 6 of 7 tables share an identical shape (partition key `id`, streams enabled); `transactions` is the outlier (partition key `number`, no streams).
 
-**No HTTP API currently exists.** `backend-config.json`'s `"api"` block is empty (an older GraphQL/AppSync API was removed). Lambdas are not currently reachable over HTTP.
+**No HTTP API currently exists.** Lambdas are not currently reachable over HTTP — they're invoked directly (see `ts-code/__tests__/integration/Amplify.test.ts` for the pattern: sign in, exchange for Identity Pool credentials, invoke by function name via `@aws-sdk/client-lambda`).
 
-**smsrouter has no SNS trigger wired up.** The phone number for the old SMS flow is lost; the Gen 2 `smsrouter` function deploys as a plain Lambda with no subscription. Rebuilding SMS routing (new phone number, new Pinpoint/SNS setup) is separate future work.
+**smsrouter has no SNS trigger wired up.** The phone number for the old SMS flow is lost; `smsrouter` deploys as a plain Lambda with no subscription. Rebuilding SMS routing (new phone number, new Pinpoint/SNS setup) is separate future work.
 
 ### Commands
 
-- `npm run build` — compiles `ts-code` (Gen 1 target) and distributes output into each Gen 1 Lambda's function folder (`backend-build.js`). Run this after any `ts-code` change to catch compile errors before testing.
-- `npm run build:gen2` — compiles `ts-code` (Gen 2 target) and distributes output into each `amplify-gen2/functions/*/build/` directory (`backend-build-gen2.js`).
-- `npm run test:unit` — runs Jest against the *compiled* unit tests (`amplify/ts-output/__tests__/unit/**/*.test.js`, produced by `npm run build`), with fake DynamoDB table-name env vars injected (`backend-unit-test.js`). Run `npm run build` first, or the tests run against stale output.
-- `npm run test:integ` — integration tests against a live deployed Amplify environment (`backend-integ-test.js`).
+- `npm run build` — compiles `ts-code` into `ts-output/` (`backend-build.js`). Feeds `test:unit`. Run this after any `ts-code` change to catch compile errors before testing.
+- `npm run build:gen2` — compiles `ts-code` and fans it out into each `amplify/functions/*/build/` directory (`backend-build-gen2.js`). Run this after any `ts-code` change that should reach a deployed Lambda.
+- `npm run test:unit` — runs Jest against the *compiled* unit tests (`ts-output/__tests__/unit/**/*.test.js`, produced by `npm run build`), with fake DynamoDB table-name env vars injected (`backend-unit-test.js`). Run `npm run build` first, or the tests run against stale output.
+- `npm run test:integ` — integration tests against the deployed `alpha` environment (`backend-integ-test.js`).
 - `npm run test` — full suite (`backend-test.js`).
 
 ### CI/CD
 
-- `.github/workflows/backend-ci.yml` — PRs to `master`: build + `test:unit`, 80% coverage gate.
-- `.github/workflows/backend-cd.yml` — push to `master` touching `amplify/**`: `amplify push` to the `alpha` env, then `test:integ`. Still targets Gen 1 — will be updated to `ampx pipeline-deploy` in the migration's Phase 5.
+- `.github/workflows/backend-ci.yml` — PRs to `master`: build + `test:unit`, 80% coverage gate, plus a `tsc --noEmit -p amplify/tsconfig.json` typecheck step for the CDK code.
+- `.github/workflows/backend-cd.yml` — push to `master` touching `amplify/**`: `npx ampx pipeline-deploy --branch alpha --app-id ...` to deploy, then `test:integ`.
 - `.github/workflows/backend-canary.yml` — hourly smoke test against the deployed `alpha` env.
 
 None of these currently touch a frontend — there is no frontend build/deploy step yet.

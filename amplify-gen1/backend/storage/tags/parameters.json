@@ -1,5 +1,0 @@
-{
-    "tableName": "tags",
-    "partitionKeyName": "id",
-    "partitionKeyType": "S"
-}

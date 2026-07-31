@@ -1,14 +1,12 @@
 /**
- * Compile Backend Typescript Code for the Amplify Gen 2 rebuild.
+ * Compile Backend Typescript Code for the Amplify Gen 2 backend.
  *
- * Mirrors backend-build.js's compile-once/fan-out-copy logic exactly, but
- * targets amplify/functions/<kebab-name>/build/ instead of Gen 1's
- * amplify-gen1/backend/function/<Name>/src/ts-output/. Kept as a separate
- * script (not a modification of backend-build.js) so Gen 1 stays fully
- * buildable for as long as amplify-gen1/ sticks around (Gen 1 is no longer
- * deployed from CI — ampx's tooling requires the Gen 2 backend to live at
- * amplify/backend.*, hardcoded with no override, which is why amplify/ is
- * Gen 2's directory now and Gen 1 was moved to amplify-gen1/).
+ * Compiles ts-code/ once and fans it out into each Lambda's
+ * amplify/functions/<kebab-name>/build/ directory (used by each
+ * function's resource.ts via lambda.Code.fromAsset(...)). Kept as a
+ * separate script from backend-build.js (which compiles the same source
+ * into ts-output/ for npm run test:unit) since the two serve different
+ * consumers with different output shapes.
  *
  * GEN2_DIR remains overridable via env var for any ad hoc/worktree use
  * that wants a different target directory, but defaults to "amplify".
