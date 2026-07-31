@@ -13,9 +13,11 @@ test('will delete item correctly when using handler', async () => {
 
     await expect(
         handler({
+            body: JSON.stringify({
             id: TestConstants.ITEM_ID_2
-        }, null, null)
-    ).resolves.toEqual(`Deleted a '${TestConstants.NAME_2}' from the inventory.`)
+        })
+        } as any, null, null)
+    ).resolves.toEqual({ statusCode: 200, body: JSON.stringify(`Deleted a '${TestConstants.NAME_2}' from the inventory.`) })
     expect(dbClient.getDB()).toEqual(DBSeed.ONE_NAME)
     metricsClient.assureState(0)
 })

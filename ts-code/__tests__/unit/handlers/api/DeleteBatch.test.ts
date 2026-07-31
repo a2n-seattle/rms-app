@@ -13,9 +13,11 @@ test('will delete batch correctly when using handler', async () => {
 
     await expect(
         handler({
+            body: JSON.stringify({
             name: TestConstants.BATCH,
-        }, null, null)
-    ).resolves.toEqual(`Successfully deleted batch '${TestConstants.BATCH}'`)
+        })
+        } as any, null, null)
+    ).resolves.toEqual({ statusCode: 200, body: JSON.stringify(`Successfully deleted batch '${TestConstants.BATCH}'`) })
     expect(dbClient.getDB()).toEqual(DBSeed.TWO_NAMES)
     metricsClient.assureState(0)
 })

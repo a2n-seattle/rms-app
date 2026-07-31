@@ -18,10 +18,12 @@ test('will borrow item correctly with handler when schedule id exists', async ()
 
     await expect(
         handler({
+            body: JSON.stringify({
             scheduleId: scheduleId, 
             notes: TestConstants.NOTES
-        }, null, null)
-    ).resolves.toEqual(`Successfully borrowed items from schedule '${scheduleId}'.`)
+        })
+        } as any, null, null)
+    ).resolves.toEqual({ statusCode: 200, body: JSON.stringify(`Successfully borrowed items from schedule '${scheduleId}'.`) })
     expect(dbClient.getDB()).toEqual(DBSeed.TWO_NAMES_ONE_BATCH_BORROWED)
     metricsClient.assureState(0)
 })

@@ -13,6 +13,7 @@ import { defineDeleteReservationFunction } from "./functions/delete-reservation/
 import { defineReturnItemFunction } from "./functions/return-item/resource"
 import { defineUpdateTagsFunction } from "./functions/update-tags/resource"
 import { defineSmsRouterFunction } from "./functions/smsrouter/resource"
+import { defineApiGateway } from "./api/resource"
 
 /**
  * Phase 4 complete: auth + all 7 storage tables + all 10 functions (9 API
@@ -36,14 +37,28 @@ const tables = defineTables(
 )
 
 const functionsStack = backend.createStack("FunctionsStack")
-defineAddItemFunction(functionsStack, tables)
-defineBorrowItemFunction(functionsStack, tables)
-defineBorrowFromScheduleFunction(functionsStack, tables)
-defineCreateBatchFunction(functionsStack, tables)
-defineCreateReservationFunction(functionsStack, tables)
-defineDeleteBatchFunction(functionsStack, tables)
-defineDeleteItemFunction(functionsStack, tables)
-defineDeleteReservationFunction(functionsStack, tables)
-defineReturnItemFunction(functionsStack, tables)
-defineUpdateTagsFunction(functionsStack, tables)
+const addItemFn = defineAddItemFunction(functionsStack, tables)
+const borrowItemFn = defineBorrowItemFunction(functionsStack, tables)
+const borrowFromScheduleFn = defineBorrowFromScheduleFunction(functionsStack, tables)
+const createBatchFn = defineCreateBatchFunction(functionsStack, tables)
+const createReservationFn = defineCreateReservationFunction(functionsStack, tables)
+const deleteBatchFn = defineDeleteBatchFunction(functionsStack, tables)
+const deleteItemFn = defineDeleteItemFunction(functionsStack, tables)
+const deleteReservationFn = defineDeleteReservationFunction(functionsStack, tables)
+const returnItemFn = defineReturnItemFunction(functionsStack, tables)
+const updateTagsFn = defineUpdateTagsFunction(functionsStack, tables)
 defineSmsRouterFunction(functionsStack, tables)
+
+const apiStack = backend.createStack("ApiStack")
+defineApiGateway(apiStack, backend.auth.resources.userPool, {
+    addItem: addItemFn,
+    borrowItem: borrowItemFn,
+    borrowFromSchedule: borrowFromScheduleFn,
+    createBatch: createBatchFn,
+    createReservation: createReservationFn,
+    deleteBatch: deleteBatchFn,
+    deleteItem: deleteItemFn,
+    deleteReservation: deleteReservationFn,
+    returnItem: returnItemFn,
+    updateTags: updateTagsFn,
+})

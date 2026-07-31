@@ -1,9 +1,12 @@
-import { Handler } from "aws-lambda"
+import { APIGatewayProxyHandler, APIGatewayProxyResult } from "aws-lambda"
 import { CreateBatch, CreateBatchInput } from "../../api/CreateBatch"
 import { DBClient } from "../../injection/db/DBClient"
 import { MetricsClient } from "../../injection/metrics/MetricsClient"
 import { apiHelper } from "./APIHelper"
 
-export const handler: Handler = async (event: CreateBatchInput): Promise<string> => {
-    return apiHelper((dbClient: DBClient, metricsClient: MetricsClient) => new CreateBatch(dbClient, metricsClient).execute(event))
+export const handler: APIGatewayProxyHandler = async (event): Promise<APIGatewayProxyResult> => {
+    const input: CreateBatchInput = JSON.parse(event.body ?? "{}")
+    return apiHelper((dbClient: DBClient, metricsClient: MetricsClient) => new CreateBatch(dbClient, metricsClient).execute(input))
+        .then((result) => ({ statusCode: 200, body: JSON.stringify(result) }))
+        .catch((error: Error) => ({ statusCode: 400, body: JSON.stringify({ error: error.message }) }))
 }

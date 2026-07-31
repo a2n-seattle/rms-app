@@ -16,11 +16,13 @@ test('will return item correctly when using handler', async () => {
     
     await expect(
         handler({
+            body: JSON.stringify({
             ids: [ TestConstants.ITEM_ID ],
             borrower: TestConstants.BORROWER,
             notes: TestConstants.NOTES_2
-        }, null, null)
-    ).resolves.toEqual(`Successfully returned items '${TestConstants.ITEM_ID}'.`)
+        })
+        } as any, null, null)
+    ).resolves.toEqual({ statusCode: 200, body: JSON.stringify(`Successfully returned items '${TestConstants.ITEM_ID}'.`) })
     expect(dbClient.getDB()).toEqual(DBSeed.ONE_NAME_RETURNED)
     metricsClient.assureState(0)
 })

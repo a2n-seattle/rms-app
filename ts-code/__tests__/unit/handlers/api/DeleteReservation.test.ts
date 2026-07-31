@@ -13,9 +13,11 @@ test('will create batch correctly when using handler', async () => {
 
     await expect(
         handler({
+            body: JSON.stringify({
             id: TestConstants.RESERVATION_ID
-        }, null, null)
-    ).resolves.toEqual(`Successfully deleted reservation '${TestConstants.RESERVATION_ID}'.`)
+        })
+        } as any, null, null)
+    ).resolves.toEqual({ statusCode: 200, body: JSON.stringify(`Successfully deleted reservation '${TestConstants.RESERVATION_ID}'.`) })
     expect(dbClient.getDB()).toEqual(DBSeed.TWO_NAMES_ONE_BATCH)
     metricsClient.assureState(0)
 })

@@ -25,7 +25,4 @@ export function apiHelper<T>(
     executable: (dbClient: DBClient, metricsClient: MetricsClient) => Promise<T>
 ): Promise<T>{
     return executable(getClients.getDBClient(), getClients.getMetricsClient())
-        .catch((reason: any) => {
-            return reason
-        })
 }
