@@ -1,67 +1,28 @@
 /**
  * Compile Backend Typescript Code
+ *
+ * Compiles ts-code/ into ts-output/ so npm run test:unit has compiled JS
+ * to run against. Used to also fan compiled output out into each Gen 1
+ * Lambda's function folder for `amplify push` - that deploy path no
+ * longer exists (Gen 1 is decommissioned, deploys go through Gen 2's
+ * `ampx pipeline-deploy`), so this script now only compiles.
  */
 
 const fs = require("fs");
 const path = require("path")
 const { exec } = require("child_process")
 
-const MASTER_PATH = path.join(__dirname, "amplify-gen1")
 const REPO_ROOT = __dirname
+const TS_OUTPUT_PATH = path.join(REPO_ROOT, "ts-output")
 
-
-const API_NAMES = [
-                    "AddItem",
-                    "BorrowItem",
-                    "BorrowFromSchedule",
-                    "CreateBatch",
-                    "CreateReservation",
-                    "DeleteBatch",
-                    "DeleteItem",
-                    "DeleteReservation",
-                    "ReturnItem",
-                    "UpdateTags"
-]
-
-function deleteTsOutput(parentPath) {
-    fs.readdirSync(parentPath).forEach((file) => {
-        const curPath = path.join(parentPath, file)
-        if (fs.lstatSync(curPath).isDirectory()) {
-            if (file == "ts-output") {
-                fs.rmSync(curPath, { recursive: true, force: true })
-            } else if (file !== "#current-cloud-backend") {
-                deleteTsOutput(curPath)
-            }
-        }
-    })
-}
-
-function copyEntireDirectory(source, target) {
-    if ( !fs.existsSync(target) ) {
-        fs.mkdirSync(target, { recursive: true })
+function deleteIfExists(targetPath) {
+    if (fs.existsSync(targetPath)) {
+        fs.rmSync(targetPath, { recursive: true, force: true })
     }
-
-    fs.readdirSync(source).forEach((file) => {
-        if (fs.lstatSync(path.join(source, file)).isDirectory()) {
-            copyEntireDirectory(path.join(source, file), path.join(target, file))
-        } else {
-            fs.copyFileSync(path.join(source, file), path.join(target, file))
-        }
-    })
 }
 
-function copySingleFile(sourceDir, targetDir, filename) {
-    if ( !fs.existsSync(targetDir) ) {
-        fs.mkdirSync(targetDir, { recursive: true })
-    }
+deleteIfExists(TS_OUTPUT_PATH)
 
-    fs.copyFileSync(path.join(sourceDir, filename + ".js"), path.join(targetDir, filename + ".js"))
-    fs.copyFileSync(path.join(sourceDir, filename + ".d.ts"), path.join(targetDir, filename + ".d.ts"))
-}
-
-deleteTsOutput(MASTER_PATH)
-
-// Compile Typescript (ts-code/ lives at repo root, shared by Gen 1 and Gen 2 builds)
 exec("tsc --project tsconfig.gen1.json", { cwd: REPO_ROOT },
     (error, stdout, stderr) => {
         if (stderr) {
@@ -74,46 +35,5 @@ exec("tsc --project tsconfig.gen1.json", { cwd: REPO_ROOT },
             console.error(`exec error: ${error}`);
             return;
         }
-
-        // Move to Lambda Folders
-        copyEntireDirectory(
-            path.join(MASTER_PATH, "ts-output", "src"),
-            path.join(MASTER_PATH, "backend", "function", "smsrouter", "src", "ts-output")
-        )
-
-        API_NAMES.forEach((apiName) => {
-            copyEntireDirectory(
-                path.join(MASTER_PATH, "ts-output", "src", "db"),
-                path.join(MASTER_PATH, "backend", "function", apiName, "src", "ts-output", "db")
-            )
-            copyEntireDirectory(
-                path.join(MASTER_PATH, "ts-output", "src", "metrics"),
-                path.join(MASTER_PATH, "backend", "function", apiName, "src", "ts-output", "metrics")
-            )
-            copyEntireDirectory(
-                path.join(MASTER_PATH, "ts-output", "src", "injection"),
-                path.join(MASTER_PATH, "backend", "function", apiName, "src", "ts-output", "injection")
-            )
-            copySingleFile(
-                path.join(MASTER_PATH, "ts-output", "src", "api"),
-                path.join(MASTER_PATH, "backend", "function", apiName, "src", "ts-output", "api"),
-                apiName
-            )
-            copySingleFile(
-                path.join(MASTER_PATH, "ts-output", "src", "api"),
-                path.join(MASTER_PATH, "backend", "function", apiName, "src", "ts-output", "api"),
-                apiName
-            )
-            copySingleFile(
-                path.join(MASTER_PATH, "ts-output", "src", "handlers", "api"),
-                path.join(MASTER_PATH, "backend", "function", apiName, "src", "ts-output", "handlers", "api"),
-                "APIHelper"
-            )
-            copySingleFile(
-                path.join(MASTER_PATH, "ts-output", "src", "handlers", "api"),
-                path.join(MASTER_PATH, "backend", "function", apiName, "src", "ts-output", "handlers", "api"),
-                apiName
-            )
-        })
     }
 )
