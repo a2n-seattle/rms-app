@@ -1,7 +1,7 @@
 import * as path from "path"
 import { Stack, Duration } from "aws-cdk-lib"
 import { Function, Runtime, Code } from "aws-cdk-lib/aws-lambda"
-import { Table } from "aws-cdk-lib/aws-dynamodb"
+import { ITable } from "aws-cdk-lib/aws-dynamodb"
 import { RmsTables } from "../storage/tables"
 
 /**
@@ -30,12 +30,12 @@ export function defineApiFunction(
         environment: Object.fromEntries(
             tableNames.map((name) => [
                 `STORAGE_${name.toUpperCase()}_NAME`,
-                (tables[name] as Table).tableName,
+                (tables[name] as ITable).tableName,
             ])
         ),
     })
 
-    tableNames.forEach((name) => (tables[name] as Table).grantReadWriteData(fn))
+    tableNames.forEach((name) => (tables[name] as ITable).grantReadWriteData(fn))
 
     return fn
 }

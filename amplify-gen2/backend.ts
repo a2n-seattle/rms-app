@@ -1,3 +1,4 @@
+import { Stack } from "aws-cdk-lib"
 import { defineBackend } from "@aws-amplify/backend"
 import { auth } from "./auth/resource"
 import { defineTables } from "./storage/tables"
@@ -15,15 +16,24 @@ import { defineSmsRouterFunction } from "./functions/smsrouter/resource"
 
 /**
  * Phase 4 complete: auth + all 7 storage tables + all 10 functions (9 API
- * handlers + smsrouter), mirroring Gen 1 alpha's full compute layer. Next
- * up per the migration plan: sandbox validation, then the alpha cutover.
+ * handlers + smsrouter), mirroring Gen 1 alpha's full compute layer.
+ * Phase 5 (alpha cutover): storage tables reference the existing Gen
+ * 1-created live tables by ARN (see storage/tables.ts) rather than
+ * declaring new CDK-managed ones, since cdk import isn't reachable
+ * through ampx's tooling and AWS's own Gen 2 migration guidance keeps
+ * DynamoDB tables external to the Gen 2 stack for exactly that reason.
  */
 const backend = defineBackend({
     auth,
 })
 
 const storageStack = backend.createStack("StorageStack")
-const tables = defineTables(storageStack, "alpha")
+const tables = defineTables(
+    storageStack,
+    Stack.of(storageStack).account,
+    Stack.of(storageStack).region,
+    "alpha"
+)
 
 const functionsStack = backend.createStack("FunctionsStack")
 defineAddItemFunction(functionsStack, tables)

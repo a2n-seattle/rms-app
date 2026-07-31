@@ -1,31 +1,34 @@
 import { Amplify } from 'aws-amplify'
-import { AuthSession, fetchAuthSession, signIn, SignInOutput, signOut } from 'aws-amplify/auth';
+import { AuthSession, fetchAuthSession, signIn, signUp, SignInOutput, signOut } from 'aws-amplify/auth';
 import { InvokeCommandOutput, Lambda } from '@aws-sdk/client-lambda';
 import { TestConstants, TestTimestamps } from "../../__dev__/db/DBTestConstants"
-const awsExports = require('../../../../src/aws-exports').default
+const amplifyOutputs = require('../../../../amplify_outputs.json')
 
 const ENV_SUFFIX = '-alpha'
 
 describe('Amplify Tests', () => {
     beforeAll(async () => {
-        Amplify.configure(awsExports)
-    })
+        Amplify.configure(amplifyOutputs)
 
-    /**
-     * One time use. Leaving here for completeness.
-     * 
-    test('will sign up when api is called', async () => {
-        await expect(
-            signUp({
-            username: TestConstants.EMAIL,
-            password: TestConstants.PASSWORD,
-            options: { userAttributes: {
-                email: TestConstants.EMAIL,
-                name: TestConstants.OWNER
-            } }
-        })).resolves
+        // The Gen 2 Cognito pool starts with no users, unlike Gen 1's
+        // preserved pool, so ensure the test user exists on every run.
+        // Ignore "already exists" so repeat runs against the same pool
+        // don't fail the suite.
+        try {
+            await signUp({
+                username: TestConstants.EMAIL,
+                password: TestConstants.PASSWORD,
+                options: { userAttributes: {
+                    email: TestConstants.EMAIL,
+                    name: TestConstants.OWNER
+                } }
+            })
+        } catch (error) {
+            if (!(error instanceof Error) || error.name !== 'UsernameExistsException') {
+                throw error
+            }
+        }
     })
-     */
 
     /**
      * AUTH: Sign In
@@ -47,7 +50,7 @@ describe('Amplify Tests', () => {
         const authSession: AuthSession = await fetchAuthSession()
         const lambda = new Lambda({
             credentials: authSession.credentials,
-            region: awsExports.aws_project_region
+            region: amplifyOutputs.auth.aws_region
         })
 
         // Add Item

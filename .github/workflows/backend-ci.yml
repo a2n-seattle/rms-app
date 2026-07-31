@@ -30,6 +30,10 @@ jobs:
           npm run build
           npm run test:unit
 
+      - name: typecheck gen2
+        run: |
+          npx tsc --noEmit -p amplify-gen2/tsconfig.json
+
       - name: code coverage
         uses: artiomtr/jest-coverage-report-action@v2
         with:
