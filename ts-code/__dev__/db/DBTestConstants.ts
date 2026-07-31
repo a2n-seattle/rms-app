@@ -43,7 +43,6 @@ export enum TestConstants {
     LOCATION = "test location",
     LOCATION_2 = "test location 2",
     FRIENDLY_NAME = "test friendly name",
-    FRIENDLY_NAME_2 = "test friendly name 2",
     BORROWER = "test borrower",
     BORROWER_2 = "test borrower 2",
     NOTES = "test note",
