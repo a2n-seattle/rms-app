@@ -15,8 +15,8 @@ export class ItemTable {
     public create(
         id: string,
         name: string,
-        owner: string,
-        notes: string
+        notes: string,
+        friendlyName?: string
     ): Promise<PutCommandOutput> {
         return this.get(id)
             .then((entry: ItemsSchema) => {
@@ -40,10 +40,11 @@ export class ItemTable {
                     const item: ItemsSchema = {
                         id: id,
                         name: name.toLowerCase(),
-                        owner: owner,
+                        friendlyName: friendlyName ?? id,
                         notes: notes,
                         borrower: "",
-                        batch: [],
+                        borrowTime: 0,
+                        returnTime: 0,
                         history: [],
                         schedule: []
                     }
@@ -68,10 +69,6 @@ export class ItemTable {
         return this.get(id)
             .then((entry: ItemsSchema) => {
                 if (entry) {
-                    if (entry.batch.length !== 0) {
-                        throw Error(`Item ${id} still belongs to batches. Need to remove item from batch before proceeding with removal.`)
-                    }
-
                     const itemsParams: DeleteCommandInput = {
                         TableName: ITEMS_TABLE,
                         Key: {
@@ -140,7 +137,7 @@ export class ItemTable {
      */
      public updateItem(
         id: string,
-        key: "owner" | "notes",
+        key: "notes",
         val: string,
         expectedValue?: string
     ): Promise<GetCommandOutput> {
@@ -209,39 +206,54 @@ export class ItemTable {
         }
         return this.client.get(itemSearchParams)
             .then((data: GetCommandOutput) => {
-                if (data.Item) {
-                    const entry: ItemsSchema = data.Item as ItemsSchema
-                    
-                    if (entry.borrower !== expectedBorrower) {
-                        if (action === "borrow") {
-                            throw Error("Unable to borrow item: "
-                                + `Item is currently being borrowed by '${entry.borrower}'.`)
-                        } else {
-                            throw Error("Unable to return item: "
-                                + `Borrower in database is '${entry.borrower}', `
-                                + `which isn't equal to the specified borrower of '${expectedBorrower}'.`)
-                        }
-                    } else {
-                        const updateParams: UpdateCommandInput = {
-                            TableName: ITEMS_TABLE,
-                            Key: {
-                                "id": id
-                            },
-                            UpdateExpression: "SET #key = :val",
-                            ExpressionAttributeNames: {
-                                "#key": "borrower"
-                            },
-                            ExpressionAttributeValues: {
-                                ":val": nextBorrower
-                            }
-                        }
-                        return this.client.update(updateParams)
-                            .then(() => entry.name)
-                    }
-                } else {
+                if (!data.Item) {
                     throw Error(`Couldn't find item ${id} in the database.`)
                 }
+
+                const entry: ItemsSchema = data.Item as ItemsSchema
+                this.assertExpectedBorrower(entry.borrower, expectedBorrower, action)
+
+                const curEpochMs: number = Date.now()
+                return this.setItemField(id, "borrower", nextBorrower)
+                    .then(() => (action === "borrow")
+                        ? this.setItemField(id, "borrowTime", curEpochMs).then(() => this.setItemField(id, "returnTime", 0))
+                        : this.setItemField(id, "returnTime", curEpochMs))
+                    .then(() => entry.name)
             })
+    }
+
+    private assertExpectedBorrower(
+        actualBorrower: string,
+        expectedBorrower: string,
+        action: "borrow" | "return"
+    ): void {
+        if (actualBorrower !== expectedBorrower) {
+            if (action === "borrow") {
+                throw Error("Unable to borrow item: "
+                    + `Item is currently being borrowed by '${actualBorrower}'.`)
+            } else {
+                throw Error("Unable to return item: "
+                    + `Borrower in database is '${actualBorrower}', `
+                    + `which isn't equal to the specified borrower of '${expectedBorrower}'.`)
+            }
+        }
+    }
+
+    private setItemField(id: string, key: string, val: string | number): Promise<any> {
+        const updateParams: UpdateCommandInput = {
+            TableName: ITEMS_TABLE,
+            Key: {
+                "id": id
+            },
+            UpdateExpression: "SET #key = :val",
+            ExpressionAttributeNames: {
+                "#key": key
+            },
+            ExpressionAttributeValues: {
+                ":val": val
+            }
+        }
+        return this.client.update(updateParams)
     }
 
     /**

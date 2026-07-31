@@ -1,60 +1,93 @@
 {
-    "main":{
-        "test name":{
-            "id":"test name",
+    "main": {
+        "test name": {
+            "id": "test name",
             "displayName": "Test Name",
-            "description":"test description",
-            "items":["123"],
-            "tags":["tag1"]
+            "description": "test description",
+            "items": [
+                "123"
+            ],
+            "tags": [
+                "tag1"
+            ],
+            "owner": "test owner",
+            "location": "test location",
+            "batch": [
+                "test batch"
+            ]
         },
-        "test name 2":{
-            "id":"test name 2",
+        "test name 2": {
+            "id": "test name 2",
             "displayName": "test name 2",
-            "description":"test description 2",
-            "items":["12345"],
-            "tags":["tag1", "tag2"]
+            "description": "test description 2",
+            "items": [
+                "12345"
+            ],
+            "tags": [
+                "tag1",
+                "tag2"
+            ],
+            "owner": "test owner 2",
+            "location": "test location 2",
+            "batch": [
+                "test batch"
+            ]
         }
     },
-    "items":{
-        "123":{
-            "id":"123",
-            "name":"test name",
-            "owner":"test owner",
-            "notes":"test note",
-            "borrower":"test borrower",
-            "batch": ["test batch"],
-            "history": ["1000000000000-123"],
-            "schedule": []
+    "items": {
+        "123": {
+            "id": "123",
+            "name": "test name",
+            "notes": "test note",
+            "borrower": "test borrower",
+            "history": [
+                "1000000000000-123"
+            ],
+            "schedule": [],
+            "friendlyName": "123",
+            "borrowTime": 1000000000000,
+            "returnTime": 0
         },
-        "12345":{
-            "id":"12345",
-            "name":"test name 2",
-            "owner":"test owner 2",
-            "notes":"test note 2",
-            "borrower":"",
-            "batch": ["test batch"],
+        "12345": {
+            "id": "12345",
+            "name": "test name 2",
+            "notes": "test note 2",
+            "borrower": "",
             "history": [],
-            "schedule": []
+            "schedule": [],
+            "friendlyName": "12345",
+            "borrowTime": 0,
+            "returnTime": 0
         }
     },
-    "batch":{
+    "batch": {
         "test batch": {
             "id": "test batch",
-            "val": ["123", "12345"],
-            "groups": ["group1"]
+            "val": [
+                "123",
+                "12345"
+            ],
+            "groups": [
+                "group1"
+            ]
         }
     },
-    "tags":{
-        "tag1":{
-            "id":"tag1",
-            "val":["test name", "test name 2"]
+    "tags": {
+        "tag1": {
+            "id": "tag1",
+            "val": [
+                "test name",
+                "test name 2"
+            ]
         },
-        "tag2":{
-            "id":"tag2",
-            "val":["test name 2"]
+        "tag2": {
+            "id": "tag2",
+            "val": [
+                "test name 2"
+            ]
         }
     },
-    "history":{
+    "history": {
         "1000000000000-123": {
             "action": "borrow",
             "borrower": "test borrower",
@@ -65,6 +98,6 @@
             "timestamp": 1000000000000
         }
     },
-    "schedule":{},
-    "transactions":{}
+    "schedule": {},
+    "transactions": {}
 }

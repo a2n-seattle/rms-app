@@ -91,14 +91,16 @@ interface ScratchInterface {
 export function getItemHeader(entry: MainSchema): string {
     return `name: ${entry.displayName}`
         + `\ndescription: ${entry.description}`
+        + `\nowner: ${entry.owner}`
+        + `\nlocation: ${entry.location}`
+        + `\nbatch: ${entry.batch.toString()}`
         + `\ntags: ${entry.tags.toString()}`
         + `\nitems:`
 }
 
 export function getItemItem(entry: ItemsSchema) {
     return `\n  id: ${entry.id}`
-        + `\n    owner: ${entry.owner}`
+        + `\n    friendlyName: ${entry.friendlyName}`
         + `\n    borrower: ${entry.borrower}`
-        + `\n    batch: ${entry.batch.toString()}`
         + `\n    notes: ${entry.notes}`
 }

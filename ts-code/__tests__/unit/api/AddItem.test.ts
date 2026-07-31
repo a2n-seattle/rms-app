@@ -1,4 +1,5 @@
 import { AddItem } from "../../../src/api/AddItem"
+import { MainTable } from "../../../src/db/MainTable"
 import { DBSeed, TestConstants} from "../../../__dev__/db/DBTestConstants"
 import { LocalDBClient } from "../../../__dev__/db/LocalDBClient"
 
@@ -15,6 +16,7 @@ test('will add item correctly when name does not exist', async () => {
             description: TestConstants.DESCRIPTION,
             tags: [TestConstants.TAG],
             owner: TestConstants.OWNER,
+            location: TestConstants.LOCATION,
             notes: TestConstants.NOTES
         })
     ).resolves.toEqual(`${TestConstants.ITEM_ID}`)
@@ -34,6 +36,7 @@ test('will add additional item correctly when item already exist', async () => {
             description: TestConstants.DESCRIPTION_2,
             tags: [TestConstants.TAG, TestConstants.TAG_2],
             owner: TestConstants.OWNER_2,
+            location: TestConstants.LOCATION_2,
             notes: TestConstants.NOTES_2
         })
     ).resolves.toEqual(`${TestConstants.ITEM_ID_2}`)
@@ -53,6 +56,7 @@ test('will fail to add item when id is not unique', async () => {
             description: TestConstants.DESCRIPTION_2,
             tags: [TestConstants.TAG, TestConstants.TAG_2],
             owner: TestConstants.OWNER_2,
+            location: TestConstants.LOCATION_2,
             notes: TestConstants.NOTES_2
         })
     ).rejects.toThrow(`RMS ID ${TestConstants.ITEM_ID} is not unique.`)
@@ -72,6 +76,7 @@ test('will add different name correctly when name already exists', async () => {
             description: TestConstants.DESCRIPTION_2,
             tags: [TestConstants.TAG, TestConstants.TAG_2],
             owner: TestConstants.OWNER_2,
+            location: TestConstants.LOCATION_2,
             notes: TestConstants.NOTES_2
         })
     ).resolves.toEqual(`${TestConstants.ITEM_ID_2}`)
@@ -91,10 +96,34 @@ test('will fail to add name when id is not unique', async () => {
             description: TestConstants.DESCRIPTION_2,
             tags: [TestConstants.TAG, TestConstants.TAG_2],
             owner: TestConstants.OWNER_2,
+            location: TestConstants.LOCATION_2,
             notes: TestConstants.NOTES_2
         })
     ).rejects.toThrow(`RMS ID ${TestConstants.ITEM_ID} is not unique.`)
     expect(dbClient.getDB()).toEqual(DBSeed.TWO_NAMES_FAIL_CREATE)
+})
+
+test('will not update main owner/location when adding item to existing name', async () => {
+    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.ONE_NAME)
+    const api: AddItem = new AddItem(dbClient)
+    const mainTable: MainTable = new MainTable(dbClient)
+
+    // Mock ID
+    AddItem.prototype.getUniqueId = jest.fn(() => Promise.resolve(TestConstants.ITEM_ID_2));
+
+    await api.execute({
+        name: TestConstants.DISPLAYNAME,
+        description: TestConstants.DESCRIPTION_2,
+        tags: [TestConstants.TAG, TestConstants.TAG_2],
+        owner: TestConstants.OWNER_2,
+        location: TestConstants.LOCATION_2,
+        notes: TestConstants.NOTES_2
+    })
+
+    await expect(mainTable.get(TestConstants.NAME)).resolves.toMatchObject({
+        owner: TestConstants.OWNER,
+        location: TestConstants.LOCATION
+    })
 })
 
 test('will fail to add item when item name not passed in', async () => {
@@ -109,6 +138,7 @@ test('will fail to add item when item name not passed in', async () => {
             description: TestConstants.DESCRIPTION,
             tags: [TestConstants.TAG],
             owner: TestConstants.OWNER,
+            location: TestConstants.LOCATION,
             notes: TestConstants.NOTES
         })
     ).rejects.toThrow("Missing required field 'name'")

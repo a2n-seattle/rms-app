@@ -12,16 +12,21 @@ export class MainTable {
     /**
      * Create new description for item family.
      *
-     * Tags and Items are initialized as empty.
+     * Tags, Items, and Batch are initialized as empty.
      */
     public create(
         name: string,
-        description: string
+        description: string,
+        owner: string,
+        location: string
     ): Promise<PutCommandOutput> {
         const item: MainSchema = {
             id: name.toLowerCase(),
             displayName: name,
             description: description,
+            owner: owner,
+            location: location,
+            batch: [],
             tags: [],
             items: []
         }
