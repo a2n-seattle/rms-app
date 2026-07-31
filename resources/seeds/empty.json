@@ -1,9 +1,9 @@
 {
-    "main":{},
-    "items":{},
-    "batch":{},
-    "tags":{},
-    "history":{},
-    "schedule":{},
-    "transactions":{}
+    "main": {},
+    "items": {},
+    "batch": {},
+    "tags": {},
+    "history": {},
+    "schedule": {},
+    "transactions": {}
 }

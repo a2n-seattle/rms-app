@@ -11,6 +11,9 @@ test('will get item correctly when id exists', async () => {
         id: TestConstants.NAME,
         displayName: TestConstants.DISPLAYNAME,
         description: TestConstants.DESCRIPTION,
+        owner: TestConstants.OWNER,
+        location: TestConstants.LOCATION,
+        batch: [],
         tags: [TestConstants.TAG],
         items: [TestConstants.ITEM_ID, TestConstants.ITEM_ID_2]
     }
@@ -18,16 +21,17 @@ test('will get item correctly when id exists', async () => {
         {
             id: TestConstants.ITEM_ID,
             name: TestConstants.NAME,
-            owner: TestConstants.OWNER,
+            friendlyName: TestConstants.ITEM_ID,
             borrower: "",
+            borrowTime: 0,
+            returnTime: 0,
             notes: TestConstants.NOTES,
-            batch: [],
             history: [],
             schedule: []
         }
     ]
     const expected: ReturnObject = new ReturnObject(expectedMain, expectedItems)
-    
+
     await expect(
         api.execute({
             key: TestConstants.ITEM_ID
@@ -44,6 +48,9 @@ test('will get item correctly when name exists', async () => {
         id: TestConstants.NAME,
         displayName: TestConstants.DISPLAYNAME,
         description: TestConstants.DESCRIPTION,
+        owner: TestConstants.OWNER,
+        location: TestConstants.LOCATION,
+        batch: [],
         tags: [TestConstants.TAG],
         items: [TestConstants.ITEM_ID, TestConstants.ITEM_ID_2]
     }
@@ -51,20 +58,22 @@ test('will get item correctly when name exists', async () => {
         {
             id: TestConstants.ITEM_ID,
             name: TestConstants.NAME,
-            owner: TestConstants.OWNER,
+            friendlyName: TestConstants.ITEM_ID,
             borrower: "",
+            borrowTime: 0,
+            returnTime: 0,
             notes: TestConstants.NOTES,
-            batch: [],
             history: [],
             schedule: []
         },
         {
             id: TestConstants.ITEM_ID_2,
             name: TestConstants.NAME,
-            owner: TestConstants.OWNER_2,
+            friendlyName: TestConstants.ITEM_ID_2,
             borrower: "",
+            borrowTime: 0,
+            returnTime: 0,
             notes: TestConstants.NOTES_2,
-            batch: [],
             history: [],
             schedule: []
         }

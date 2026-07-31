@@ -1,6 +1,9 @@
 /**
  * @param id Name of item type. This needs to be unique.
  * @param description Optional description of item.
+ * @param owner Name of the owner of this item type, or where it's stored.
+ * @param location Location where this item type is stored.
+ * @param batch List of batches this item type is part of.
  * @param tags Tags to categorize item.
  * @param items List of IDs of all items of this item type.
  * @param id ID of item. User specified.
@@ -10,25 +13,30 @@ export interface MainSchema {
     id: string,
     displayName: string,
     description: string,
+    owner: string,
+    location: string,
+    batch: string[],
     tags: string[],
     items: string[]
 }
 
 /**
- * @param owner Name of the owner of the item or where the item is stored.
+ * @param friendlyName Human-readable label for this specific item instance.
  * @param notes Notes specific to this item.
  * @param borrower Current borrower of item. Blank if available. Initialized as blank.
+ * @param borrowTime Time item was last borrowed (epoch milliseconds). 0 if never borrowed.
+ * @param returnTime Time item was last returned (epoch milliseconds). 0 while currently borrowed.
  * @param history List of entries in the history table
  * @param schedule List of entries in the schedule table [TODO: Implement Schedule]
- * @param batch List of batches this item is part of.
  */
 export const ITEMS_TABLE: string = process.env.STORAGE_ITEMS_NAME
 export interface ItemsSchema {
     id: string,
     name: string,
-    owner: string,
+    friendlyName: string,
     borrower: string,
-    batch: string[],
+    borrowTime: number,
+    returnTime: number,
     history: string[],
     schedule: string[],
     notes: string

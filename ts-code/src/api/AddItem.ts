@@ -56,6 +56,9 @@ export class AddItem {
                 .then(() => "Owner of this item (or location where it's stored if church owned):")
         } else if (scratch.owner === undefined) {
             return this.transactionsTable.appendToScratch(number, "owner", request)
+                .then(() => "Location where this item is stored:")
+        } else if (scratch.location === undefined) {
+            return this.transactionsTable.appendToScratch(number, "location", request)
                 .then(() => "Optional notes about this specific item:")
         } else {
             scratch.notes = request
@@ -72,8 +75,13 @@ export class AddItem {
      * @param name Name of Item
      * @param description Optional description about the item
      * @param tags Tags to query the item with
-     * @param owner Owner of this item (or location where it's stored if church owned)
-     * @param tags Notes about this specific item.
+     * @param owner Owner of this item type (or location where it's stored if church owned).
+     *   Only set when the item type is first created; ignored on subsequent items of the same name.
+     * @param location Location where this item type is stored.
+     *   Only set when the item type is first created; ignored on subsequent items of the same name.
+     * @param friendlyName Optional human-readable label for this specific item instance.
+     *   Defaults to the generated item ID when not provided.
+     * @param notes Notes about this specific item.
      * Params used by router exclusively:
      * @param createItem Flag to indicate item needs to be created (used by the router function)
      */
@@ -84,16 +92,16 @@ export class AddItem {
                     .then(() => this.mainTable.getConsistent(input.name.toLowerCase()))
                     .then((entry: MainSchema) => {
                         if (entry) {
-                        // Object Exists. No need to add description
+                        // Object Exists. No need to add description, owner, or location
                             return
                         } else {
                         // Add new Object
-                        return this.mainTable.create(input.name, input.description)
+                        return this.mainTable.create(input.name, input.description, input.owner, input.location)
                             .then(() => this.tagTable.create(input.name, input.tags))
                         }
                     }).then(() => this.getUniqueId(input.name))
                     .then((id: string) => {
-                        return this.itemTable.create(id, input.name, input.owner, input.notes)
+                        return this.itemTable.create(id, input.name, input.notes, input.friendlyName)
                             .then(() => id)
                     })
             },
@@ -138,5 +146,7 @@ export interface AddItemInput {
     description?: string,
     tags?: string[],
     owner?: string,
+    location?: string,
+    friendlyName?: string,
     notes?: string
 }

@@ -1,33 +1,43 @@
 {
-    "main":{
-        "test name":{
-            "id":"test name",
+    "main": {
+        "test name": {
+            "id": "test name",
             "displayName": "Test Name",
-            "description":"test description",
-            "items":["123"],
-            "tags":["tag1"]
+            "description": "test description",
+            "items": [
+                "123"
+            ],
+            "tags": [
+                "tag1"
+            ],
+            "owner": "test owner 2",
+            "location": "test location 2",
+            "batch": []
         }
     },
-    "items":{
-        "123":{
-            "id":"123",
-            "name":"test name",
-            "owner":"test owner 2",
-            "notes":"test note",
-            "borrower":"",
-            "batch": [],
+    "items": {
+        "123": {
+            "id": "123",
+            "name": "test name",
+            "notes": "test note",
+            "borrower": "",
             "history": [],
-            "schedule": []
+            "schedule": [],
+            "friendlyName": "123",
+            "borrowTime": 0,
+            "returnTime": 0
         }
     },
-    "batch":{},
-    "tags":{
-        "tag1":{
-            "id":"tag1",
-            "val":["test name"]
+    "batch": {},
+    "tags": {
+        "tag1": {
+            "id": "tag1",
+            "val": [
+                "test name"
+            ]
         }
     },
-    "history":{},
-    "schedule":{},
-    "transactions":{}
+    "history": {},
+    "schedule": {},
+    "transactions": {}
 }

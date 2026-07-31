@@ -22,6 +22,7 @@ test('will add item correctly when using handler', async () => {
             description: TestConstants.DESCRIPTION,
             tags: [TestConstants.TAG],
             owner: TestConstants.OWNER,
+            location: TestConstants.LOCATION,
             notes: TestConstants.NOTES
         }, null, null)
     ).resolves.toEqual(`${TestConstants.ITEM_ID}`)

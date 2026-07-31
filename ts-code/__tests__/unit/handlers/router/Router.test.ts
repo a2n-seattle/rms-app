@@ -135,6 +135,9 @@ test('will add item correctly when name does not exist', async () => {
             expect(output).toEqual("Owner of this item (or location where it's stored if church owned):")
             return router.processRequest(TestConstants.OWNER, TestConstants.NUMBER)
         }).then((output: string) => {
+            expect(output).toEqual("Location where this item is stored:")
+            return router.processRequest(TestConstants.LOCATION, TestConstants.NUMBER)
+        }).then((output: string) => {
             expect(output).toEqual("Optional notes about this specific item:")
             return router.processRequest(TestConstants.NOTES, TestConstants.NUMBER)
         }).then((output: string) => {
@@ -158,6 +161,9 @@ test('will add item correctly when name exists', async () => {
             expect(output).toEqual("Owner of this item (or location where it's stored if church owned):")
             return router.processRequest(TestConstants.OWNER_2, TestConstants.NUMBER)
         }).then((output: string) => {
+            expect(output).toEqual("Location where this item is stored:")
+            return router.processRequest(TestConstants.LOCATION_2, TestConstants.NUMBER)
+        }).then((output: string) => {
             expect(output).toEqual("Optional notes about this specific item:")
             return router.processRequest(TestConstants.NOTES_2, TestConstants.NUMBER)
         }).then((output: string) => {
@@ -174,16 +180,20 @@ test('will get item correctly when given valid id', async () => {
         id: TestConstants.NAME,
         displayName: TestConstants.DISPLAYNAME,
         description: TestConstants.DESCRIPTION,
+        owner: TestConstants.OWNER,
+        location: TestConstants.LOCATION,
+        batch: [],
         tags: [TestConstants.TAG],
         items: [TestConstants.ITEM_ID]
     }
     const expectedItem: ItemsSchema = {
         id: TestConstants.ITEM_ID,
         name: TestConstants.NAME,
-        owner: TestConstants.OWNER,
+        friendlyName: TestConstants.ITEM_ID,
         borrower: "",
+        borrowTime: 0,
+        returnTime: 0,
         notes: TestConstants.NOTES,
-        batch: [],
         history: [],
         schedule: []
     }
@@ -223,6 +233,9 @@ test('will search item correctly when using router', async () => {
         id: TestConstants.NAME,
         displayName: TestConstants.DISPLAYNAME,
         description: TestConstants.DESCRIPTION,
+        owner: TestConstants.OWNER,
+        location: TestConstants.LOCATION,
+        batch: [],
         tags: [TestConstants.TAG],
         items: [TestConstants.ITEM_ID]
     }

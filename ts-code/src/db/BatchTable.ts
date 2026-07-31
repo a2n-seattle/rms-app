@@ -1,4 +1,4 @@
-import { BATCH_TABLE, BatchSchema, ITEMS_TABLE, ItemsSchema } from "./Schemas"
+import { BATCH_TABLE, BatchSchema, ITEMS_TABLE, ItemsSchema, MAIN_TABLE, MainSchema } from "./Schemas"
 import { DBClient } from "../injection/db/DBClient"
 import { DeleteCommandInput, GetCommandInput, GetCommandOutput, PutCommandInput, UpdateCommandInput } from "@aws-sdk/lib-dynamodb"
 
@@ -57,22 +57,23 @@ export class BatchTable {
                 "id": id
             }
         }
-        const updateParams: UpdateCommandInput = {
-            TableName: ITEMS_TABLE,
-            Key: {
-                "id": id
-            },
-            UpdateExpression: "SET #key = list_append(#key, :val)",
-            ExpressionAttributeNames: {
-                "#key": "batch"
-            },
-            ExpressionAttributeValues: {
-                ":val": [batchName]
-            }
-        }
         return this.client.get(getParams)
             .then((entry: GetCommandOutput) => {
                 if (entry.Item !== undefined) {
+                    const item: ItemsSchema = entry.Item as ItemsSchema
+                    const updateParams: UpdateCommandInput = {
+                        TableName: MAIN_TABLE,
+                        Key: {
+                            "id": item.name
+                        },
+                        UpdateExpression: "SET #key = list_append(#key, :val)",
+                        ExpressionAttributeNames: {
+                            "#key": "batch"
+                        },
+                        ExpressionAttributeValues: {
+                            ":val": [batchName]
+                        }
+                    }
                     return this.client.update(updateParams)
                 } else {
                     throw new Error(`Unable to find id '${id}'`)
@@ -113,34 +114,48 @@ export class BatchTable {
         batchName: string,
         id: string
     ): Promise<any> {
-        const getParams: GetCommandInput = {
+        const getItemParams: GetCommandInput = {
             TableName: ITEMS_TABLE,
             Key: {
                 "id": id
             }
         }
-        
-        return this.client.get(getParams)
-            .then((output: GetCommandOutput) => {
-                const item: ItemsSchema = output.Item as ItemsSchema
+
+        return this.client.get(getItemParams)
+            .then((itemOutput: GetCommandOutput) => {
+                const item: ItemsSchema = itemOutput.Item as ItemsSchema
                 if (item) {
-                    const idx: number = item.batch.indexOf(batchName)
-
-                    if (idx < 0 || idx >= item.batch.length) {
-                        throw Error(`Unable to find batch ${batchName} in item`)
-                    }
-
-                    const deleteParams: UpdateCommandInput = {
-                        TableName: ITEMS_TABLE,
+                    const getMainParams: GetCommandInput = {
+                        TableName: MAIN_TABLE,
                         Key: {
-                            "id": id
-                        },
-                        UpdateExpression: `REMOVE #key[${idx}]`,
-                        ExpressionAttributeNames: {
-                            "#key": "batch"
+                            "id": item.name
                         }
                     }
-                    return this.client.update(deleteParams)
+                    return this.client.get(getMainParams)
+                        .then((mainOutput: GetCommandOutput) => {
+                            const main: MainSchema = mainOutput.Item as MainSchema
+                            if (main) {
+                                const idx: number = main.batch.indexOf(batchName)
+
+                                if (idx < 0 || idx >= main.batch.length) {
+                                    throw Error(`Unable to find batch ${batchName} in item`)
+                                }
+
+                                const deleteParams: UpdateCommandInput = {
+                                    TableName: MAIN_TABLE,
+                                    Key: {
+                                        "id": item.name
+                                    },
+                                    UpdateExpression: `REMOVE #key[${idx}]`,
+                                    ExpressionAttributeNames: {
+                                        "#key": "batch"
+                                    }
+                                }
+                                return this.client.update(deleteParams)
+                            } else {
+                                throw Error(`Unable to find name ${item.name}`)
+                            }
+                        })
                 } else {
                     throw Error(`Unable to find item ${id}`)
                 }

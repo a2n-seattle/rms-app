@@ -15,8 +15,8 @@ export class ItemTable {
     public create(
         id: string,
         name: string,
-        owner: string,
-        notes: string
+        notes: string,
+        friendlyName?: string
     ): Promise<PutCommandOutput> {
         return this.get(id)
             .then((entry: ItemsSchema) => {
@@ -40,10 +40,11 @@ export class ItemTable {
                     const item: ItemsSchema = {
                         id: id,
                         name: name.toLowerCase(),
-                        owner: owner,
+                        friendlyName: friendlyName ?? id,
                         notes: notes,
                         borrower: "",
-                        batch: [],
+                        borrowTime: 0,
+                        returnTime: 0,
                         history: [],
                         schedule: []
                     }
@@ -68,10 +69,6 @@ export class ItemTable {
         return this.get(id)
             .then((entry: ItemsSchema) => {
                 if (entry) {
-                    if (entry.batch.length !== 0) {
-                        throw Error(`Item ${id} still belongs to batches. Need to remove item from batch before proceeding with removal.`)
-                    }
-
                     const itemsParams: DeleteCommandInput = {
                         TableName: ITEMS_TABLE,
                         Key: {
@@ -140,7 +137,7 @@ export class ItemTable {
      */
      public updateItem(
         id: string,
-        key: "owner" | "notes",
+        key: "notes",
         val: string,
         expectedValue?: string
     ): Promise<GetCommandOutput> {
@@ -222,20 +219,28 @@ export class ItemTable {
                                 + `which isn't equal to the specified borrower of '${expectedBorrower}'.`)
                         }
                     } else {
-                        const updateParams: UpdateCommandInput = {
-                            TableName: ITEMS_TABLE,
-                            Key: {
-                                "id": id
-                            },
-                            UpdateExpression: "SET #key = :val",
-                            ExpressionAttributeNames: {
-                                "#key": "borrower"
-                            },
-                            ExpressionAttributeValues: {
-                                ":val": nextBorrower
+                        const curEpochMs: number = Date.now()
+                        const setField = (key: string, val: string | number): Promise<any> => {
+                            const updateParams: UpdateCommandInput = {
+                                TableName: ITEMS_TABLE,
+                                Key: {
+                                    "id": id
+                                },
+                                UpdateExpression: "SET #key = :val",
+                                ExpressionAttributeNames: {
+                                    "#key": key
+                                },
+                                ExpressionAttributeValues: {
+                                    ":val": val
+                                }
                             }
+                            return this.client.update(updateParams)
                         }
-                        return this.client.update(updateParams)
+
+                        return setField("borrower", nextBorrower)
+                            .then(() => (action === "borrow")
+                                ? setField("borrowTime", curEpochMs).then(() => setField("returnTime", 0))
+                                : setField("returnTime", curEpochMs))
                             .then(() => entry.name)
                     }
                 } else {
