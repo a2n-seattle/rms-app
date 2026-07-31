@@ -1,4 +1,5 @@
 {
+  "name": "rms-app",
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
     "build": "node backend-build.js",
@@ -79,5 +80,6 @@
       "js"
     ]
   },
-  "private": true
+  "private": true,
+  "type": "commonjs"
 }

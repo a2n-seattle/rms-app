@@ -25,7 +25,7 @@ export function defineApiFunction(
         functionName: `${functionName}-alpha`,
         runtime: Runtime.NODEJS_22_X,
         handler,
-        code: Code.fromAsset(path.join(__dirname, functionDir, "build")),
+        code: Code.fromAsset(path.join(process.cwd(), "amplify", "functions", functionDir, "build")),
         timeout: Duration.seconds(25),
         environment: Object.fromEntries(
             tableNames.map((name) => [
