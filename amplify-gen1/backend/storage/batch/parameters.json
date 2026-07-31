@@ -1,5 +1,0 @@
-{
-    "tableName": "batch",
-    "partitionKeyName": "id",
-    "partitionKeyType": "S"
-}

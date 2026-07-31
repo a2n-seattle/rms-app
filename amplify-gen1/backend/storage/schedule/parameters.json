@@ -1,5 +1,0 @@
-{
-    "tableName": "schedule",
-    "partitionKeyName": "id",
-    "partitionKeyType": "S"
-}
