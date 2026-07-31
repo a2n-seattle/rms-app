@@ -6,7 +6,7 @@
       "noImplicitAny": true,
       "preserveConstEnums": true,
       "skipLibCheck": true,
-      "outDir": "./amplify/ts-output"
+      "outDir": "./amplify-gen1/ts-output"
     },
     "include": ["./ts-code/**/*"],
     "exclude": []

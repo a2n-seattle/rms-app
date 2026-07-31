@@ -66,14 +66,14 @@
   "jest": {
     "collectCoverage": true,
     "collectCoverageFrom": [
-      "./amplify/ts-output/src/**/*.js"
+      "./amplify-gen1/ts-output/src/**/*.js"
     ],
     "coverageReporters": [
       "text",
       "text-summary"
     ],
     "roots": [
-      "./amplify/ts-output"
+      "./amplify-gen1/ts-output"
     ],
     "moduleFileExtensions": [
       "js"
