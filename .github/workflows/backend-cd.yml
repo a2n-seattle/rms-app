@@ -6,7 +6,7 @@ on:
   # Triggers the workflow on push events but only for the master branch
   push:
     branches: [ master ]
-    paths: [ 'amplify/**' ]
+    paths: [ 'amplify/**', 'amplify-gen2/**' ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -31,29 +31,21 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: configure amplify
-        run: |
-          npm install -g @aws-amplify/cli@13.0.1
-          aws_config_file_path="$(pwd)/aws_config_file_path.json"
-          echo '{"accessKeyId":"'$AWS_ACCESS_KEY_ID'","secretAccessKey":"'$AWS_SECRET_ACCESS_KEY'","region":"'$AWS_REGION'"}' > $aws_config_file_path
-          echo '{"projectPath": "'"$(pwd)"'","defaultEditor":"code","envName":"'alpha'"}' > ./amplify/.config/local-env-info.json
-          echo '{"'alpha'":{"configLevel":"project","useProfile":false,"awsConfigFilePath":"'$aws_config_file_path'"}}' > ./amplify/.config/local-aws-info.json
-          amplify env pull --yes
-          amplify status
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-
       - name: install, build and unit test
         run: |
           npm install
           npm run build
+          npm run build:gen2
           npm run test:unit
 
       - name: deploy
         run: |
-          amplify push --yes
+          npx ampx pipeline-deploy --branch alpha --app-id "$GEN2_AMPLIFY_APP_ID"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          GEN2_AMPLIFY_APP_ID: ${{ secrets.GEN2_AMPLIFY_APP_ID }}
 
       - name: integration test
         run: |
