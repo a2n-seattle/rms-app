@@ -13,6 +13,12 @@ import { defineDeleteReservationFunction } from "./functions/delete-reservation/
 import { defineReturnItemFunction } from "./functions/return-item/resource"
 import { defineUpdateTagsFunction } from "./functions/update-tags/resource"
 import { defineSmsRouterFunction } from "./functions/smsrouter/resource"
+import { defineGetItemFunction } from "./functions/get-item/resource"
+import { defineSearchItemFunction } from "./functions/search-item/resource"
+import { defineGetReservationFunction } from "./functions/get-reservation/resource"
+import { defineGetBatchFunction } from "./functions/get-batch/resource"
+import { defineListItemsFunction } from "./functions/list-items/resource"
+import { defineListReservationsFunction } from "./functions/list-reservations/resource"
 import { defineApiGateway } from "./api/resource"
 
 /**
@@ -47,6 +53,12 @@ const deleteItemFn = defineDeleteItemFunction(functionsStack, tables)
 const deleteReservationFn = defineDeleteReservationFunction(functionsStack, tables)
 const returnItemFn = defineReturnItemFunction(functionsStack, tables)
 const updateTagsFn = defineUpdateTagsFunction(functionsStack, tables)
+const getItemFn = defineGetItemFunction(functionsStack, tables)
+const searchItemFn = defineSearchItemFunction(functionsStack, tables)
+const getReservationFn = defineGetReservationFunction(functionsStack, tables)
+const getBatchFn = defineGetBatchFunction(functionsStack, tables)
+const listItemsFn = defineListItemsFunction(functionsStack, tables)
+const listReservationsFn = defineListReservationsFunction(functionsStack, tables)
 defineSmsRouterFunction(functionsStack, tables)
 
 const apiStack = backend.createStack("ApiStack")
@@ -61,4 +73,10 @@ defineApiGateway(apiStack, backend.auth.resources.userPool, {
     deleteReservation: deleteReservationFn,
     returnItem: returnItemFn,
     updateTags: updateTagsFn,
+    getItem: getItemFn,
+    searchItem: searchItemFn,
+    getReservation: getReservationFn,
+    getBatch: getBatchFn,
+    listItems: listItemsFn,
+    listReservations: listReservationsFn,
 })

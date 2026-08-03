@@ -19,7 +19,8 @@ export class LocalMetricsClient implements MetricsClient {
                             .then(() => response)
                     },
                     (reason: any) => {
-                        throw this.emitErrors(1)
+                        return this.emitDuration(startTime)
+                            .then(() => this.emitErrors(1))
                             .then(() => { throw reason })
                     }
                 )

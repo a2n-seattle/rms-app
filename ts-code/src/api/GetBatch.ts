@@ -67,10 +67,41 @@ export class GetBatch {
             GetBatch.NAME, this.metrics
         )
     }
+
+    /**
+     * Same as execute(), but enriches each item ID in the batch with its
+     * display name, owner, and borrower - the structured equivalent of
+     * what router() formats into a string, for API/browse consumers that
+     * need JSON rather than human-readable text.
+     */
+    public executeDetailed(scratch: ScratchInterface): Promise<GetBatchDetailedEntry[]> {
+        return this.execute(scratch)
+            .then((ids: string[]) => {
+                return Promise.all(ids.map((id: string) => {
+                    return this.itemTable.get(id)
+                        .then((itemEntry: ItemsSchema) => {
+                            return this.mainTable.get(itemEntry.name)
+                                .then((mainEntry: MainSchema): GetBatchDetailedEntry => ({
+                                    id,
+                                    name: mainEntry.displayName,
+                                    owner: mainEntry.owner,
+                                    borrower: itemEntry.borrower
+                                }))
+                        })
+                }))
+            })
+    }
 }
 
 interface ScratchInterface {
     name?: string
+}
+
+export interface GetBatchDetailedEntry {
+    id: string,
+    name: string,
+    owner: string,
+    borrower: string
 }
 
 export function getBatchItem(id: string, name: string, owner: string, borrower: string): string {

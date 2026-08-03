@@ -1,6 +1,9 @@
 import { SCHEDULE_TABLE, ScheduleSchema, ITEMS_TABLE, ItemsSchema } from "./Schemas";
 import { DBClient } from "../injection/db/DBClient"
-import { DeleteCommandInput, GetCommandInput, GetCommandOutput, PutCommandInput, UpdateCommandInput } from "@aws-sdk/lib-dynamodb"
+import { DeleteCommandInput, GetCommandInput, GetCommandOutput, PutCommandInput, ScanCommandInput, ScanCommandOutput, UpdateCommandInput } from "@aws-sdk/lib-dynamodb"
+import { encodePageToken, decodePageToken } from "./PageToken"
+
+const DEFAULT_PAGE_SIZE = 25
 
 export class ScheduleTable {
     private readonly client: DBClient
@@ -183,6 +186,42 @@ export class ScheduleTable {
     }
 
     /**
+     * Lists reservations for a given borrower, paginated.
+     *
+     * No GSI exists on ScheduleSchema.borrower today, so this is a table
+     * Scan with a FilterExpression - acceptable at RMS's current scale
+     * since the tables aren't CDK-managed (adding a GSI is a separate,
+     * out-of-band change). DynamoDB applies FilterExpression *after*
+     * Limit, so a returned page can have fewer (even zero) matching
+     * entries despite more data remaining - callers must keep paging
+     * using nextPageToken until it's undefined, not stop on a short page.
+     */
+    public listByBorrower(
+        borrower: string,
+        limit: number = DEFAULT_PAGE_SIZE,
+        pageToken?: string
+    ): Promise<ListByBorrowerResult> {
+        const params: ScanCommandInput = {
+            TableName: SCHEDULE_TABLE,
+            Limit: limit,
+            FilterExpression: "#borrower = :borrower",
+            ExpressionAttributeNames: {
+                "#borrower": "borrower"
+            },
+            ExpressionAttributeValues: {
+                ":borrower": borrower
+            },
+            ...(pageToken ? { ExclusiveStartKey: decodePageToken(pageToken) } : {})
+        }
+
+        return this.client.scan(params)
+            .then((output: ScanCommandOutput) => ({
+                items: (output.Items ?? []) as ScheduleSchema[],
+                nextPageToken: output.LastEvaluatedKey ? encodePageToken(output.LastEvaluatedKey) : undefined
+            }))
+    }
+
+    /**
      * Validates if the given date ranges conflict
      * @param startDate1 starting date of the first time range. Given in timestamp (number) fomat
      * @param endDate1 end date of the first time range. Given in timestamp (number) fomat
@@ -198,4 +237,9 @@ export class ScheduleTable {
             const newEndTime = new Date(endDate2)
             return (newStartTime >= oldStartTime && newStartTime <= oldEndTime) || (newEndTime >= oldStartTime && newEndTime <= oldEndTime)
     }
+}
+
+export interface ListByBorrowerResult {
+    items: ScheduleSchema[],
+    nextPageToken?: string
 }

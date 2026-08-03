@@ -1,4 +1,4 @@
-import { Stack } from "aws-cdk-lib"
+import { CfnOutput, Stack } from "aws-cdk-lib"
 import {
     RestApi,
     LambdaIntegration,
@@ -19,6 +19,12 @@ export interface ApiFunctions {
     deleteReservation: Function
     returnItem: Function
     updateTags: Function
+    getItem: Function
+    searchItem: Function
+    getReservation: Function
+    getBatch: Function
+    listItems: Function
+    listReservations: Function
 }
 
 export function defineApiGateway(stack: Stack, userPool: IUserPool, functions: ApiFunctions): RestApi {
@@ -41,6 +47,12 @@ export function defineApiGateway(stack: Stack, userPool: IUserPool, functions: A
         ["delete-reservation", functions.deleteReservation],
         ["return-item", functions.returnItem],
         ["update-tags", functions.updateTags],
+        ["get-item", functions.getItem],
+        ["search-item", functions.searchItem],
+        ["get-reservation", functions.getReservation],
+        ["get-batch", functions.getBatch],
+        ["list-items", functions.listItems],
+        ["list-reservations", functions.listReservations],
     ]
 
     routes.forEach(([path, fn]) => {
@@ -49,6 +61,11 @@ export function defineApiGateway(stack: Stack, userPool: IUserPool, functions: A
             authorizationType: AuthorizationType.COGNITO,
         })
     })
+
+    // Amplify's `ampx generate outputs` doesn't surface a custom RestApi's
+    // invoke URL - the web/ frontend (GH-306) needs this output to
+    // discover the API endpoint at build time.
+    new CfnOutput(stack, "ApiUrl", { value: api.url })
 
     return api
 }
