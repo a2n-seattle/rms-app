@@ -31,7 +31,13 @@ const API_NAMES = [
                     "DeleteItem",
                     "DeleteReservation",
                     "ReturnItem",
-                    "UpdateTags"
+                    "UpdateTags",
+                    "GetItem",
+                    "SearchItem",
+                    "GetReservation",
+                    "GetBatch",
+                    "ListItems",
+                    "ListReservations"
 ]
 
 function kebabCase(name) {
