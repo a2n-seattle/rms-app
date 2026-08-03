@@ -25,3 +25,29 @@ test('will override existing batch when batch already exist', async () => {
     ).rejects.toThrow(`Unable to find Batch '${TestConstants.BAD_REQUEST}'`)
     expect(dbClient.getDB()).toEqual(DBSeed.TWO_NAMES_TWO_BATCH)
 })
+
+test('will get batch details enriched with name/owner/borrower when batch exists', async () => {
+    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.TWO_NAMES_TWO_BATCH)
+    const api: GetBatch = new GetBatch(dbClient)
+
+    await expect(
+        api.executeDetailed({
+            name: TestConstants.BATCH
+        })
+    ).resolves.toEqual([
+        { id: TestConstants.ITEM_ID, name: TestConstants.DISPLAYNAME, owner: TestConstants.OWNER, borrower: "" },
+        { id: TestConstants.ITEM_ID_2, name: "test name 2", owner: TestConstants.OWNER_2, borrower: "" }
+    ])
+    expect(dbClient.getDB()).toEqual(DBSeed.TWO_NAMES_TWO_BATCH)
+})
+
+test('will fail executeDetailed when batch is not found', async () => {
+    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.TWO_NAMES_TWO_BATCH)
+    const api: GetBatch = new GetBatch(dbClient)
+
+    await expect(
+        api.executeDetailed({
+            name: TestConstants.BAD_REQUEST
+        })
+    ).rejects.toThrow(`Unable to find Batch '${TestConstants.BAD_REQUEST}'`)
+})

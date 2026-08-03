@@ -182,16 +182,49 @@ export class LocalDBClient implements DBClient {
         })
     }
     
-    // Default to full table scan for now.
     public scan(params: ScanCommandInput): Promise<ScanCommandOutput> {
         return this.newPromise(() => {
-            const table: any[] = Object.values(this.getTable(params.TableName))
+            const allEntries: [string, any][] = Object.entries(this.getTable(params.TableName))
+                .sort(([a], [b]) => a.localeCompare(b))
+
+            const startAfterKey: string | undefined = params.ExclusiveStartKey
+                ? Object.values(params.ExclusiveStartKey)[0] as string
+                : undefined
+            const startIndex: number = startAfterKey
+                ? allEntries.findIndex(([key]) => key === startAfterKey) + 1
+                : 0
+
+            const scanned: [string, any][] = allEntries.slice(startIndex)
+            const limit: number = params.Limit ?? scanned.length
+            const page: [string, any][] = scanned.slice(0, limit)
+            const filtered: any[] = this.applyFilter(page.map(([, value]) => value), params)
+
+            const lastEvaluatedKey = page.length === limit && scanned.length > limit
+                ? { id: page[page.length - 1][0] }
+                : undefined
+
             return {
-                Items: table,
-                Count: table.length,
-                ScannedCount: table.length
+                Items: filtered,
+                Count: filtered.length,
+                ScannedCount: page.length,
+                ...(lastEvaluatedKey ? { LastEvaluatedKey: lastEvaluatedKey } : {})
             }
         })
+    }
+
+    private applyFilter(items: any[], params: ScanCommandInput): any[] {
+        if (!params.FilterExpression) {
+            return items
+        }
+
+        // Only supports this repo's one real usage: "#key = :val".
+        const match = params.FilterExpression.match(/^#(\w+) = :(\w+)$/)
+        if (!match) {
+            throw new Error(`Unsupported FilterExpression: ${params.FilterExpression}`)
+        }
+        const attrName: string = params.ExpressionAttributeNames[`#${match[1]}`]
+        const attrValue: any = params.ExpressionAttributeValues[`:${match[2]}`]
+        return items.filter((item: any) => item[attrName] === attrValue)
     }
 
     private getTable(tableName: string): any {

@@ -134,5 +134,5 @@ interface TagObject {
 export function searchItemItem(main: MainSchema, occurrences: number): string {
     return `\nName: ${main.displayName}`
         + `\n  # of relevant tags: ${occurrences}`
-        + `\n  Item IDs: ${main.tags.values.toString()}`
+        + `\n  Item IDs: ${main.tags.toString()}`
 }
