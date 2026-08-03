@@ -62,7 +62,7 @@ const listReservationsFn = defineListReservationsFunction(functionsStack, tables
 defineSmsRouterFunction(functionsStack, tables)
 
 const apiStack = backend.createStack("ApiStack")
-defineApiGateway(apiStack, backend.auth.resources.userPool, {
+const api = defineApiGateway(apiStack, backend.auth.resources.userPool, {
     addItem: addItemFn,
     borrowItem: borrowItemFn,
     borrowFromSchedule: borrowFromScheduleFn,
@@ -79,4 +79,14 @@ defineApiGateway(apiStack, backend.auth.resources.userPool, {
     getBatch: getBatchFn,
     listItems: listItemsFn,
     listReservations: listReservationsFn,
+})
+
+// `ampx generate outputs` only surfaces values added via backend.addOutput
+// (landing under amplify_outputs.json's `custom` key) - a plain CDK
+// CfnOutput (see api/resource.ts) isn't picked up by it. The web/
+// frontend (GH-306) needs this to discover the API Gateway endpoint.
+backend.addOutput({
+    custom: {
+        apiUrl: api.url,
+    },
 })

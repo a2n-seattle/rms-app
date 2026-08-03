@@ -1,0 +1,55 @@
+# Workflow to run frontend (web/) tests on push
+name: Frontend CI
+
+on:
+  pull_request:
+    branches: [ master ]
+    paths: [ 'web/**' ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [22.x]
+
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: use node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: install
+        run: npm ci
+
+      - name: generate amplify outputs
+        run: npx ampx generate outputs --app-id "$GEN2_AMPLIFY_APP_ID" --branch alpha --out-dir .
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          GEN2_AMPLIFY_APP_ID: ${{ secrets.GEN2_AMPLIFY_APP_ID }}
+
+      - name: build
+        run: npm run build
+
+      - name: unit test
+        run: npm run test
+
+      - name: install playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: e2e test
+        run: npm run test:e2e
+        env:
+          RMS_TEST_USER_EMAIL: ${{ secrets.RMS_TEST_USER_EMAIL }}
+          RMS_TEST_USER_PASSWORD: ${{ secrets.RMS_TEST_USER_PASSWORD }}
+          RMS_TEST_ITEM_ID: ${{ secrets.RMS_TEST_ITEM_ID }}
+          RMS_WEB_BASE_URL: ${{ secrets.RMS_WEB_BASE_URL }}
