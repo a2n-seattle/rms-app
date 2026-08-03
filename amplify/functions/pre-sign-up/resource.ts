@@ -1,7 +1,7 @@
-import * as path from "path"
 import { Construct } from "constructs"
 import { Duration } from "aws-cdk-lib"
-import { Function, Runtime, Code } from "aws-cdk-lib/aws-lambda"
+import { Function, Runtime } from "aws-cdk-lib/aws-lambda"
+import { functionCode } from "../apiFunction"
 
 /**
  * Minimal CDK function construct for the Cognito Pre Sign-up trigger.
@@ -17,7 +17,7 @@ export function definePreSignUpFunction(scope: Construct): Function {
         functionName: "pre-sign-up-alpha",
         runtime: Runtime.NODEJS_22_X,
         handler: "handlers/auth/PreSignUp.handler",
-        code: Code.fromAsset(path.join(process.cwd(), "amplify", "functions", "pre-sign-up", "build")),
+        code: functionCode("pre-sign-up"),
         timeout: Duration.seconds(10),
     })
 }
