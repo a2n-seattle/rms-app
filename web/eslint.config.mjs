@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Jest config files are conventionally CommonJS (Jest's own docs use
+    // require/module.exports), not part of the app's TS source.
+    "jest.config.js",
+    "jest.setup.js",
   ]),
 ]);
 

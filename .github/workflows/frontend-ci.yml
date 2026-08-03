@@ -9,14 +9,11 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    environment: AmplifyCD
 
     strategy:
       matrix:
         node-version: [22.x]
-
-    defaults:
-      run:
-        working-directory: web
 
     steps:
       - uses: actions/checkout@v4
@@ -26,27 +23,39 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: install
+      - name: install root deps (for ampx)
         run: npm ci
 
       - name: generate amplify outputs
-        run: npx ampx generate outputs --app-id "$GEN2_AMPLIFY_APP_ID" --branch alpha --out-dir .
+        run: npx ampx generate outputs --app-id "$GEN2_AMPLIFY_APP_ID" --branch alpha --out-dir web
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           GEN2_AMPLIFY_APP_ID: ${{ secrets.GEN2_AMPLIFY_APP_ID }}
 
+      - name: install web/ deps
+        working-directory: web
+        run: npm ci
+
+      - name: lint
+        working-directory: web
+        run: npm run lint
+
       - name: build
+        working-directory: web
         run: npm run build
 
       - name: unit test
+        working-directory: web
         run: npm run test
 
       - name: install playwright browsers
+        working-directory: web
         run: npx playwright install --with-deps chromium
 
       - name: e2e test
+        working-directory: web
         run: npm run test:e2e
         env:
           RMS_TEST_USER_EMAIL: ${{ secrets.RMS_TEST_USER_EMAIL }}
