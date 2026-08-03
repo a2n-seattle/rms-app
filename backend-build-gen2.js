@@ -100,6 +100,13 @@ exec(`tsc --project tsconfig.gen1.json --outDir ${TS_OUTPUT_PATH}`, { cwd: REPO_
             smsrouterBuild
         )
 
+        const preSignUpBuildDir = path.join(GEN2_FUNCTIONS_PATH, "pre-sign-up", "build")
+        copySingleFile(
+            path.join(TS_OUTPUT_PATH, "src", "handlers", "auth"),
+            path.join(preSignUpBuildDir, "handlers", "auth"),
+            "PreSignUp"
+        )
+
         API_NAMES.forEach((apiName) => {
             const buildDir = path.join(GEN2_FUNCTIONS_PATH, kebabCase(apiName), "build")
 
