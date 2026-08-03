@@ -28,6 +28,13 @@ import { definePreSignUpFunction } from "../functions/pre-sign-up/resource"
  * defineAuth automatically maps Google's email to the standard `email`
  * attribute already. See ts-code/src/handlers/auth/PreSignUp.ts.
  *
+ * `fullname` still needs an explicit attributeMapping to Google's "name"
+ * claim: Amplify only auto-maps `email`, and this pool requires
+ * `fullname` (below) -- omitting it fails at deploy time with "The
+ * attribute mapping is missing required attributes [name]" (verified
+ * against a real deploy), since Cognito can't populate a required
+ * attribute for a federated sign-up with no mapped source.
+ *
  * clientId/clientSecret reference Amplify secrets (set via the Amplify
  * Console's per-branch secrets, or SSM directly at
  * /amplify/<app-id>/<branch>-branch-<hash>/<name> for branches without
@@ -50,6 +57,9 @@ export const auth = defineAuth({
             google: {
                 clientId: secret("GOOGLE_CLIENT_ID"),
                 clientSecret: secret("GOOGLE_CLIENT_SECRET"),
+                attributeMapping: {
+                    fullname: "name",
+                },
             },
             callbackUrls: ["http://localhost:3000/callback"],
             logoutUrls: ["http://localhost:3000/"],
