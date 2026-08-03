@@ -37,11 +37,11 @@ export function apiHelper<T>(
  * wraps.
  */
 export function apiGatewayHandler<TInput, TResult>(
-    executable: (dbClient: DBClient, metricsClient: MetricsClient, input: TInput) => Promise<TResult>
+    executable: (dbClient: DBClient, metricsClient: MetricsClient, apiInput: TInput) => Promise<TResult>
 ): APIGatewayProxyHandler {
     return async (event): Promise<APIGatewayProxyResult> => {
-        const input: TInput = JSON.parse(event.body ?? "{}")
-        return apiHelper((dbClient: DBClient, metricsClient: MetricsClient) => executable(dbClient, metricsClient, input))
+        const parsedInput: TInput = JSON.parse(event.body ?? "{}")
+        return apiHelper((dbClient: DBClient, metricsClient: MetricsClient) => executable(dbClient, metricsClient, parsedInput))
             .then((result) => ({ statusCode: 200, body: JSON.stringify(result) }))
             .catch((error: Error) => ({ statusCode: 400, body: JSON.stringify({ error: error.message }) }))
     }
