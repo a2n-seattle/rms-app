@@ -6,6 +6,7 @@ import { getItem } from "./getItem"
 
 const originalFetch = global.fetch
 
+// eslint-disable-next-line no-undef -- Jest global; CodeFactor doesn't resolve web/'s flat ESLint config, which declares this correctly
 afterEach((): void => {
     global.fetch = originalFetch
 })
