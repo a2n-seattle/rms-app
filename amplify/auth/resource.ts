@@ -41,9 +41,19 @@ import { definePreSignUpFunction } from "../functions/pre-sign-up/resource"
  * a connected Hosting repo) -- real values are provided out of band,
  * not committed here.
  *
- * callbackUrls/logoutUrls are localhost:3000 placeholders until the
- * web/ frontend (#303) exists and is deployed -- append the real prod
- * URL then, no redeploy dance needed since these are plain arrays.
+ * callbackUrls/logoutUrls point at /login, not a dedicated /callback
+ * route -- web/'s login page (GH-306) uses @aws-amplify/ui-react's
+ * <Authenticator> (with socialProviders: ["google"]), which handles the
+ * OAuth code exchange client-side via URL params on whatever page it
+ * lands on; no server route needs to parse the code itself. /login is
+ * used specifically because it's the one path proxy.ts's matcher
+ * excludes from the auth gate -- any other path would redirect
+ * unauthenticated requests straight to /login before Amplify's
+ * client-side listener ever got to process Google's ?code=... param,
+ * breaking the sign-in flow. Includes both the deployed alpha URL and
+ * localhost:3000 (for local dev); append further URLs the same way as
+ * new environments/branches come online, no redeploy dance needed since
+ * these are plain arrays.
  * domainPrefix isn't exposed at the defineAuth factory layer in this
  * Amplify version (confirmed via the installed package's own types --
  * ExternalProviderGeneralFactoryProps explicitly omits it, and
@@ -61,8 +71,8 @@ export const auth = defineAuth({
                     fullname: "name",
                 },
             },
-            callbackUrls: ["http://localhost:3000/callback"],
-            logoutUrls: ["http://localhost:3000/"],
+            callbackUrls: ["https://alpha.d2t4r8ycfq1um5.amplifyapp.com/login", "http://localhost:3000/login"],
+            logoutUrls: ["https://alpha.d2t4r8ycfq1um5.amplifyapp.com/", "http://localhost:3000/"],
         },
     },
     userAttributes: {
