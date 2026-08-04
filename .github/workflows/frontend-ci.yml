@@ -6,9 +6,9 @@ on:
     branches: [ alpha ]
     paths: [ 'web/**' ]
 
-  # Allows re-running the full suite (including the e2e golden-path test
-  # against the live deployed alpha site) on demand, without needing a
-  # throwaway PR to trigger it.
+  # Allows re-running the full suite (including e2e, served locally via
+  # `next start` against the real alpha backend -- see the e2e steps
+  # below) on demand, without needing a throwaway PR to trigger it.
   workflow_dispatch:
 
 jobs:
@@ -68,6 +68,27 @@ jobs:
         working-directory: web
         run: npx playwright install --with-deps chromium
 
+      - name: start web/ against real alpha backend
+        # e2e must exercise *this PR's* frontend code, not the
+        # already-deployed alpha site -- RMS_WEB_BASE_URL previously
+        # pointed Playwright at the live site, so a PR could pass even
+        # when its own new pages/routes were broken (only caught once
+        # merged and manually re-verified). `next start` here serves this
+        # PR's own build locally; amplify_outputs.json (generated above)
+        # still points at the real deployed Cognito/API Gateway/DynamoDB
+        # on alpha, so the backend under test is still real, only the
+        # frontend serving is local.
+        working-directory: web
+        run: |
+          AMPLIFY_APP_ORIGIN=http://localhost:3000 npx next start &
+          echo $! > /tmp/next-start.pid
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:3000/login > /dev/null && exit 0
+            sleep 2
+          done
+          echo "web/ server did not become ready in time" >&2
+          exit 1
+
       - name: e2e test
         working-directory: web
         run: npm run test:e2e
@@ -75,4 +96,8 @@ jobs:
           RMS_TEST_USER_EMAIL: ${{ secrets.RMS_TEST_USER_EMAIL }}
           RMS_TEST_USER_PASSWORD: ${{ secrets.RMS_TEST_USER_PASSWORD }}
           RMS_TEST_ITEM_ID: ${{ secrets.RMS_TEST_ITEM_ID }}
-          RMS_WEB_BASE_URL: ${{ secrets.RMS_WEB_BASE_URL }}
+          RMS_WEB_BASE_URL: http://localhost:3000
+
+      - name: stop web/ server
+        if: always()
+        run: kill "$(cat /tmp/next-start.pid)" 2>/dev/null || true
