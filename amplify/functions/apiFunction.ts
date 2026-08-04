@@ -2,6 +2,7 @@ import * as path from "path"
 import { Stack, Duration } from "aws-cdk-lib"
 import { Function, Runtime, Code } from "aws-cdk-lib/aws-lambda"
 import { ITable } from "aws-cdk-lib/aws-dynamodb"
+import { PolicyStatement } from "aws-cdk-lib/aws-iam"
 import { RmsTables } from "../storage/tables"
 
 /**
@@ -47,6 +48,18 @@ export function defineApiFunction(
     })
 
     tableNames.forEach((name) => (tables[name] as ITable).grantReadWriteData(fn))
+
+    // Every API operation emits duration/error metrics via
+    // CloudWatchClient (ts-code/src/injection/metrics/CloudWatchClient.ts)
+    // on every invocation -- without this, every call fails with an IAM
+    // AccessDenied on cloudwatch:PutMetricData (confirmed against a real
+    // alpha invoke). cloudwatch:PutMetricData has no resource-level
+    // permissions support in IAM, so this must be a wildcard-resource
+    // statement (AWS's own documented pattern for this action).
+    fn.addToRolePolicy(new PolicyStatement({
+        actions: ["cloudwatch:PutMetricData"],
+        resources: ["*"],
+    }))
 
     return fn
 }

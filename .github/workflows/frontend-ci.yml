@@ -1,0 +1,73 @@
+# Workflow to run frontend (web/) tests on push
+name: Frontend CI
+
+on:
+  pull_request:
+    branches: [ master ]
+    paths: [ 'web/**' ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    # No `environment: AmplifyCD` here -- GitHub Actions evaluates a
+    # protected environment's branch policy against the synthetic PR
+    # merge ref (refs/pull/<N>/merge), which can never match a real
+    # branch pattern, so environment-scoped secrets are structurally
+    # unreachable from pull_request-triggered jobs. This job never
+    # deploys anything (ampx generate outputs is read-only; the e2e test
+    # only reads/exercises the already-deployed alpha environment), so it
+    # uses plain repository secrets instead.
+
+    strategy:
+      matrix:
+        node-version: [22.x]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: use node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: install root deps (for ampx)
+        # npm install (not ci) to match backend-ci.yml/backend-cd.yml's
+        # existing convention for the root package-lock.json.
+        run: npm install
+
+      - name: generate amplify outputs
+        run: npx ampx generate outputs --app-id "$GEN2_AMPLIFY_APP_ID" --branch alpha --out-dir web
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          GEN2_AMPLIFY_APP_ID: ${{ secrets.GEN2_AMPLIFY_APP_ID }}
+
+      - name: install web/ deps
+        working-directory: web
+        run: npm ci
+
+      - name: lint
+        working-directory: web
+        run: npm run lint
+
+      - name: build
+        working-directory: web
+        run: npm run build
+
+      - name: unit test
+        working-directory: web
+        run: npm run test
+
+      - name: install playwright browsers
+        working-directory: web
+        run: npx playwright install --with-deps chromium
+
+      - name: e2e test
+        working-directory: web
+        run: npm run test:e2e
+        env:
+          RMS_TEST_USER_EMAIL: ${{ secrets.RMS_TEST_USER_EMAIL }}
+          RMS_TEST_USER_PASSWORD: ${{ secrets.RMS_TEST_USER_PASSWORD }}
+          RMS_TEST_ITEM_ID: ${{ secrets.RMS_TEST_ITEM_ID }}
+          RMS_WEB_BASE_URL: ${{ secrets.RMS_WEB_BASE_URL }}
