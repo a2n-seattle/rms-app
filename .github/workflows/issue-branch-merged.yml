@@ -2,7 +2,7 @@ name: Mark issue ready for testing on merge
 
 on:
   push:
-    branches: [master]
+    branches: [alpha]
 
 permissions:
   contents: read
@@ -62,5 +62,5 @@ jobs:
         run: |
           set -euo pipefail
           gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body \
-            "Merged to \`master\` at ${MERGE_SHA} — ready for testing. This issue stays open until manually verified and closed."
+            "Merged to \`alpha\` at ${MERGE_SHA} — ready for testing. This issue stays open until manually verified and closed."
           gh issue edit "$ISSUE_NUMBER" --repo "$REPO" --add-label "ready-for-testing"

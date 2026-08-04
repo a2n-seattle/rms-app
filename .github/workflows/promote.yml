@@ -1,0 +1,69 @@
+# Manually promote code from one environment branch to the next, per this
+# repo's alpha -> beta -> master branching model (see root CLAUDE.md's
+# "Branching and environment promotion" section). Deliberately a manual
+# workflow_dispatch, not an automatic push trigger -- promotion is a
+# deliberate "this is verified, ship it further" decision, not something
+# that should fire on every merge to alpha.
+#
+# This workflow only moves code (fast-forwards the target branch to the
+# source branch's HEAD). It does not deploy anything itself -- pushing to
+# the target branch is what triggers that branch's own CD workflow (e.g.
+# backend-cd.yml for alpha). beta and production don't have CD workflows
+# yet, since neither environment is provisioned -- see the guard below.
+name: Promote environment branch
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Environment to promote into"
+        required: true
+        type: choice
+        options:
+          - beta
+          - master
+
+permissions:
+  contents: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Guard against promoting to an unprovisioned environment
+        if: github.event.inputs.target == 'beta'
+        run: |
+          echo "::error::The beta environment isn't provisioned yet (no Amplify app, tables, etc). Nothing to promote into -- see root CLAUDE.md's 'Branching and environment promotion' section for what's needed before this target can be used."
+          exit 1
+
+      - name: Determine source branch for this target
+        id: source
+        run: |
+          case "${{ github.event.inputs.target }}" in
+            beta) echo "branch=alpha" >> "$GITHUB_OUTPUT" ;;
+            master) echo "branch=alpha" >> "$GITHUB_OUTPUT" ;;
+          esac
+          # master promotes directly from alpha for now, since beta has no
+          # environment to verify against yet. Once beta is provisioned,
+          # change master's source to beta here so promotion always goes
+          # through the full alpha -> beta -> master chain.
+
+      - name: Fast-forward target branch
+        env:
+          SOURCE_BRANCH: ${{ steps.source.outputs.branch }}
+          TARGET_BRANCH: ${{ github.event.inputs.target }}
+        run: |
+          set -euo pipefail
+          git fetch origin "$SOURCE_BRANCH" "$TARGET_BRANCH"
+
+          if ! git merge-base --is-ancestor "origin/$TARGET_BRANCH" "origin/$SOURCE_BRANCH"; then
+            echo "::error::origin/$TARGET_BRANCH has commits not present on origin/$SOURCE_BRANCH -- this isn't a fast-forward. Resolve manually (merge or rebase) before promoting."
+            exit 1
+          fi
+
+          git push origin "origin/$SOURCE_BRANCH:refs/heads/$TARGET_BRANCH"
+          echo "Promoted $SOURCE_BRANCH -> $TARGET_BRANCH ($(git rev-parse --short origin/$SOURCE_BRANCH))"
