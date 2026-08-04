@@ -1,2 +1,4 @@
 src/models
 amplify-codegen-temp/models/models
+# web/ has its own independent flat ESLint config (web/eslint.config.mjs)
+web/
