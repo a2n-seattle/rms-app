@@ -6,6 +6,11 @@ on:
     branches: [ alpha ]
     paths: [ 'web/**' ]
 
+  # Allows re-running the full suite (including the e2e golden-path test
+  # against the live deployed alpha site) on demand, without needing a
+  # throwaway PR to trigger it.
+  workflow_dispatch:
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
