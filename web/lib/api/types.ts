@@ -60,3 +60,31 @@ export interface ReturnItemInput {
     borrower?: string
     notes?: string
 }
+
+export interface ScheduleSchema {
+    id: string
+    borrower: string
+    itemIds: string[]
+    startTime: number
+    endTime: number
+    notes?: string
+}
+
+export interface ListReservationsInput {
+    borrower?: string
+    limit?: number
+    pageToken?: string
+}
+
+export interface ListReservationsResult {
+    items: ScheduleSchema[]
+    nextPageToken?: string
+}
+
+export interface CreateReservationInput {
+    borrower?: string
+    ids?: string[]
+    startTime?: number
+    endTime?: number
+    notes?: string
+}
