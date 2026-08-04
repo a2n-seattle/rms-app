@@ -21,6 +21,11 @@ applications:
       phases:
         build:
           commands:
+            # This phase runs from the repo root, not web/ -- ampx is a root
+            # devDependency, so it needs root's own node_modules installed
+            # first (web/'s frontend-phase `npm ci` only installs web/'s
+            # separate node_modules, in appRoot).
+            - npm ci
             # web/ has no CDK backend of its own; ts-code's Gen 2 backend is
             # deployed independently by .github/workflows/backend-cd.yml,
             # triggered on push to this same "alpha" Git branch (which is
