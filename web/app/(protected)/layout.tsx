@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 import { getSession } from "@/lib/session"
+import { SignOutButton } from "@/components/SignOutButton"
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
     const session = await getSession()
@@ -12,8 +13,8 @@ export default async function ProtectedLayout({ children }: { children: React.Re
             <nav style={{ display: "flex", gap: "1rem", padding: "1rem", borderBottom: "1px solid #ccc" }}>
                 <a href="/browse">Browse</a>
                 <a href="/reservations">Reservations</a>
-                <a href="/profile">Profile</a>
                 <span>{session.name || session.email}</span>
+                <SignOutButton />
             </nav>
             <main style={{ padding: "1rem" }}>{children}</main>
         </div>

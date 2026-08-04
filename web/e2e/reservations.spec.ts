@@ -16,15 +16,12 @@ const TEST_ITEM_ID = process.env.RMS_TEST_ITEM_ID
 test.skip(!TEST_EMAIL || !TEST_PASSWORD || !TEST_ITEM_ID, "Missing RMS_TEST_USER_EMAIL/RMS_TEST_USER_PASSWORD/RMS_TEST_ITEM_ID")
 
 test("reserve an item and see it on the reservations page", async ({ page }) => {
-    await page.goto("/login")
-    await page.getByLabel("Email").fill(TEST_EMAIL!)
-    // getByLabel("Password") is ambiguous -- it also matches the
-    // Authenticator's "Show password" toggle button, which carries an
-    // aria-label containing "Password" too. Scope to the actual textbox.
-    await page.getByRole("textbox", { name: "Password" }).fill(TEST_PASSWORD!)
-    // Non-exact "Sign in" also matches the Google SSO button ("Sign In
-    // with Google icon"); exact: true targets only the submit button.
-    await page.getByRole("button", { name: "Sign in", exact: true }).click()
+    // Signs in via web/app/test-login/page.tsx (never linked from the real
+    // UI) -- the production login page is Google-only.
+    await page.goto("/test-login")
+    await page.getByLabel("Email:").fill(TEST_EMAIL!)
+    await page.getByLabel("Password:").fill(TEST_PASSWORD!)
+    await page.getByRole("button", { name: "Sign in" }).click()
 
     await expect(page).toHaveURL(/\/browse/)
 
