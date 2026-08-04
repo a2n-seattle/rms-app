@@ -41,6 +41,17 @@ test("reserve an item and see it on the reservations page", async ({ page }) => 
     await page.locator('input[name="notes"]').fill(notes)
     await page.getByRole("button", { name: "Reserve" }).click()
 
-    await page.goto("/reservations")
-    await expect(page.getByText(notes)).toBeVisible()
+    // ScheduleTable.listByBorrower uses a plain DynamoDB Scan, which is
+    // eventually consistent by default (no ConsistentRead) -- a just-created
+    // reservation can briefly not appear on the very next scan. Poll by
+    // reloading rather than asserting once.
+    await expect
+        .poll(
+            async () => {
+                await page.goto("/reservations")
+                return page.getByText(notes).isVisible()
+            },
+            { timeout: 15000 }
+        )
+        .toBe(true)
 })
