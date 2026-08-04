@@ -7,9 +7,12 @@ applications:
           commands:
             - npm ci
             # amplify_outputs.json is already written into web/ by the
-            # backend phase above (which runs before this one, from repo
-            # root where ampx is actually installed -- web/ has no ampx
-            # dependency of its own, so calling it again here would fail).
+            # backend phase above (which runs before this one, cd's to
+            # repo root where ampx is actually installed -- web/ has no
+            # ampx dependency of its own, so calling it again here would
+            # fail -- then cd's back into web/ before this phase starts,
+            # since `cd` persists across phases and this npm ci needs to
+            # run against web/'s own package.json/package-lock.json).
         build:
           commands:
             - npm run build
@@ -39,8 +42,12 @@ applications:
             # backend-cd.yml/frontend-ci.yml's existing convention for
             # root's package-lock.json, which tends to drift (npm ci
             # requires an exact lockfile match and fails on any drift;
-            # npm install tolerates and repairs it).
-            - cd .. && npm install && npx ampx generate outputs --app-id $AWS_APP_ID --branch $AWS_BRANCH --out-dir web
+            # npm install tolerates and repairs it). `cd` persists for the
+            # rest of the build, across phases -- confirmed both by AWS's
+            # own docs and a real failed build where the frontend phase's
+            # `npm ci` below inherited repo root as its cwd and failed on
+            # root's lockfile drift -- so cd back into web/ at the end.
+            - cd .. && npm install && npx ampx generate outputs --app-id $AWS_APP_ID --branch $AWS_BRANCH --out-dir web && cd web
             # web/ has no CDK backend of its own; ts-code's Gen 2 backend is
             # deployed independently by .github/workflows/backend-cd.yml,
             # triggered on push to this same "alpha" Git branch (which is
