@@ -6,7 +6,7 @@ applications:
         preBuild:
           commands:
             - npm ci
-            - npx ampx generate outputs --app-id $AWS_APP_ID --branch alpha --out-dir .
+            - npx ampx generate outputs --app-id $AWS_APP_ID --branch $AWS_BRANCH --out-dir .
         build:
           commands:
             - npm run build
@@ -23,13 +23,11 @@ applications:
           commands:
             # web/ has no CDK backend of its own; ts-code's Gen 2 backend
             # is deployed independently by .github/workflows/backend-cd.yml
-            # against the "alpha" environment (an Amplify/CDK environment
-            # name, decoupled from Git branches -- there's no Git branch
-            # literally named "alpha"). Hosting's connected Git branch is
-            # "master", so --branch is hardcoded to "alpha" here rather
-            # than $AWS_BRANCH. Substituting `ampx generate outputs` for
-            # the default `ampx pipeline-deploy` is the documented way to
-            # skip Amplify Hosting's own backend deploy while still
-            # fetching config for the frontend build (there's no dedicated
-            # Gen 2 "skip backend build" flag -- that's Gen-1-only).
-            - npx ampx generate outputs --app-id $AWS_APP_ID --branch alpha --out-dir ../web
+            # (triggered on push to master, then fast-forwarded onto the
+            # "alpha" Git branch that Hosting is connected to -- see that
+            # workflow). Substituting `ampx generate outputs` for the
+            # default `ampx pipeline-deploy` is the documented way to skip
+            # Amplify Hosting's own backend deploy while still fetching
+            # config for the frontend build (there's no dedicated Gen 2
+            # "skip backend build" flag -- that's Gen-1-only).
+            - npx ampx generate outputs --app-id $AWS_APP_ID --branch $AWS_BRANCH --out-dir ../web

@@ -51,6 +51,13 @@ jobs:
         run: |
           npm run test:integ
 
+      - name: fast-forward alpha branch
+        # Amplify Hosting (web/) is connected to the "alpha" Git branch, kept
+        # as a pure mirror of master -- only advanced here, after a successful
+        # backend deploy + integ test, so Hosting never builds against a
+        # backend that failed verification.
+        run: git push origin HEAD:refs/heads/alpha
+
       - name: Report Status
         uses: ravsamhq/notify-slack-action@v2
         if: always()
