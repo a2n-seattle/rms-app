@@ -6,7 +6,10 @@ applications:
         preBuild:
           commands:
             - npm ci
-            - npx ampx generate outputs --app-id $AWS_APP_ID --branch $AWS_BRANCH --out-dir .
+            # amplify_outputs.json is already written into web/ by the
+            # backend phase above (which runs before this one, from repo
+            # root where ampx is actually installed -- web/ has no ampx
+            # dependency of its own, so calling it again here would fail).
         build:
           commands:
             - npm run build
@@ -18,13 +21,18 @@ applications:
         paths:
           - node_modules/**/*
     backend:
+      # Without buildPath, monorepo phases run from appRoot (web/) by
+      # default -- confirmed against a real failed build ("npm error could
+      # not determine executable to run" on ampx, because web/'s own
+      # package.json has no ampx dependency; only root's does). Override to
+      # the monorepo root here so this phase's npm ci installs root's
+      # node_modules and can resolve ampx, per AWS's own documented pattern
+      # for monorepo backend phases (docs.aws.amazon.com/amplify/latest/
+      # userguide/monorepo-configuration.html).
+      buildPath: /
       phases:
         build:
           commands:
-            # This phase runs from the repo root, not web/ -- ampx is a root
-            # devDependency, so it needs root's own node_modules installed
-            # first (web/'s frontend-phase `npm ci` only installs web/'s
-            # separate node_modules, in appRoot).
             - npm ci
             # web/ has no CDK backend of its own; ts-code's Gen 2 backend is
             # deployed independently by .github/workflows/backend-cd.yml,
@@ -35,5 +43,6 @@ applications:
             # is the documented way to skip Amplify Hosting's own backend
             # deploy while still fetching config for the frontend build
             # (there's no dedicated Gen 2 "skip backend build" flag --
-            # that's Gen-1-only).
-            - npx ampx generate outputs --app-id $AWS_APP_ID --branch $AWS_BRANCH --out-dir ../web
+            # that's Gen-1-only). --out-dir is relative to this phase's
+            # buildPath (repo root), so it targets web/ directly, not ../web.
+            - npx ampx generate outputs --app-id $AWS_APP_ID --branch $AWS_BRANCH --out-dir web
