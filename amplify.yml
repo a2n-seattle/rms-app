@@ -21,19 +21,22 @@ applications:
         paths:
           - node_modules/**/*
     backend:
-      # Without buildPath, monorepo phases run from appRoot (web/) by
-      # default -- confirmed against a real failed build ("npm error could
-      # not determine executable to run" on ampx, because web/'s own
-      # package.json has no ampx dependency; only root's does). Override to
-      # the monorepo root here so this phase's npm ci installs root's
-      # node_modules and can resolve ampx, per AWS's own documented pattern
-      # for monorepo backend phases (docs.aws.amazon.com/amplify/latest/
-      # userguide/monorepo-configuration.html).
-      buildPath: /
       phases:
         build:
           commands:
-            - npm ci
+            # The backend phase runs from appRoot (web/), same as the
+            # frontend phase -- confirmed empirically against two real
+            # failed builds: neither omitting buildPath nor setting
+            # `buildPath: /` changed the actual working directory (the
+            # installed package set was always web/'s, never root's).
+            # `buildPath` appears to only affect the frontend section in
+            # practice, despite AWS's docs showing it under an app-level
+            # example. So: cd to repo root explicitly, install there
+            # (where ampx/@aws-amplify/backend-cli actually lives), and
+            # generate outputs with --out-dir web -- relative to the new
+            # (repo root) cwd, pointing back at the same web/ this phase
+            # started in.
+            - cd .. && npm ci && npx ampx generate outputs --app-id $AWS_APP_ID --branch $AWS_BRANCH --out-dir web
             # web/ has no CDK backend of its own; ts-code's Gen 2 backend is
             # deployed independently by .github/workflows/backend-cd.yml,
             # triggered on push to this same "alpha" Git branch (which is
@@ -43,6 +46,4 @@ applications:
             # is the documented way to skip Amplify Hosting's own backend
             # deploy while still fetching config for the frontend build
             # (there's no dedicated Gen 2 "skip backend build" flag --
-            # that's Gen-1-only). --out-dir is relative to this phase's
-            # buildPath (repo root), so it targets web/ directly, not ../web.
-            - npx ampx generate outputs --app-id $AWS_APP_ID --branch $AWS_BRANCH --out-dir web
+            # that's Gen-1-only).
