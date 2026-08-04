@@ -12,7 +12,8 @@ export default async function ProtectedLayout({ children }: { children: React.Re
             <nav style={{ display: "flex", gap: "1rem", padding: "1rem", borderBottom: "1px solid #ccc" }}>
                 <a href="/browse">Browse</a>
                 <a href="/reservations">Reservations</a>
-                <span>{session.email}</span>
+                <a href="/profile">Profile</a>
+                <span>{session.name || session.email}</span>
             </nav>
             <main style={{ padding: "1rem" }}>{children}</main>
         </div>
