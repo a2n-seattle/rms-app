@@ -21,5 +21,9 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ["/((?!login|api/auth|_next/static|_next/image|favicon.ico).*)"],
+    // test-login is excluded too -- a separate, unlinked page used only by
+    // e2e tests (web/app/test-login/page.tsx) for email/password sign-in,
+    // since the real /login page is Google-only. Needs to be reachable
+    // while unauthenticated, same as /login.
+    matcher: ["/((?!login|test-login|api/auth|_next/static|_next/image|favicon.ico).*)"],
 }

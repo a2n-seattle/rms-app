@@ -28,6 +28,15 @@ import { definePreSignUpFunction } from "../functions/pre-sign-up/resource"
  * defineAuth automatically maps Google's email to the standard `email`
  * attribute already. See ts-code/src/handlers/auth/PreSignUp.ts.
  *
+ * loginWith.email stays enabled even though real users only ever see a
+ * Google button (web/app/login/page.tsx) -- this pool-level setting is
+ * what keeps web/app/test-login/page.tsx's email/password form usable for
+ * the dedicated e2e test account (rms.test@acts2.network), since Google's
+ * redirect flow isn't automatable in CI. Real users never get a password
+ * (accounts are only ever created via Google federation), so this doesn't
+ * open up a second real login path for them -- see test-login/page.tsx's
+ * own comment for the full reasoning.
+ *
  * `fullname` still needs an explicit attributeMapping to Google's "name"
  * claim: Amplify only auto-maps `email`, and this pool requires
  * `fullname` (below) -- omitting it fails at deploy time with "The
@@ -42,18 +51,18 @@ import { definePreSignUpFunction } from "../functions/pre-sign-up/resource"
  * not committed here.
  *
  * callbackUrls/logoutUrls point at /login, not a dedicated /callback
- * route -- web/'s login page (GH-306) uses @aws-amplify/ui-react's
- * <Authenticator> (with socialProviders: ["google"]), which handles the
- * OAuth code exchange client-side via URL params on whatever page it
- * lands on; no server route needs to parse the code itself. /login is
- * used specifically because it's the one path proxy.ts's matcher
- * excludes from the auth gate -- any other path would redirect
- * unauthenticated requests straight to /login before Amplify's
- * client-side listener ever got to process Google's ?code=... param,
- * breaking the sign-in flow. Includes both the deployed alpha URL and
- * localhost:3000 (for local dev); append further URLs the same way as
- * new environments/branches come online, no redeploy dance needed since
- * these are plain arrays.
+ * route -- web/'s login page calls signInWithRedirect directly (see its
+ * own comment for why it doesn't use @aws-amplify/ui-react's
+ * <Authenticator>), which handles the OAuth code exchange client-side via
+ * URL params on whatever page it lands on; no server route needs to parse
+ * the code itself. /login is used specifically because it's one of the
+ * paths proxy.ts's matcher excludes from the auth gate (test-login is the
+ * other) -- any other path would redirect unauthenticated requests
+ * straight to /login before Amplify's client-side listener ever got to
+ * process Google's ?code=... param, breaking the sign-in flow. Includes
+ * both the deployed alpha URL and localhost:3000 (for local dev); append
+ * further URLs the same way as new environments/branches come online, no
+ * redeploy dance needed since these are plain arrays.
  * domainPrefix isn't exposed at the defineAuth factory layer in this
  * Amplify version (confirmed via the installed package's own types --
  * ExternalProviderGeneralFactoryProps explicitly omits it, and
