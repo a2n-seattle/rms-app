@@ -3,9 +3,13 @@ name: Backend CD
 
 # Controls when the action will run.
 on:
-  # Triggers the workflow on push events but only for the master branch
+  # Triggers the workflow on push events but only for the alpha branch --
+  # alpha is this repo's active-development merge target and has the only
+  # provisioned backend environment today (see root CLAUDE.md's
+  # "Branching and environment promotion" section). beta/production get
+  # their own deploy workflows once those environments are provisioned.
   push:
-    branches: [ master ]
+    branches: [ alpha ]
     paths: [ 'amplify/**' ]
 
   # Allows you to run this workflow manually from the Actions tab

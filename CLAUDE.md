@@ -2,6 +2,16 @@
 
 RMS ("Reservation Management System") tracks borrowable/reservable items: item inventory, borrow/return, batches of items, and scheduled reservations. There's also an SMS-based interface (`smsrouter`) for interacting via text.
 
+## Branching and environment promotion (standing rule)
+
+**`alpha` is this repo's default branch and the merge target for all PRs** — not `master`. Every backend/frontend CI workflow (`backend-ci.yml`, `frontend-ci.yml`) gates PRs against `alpha`, and `backend-cd.yml` deploys on push to `alpha`. The issue pipeline (below) branches from `origin/alpha`, not `origin/master`.
+
+The intended long-term model is a promotion chain: **`alpha` → `beta` → `master`**, where each stage is a real deployed environment (own Amplify Hosting branch, own backend deploy). `master` is the **production** branch — the promotion *destination*, not the source of truth for active development. Each stage is meant to eventually fan out to multiple per-city branches (e.g. `beta`'s and `master`'s work will expand into one branch per church/city once the multi-tenant rollout — tracked separately, see the "Not in scope" note on the frontend epic — is built out); for now, only `alpha` exists as a real environment.
+
+**Today, only `alpha` is provisioned** (the Amplify app, Cognito pool, DynamoDB tables, etc. described below). `beta` and `master`/production have no infrastructure yet — don't treat `master` as deployable until that's built.
+
+**Promotion between stages is a manual, deliberate action, not automatic.** Run the **"Promote environment branch"** workflow (`.github/workflows/promote.yml`, triggered via `workflow_dispatch` — GitHub Actions tab, or `gh workflow run promote.yml -f target=master`) once you've verified a change in `alpha` and are ready to ship it further. It fast-forwards the target branch (`beta` or `master`) to the source branch's current HEAD (`alpha`, or eventually `beta` once that stage exists) — it does not itself deploy anything; pushing to the target branch is what triggers that branch's own CD workflow. Attempting to promote to `beta` today fails fast with a clear error, since there's no `beta` environment yet to promote into. When `beta` is provisioned, update `promote.yml`'s source-branch mapping so `master` promotes from `beta` instead of directly from `alpha`, keeping the full chain intact.
+
 ## Testing policy (standing rule)
 
 **Every change to this repo must include a corresponding test change.** A PR that alters backend or frontend behavior without adding or updating a test is incomplete, not just "missing polish" — treat it the same as a PR that doesn't compile.
@@ -76,8 +86,9 @@ amplify/
 
 ### CI/CD
 
-- `.github/workflows/backend-ci.yml` — PRs to `master`: build + `test:unit`, 80% coverage gate, plus a `tsc --noEmit -p amplify/tsconfig.json` typecheck step for the CDK code.
-- `.github/workflows/backend-cd.yml` — push to `master` touching `amplify/**`: `npx ampx pipeline-deploy --branch alpha --app-id ...` to deploy, then `test:integ`.
+- `.github/workflows/backend-ci.yml` — PRs to `alpha`: build + `test:unit`, 80% coverage gate, plus a `tsc --noEmit -p amplify/tsconfig.json` typecheck step for the CDK code.
+- `.github/workflows/backend-cd.yml` — push to `alpha` touching `amplify/**`: `npx ampx pipeline-deploy --branch alpha --app-id ...` to deploy, then `test:integ`.
+- `.github/workflows/promote.yml` — manual promotion to `beta`/`master`, see "Branching and environment promotion" above.
 - `.github/workflows/backend-canary.yml` — hourly smoke test against the deployed `alpha` env.
 
 None of these currently touch a frontend — there is no frontend build/deploy step yet.
@@ -102,13 +113,14 @@ that's what gets the work tracked as an issue and kept in sync as the plan
 iterates. Work that won't produce a code change (answering a question,
 explaining existing behavior) skips the pipeline entirely.
 
-**Always branch from `origin/master`, never from whatever branch happens
-to be checked out.** This repo's default branch is `master`, not `main` —
-double-check before scripting anything that assumes otherwise. A prior
-session may have left an unrelated issue's branch checked out; branching
-from that instead of `master` silently drags its commits into the new
-branch's history. Always `git fetch origin master` first, then
-`git checkout -b <new-branch> origin/master`.
+**Always branch from `origin/alpha`, never from whatever branch happens
+to be checked out.** This repo's default branch is `alpha`, not `main` or
+`master` — double-check before scripting anything that assumes otherwise
+(see "Branching and environment promotion" above). A prior session may
+have left an unrelated issue's branch checked out; branching from that
+instead of `alpha` silently drags its commits into the new branch's
+history. Always `git fetch origin alpha` first, then
+`git checkout -b <new-branch> origin/alpha`.
 
 - **`/issue-create <text>`** — turns a raw chunk of text (notes, a plan
   draft, a bug description) into a GitHub issue. First checks open issues
@@ -153,13 +165,13 @@ branch's history. Always `git fetch origin master` first, then
   labels only, without fetching the comment thread — for the full
   triage/plan history use `/issue-triage <N>` instead.
 - **`.github/workflows/issue-branch-merged.yml`** — triggers on push to
-  `master`, no Claude/API involved (pure shell + `gh`). Detects a
+  `alpha`, no Claude/API involved (pure shell + `gh`). Detects a
   just-merged `GH-<N>/...` branch by name, comments "ready for testing" on
   issue `N`, and applies the `ready-for-testing` label. It does **not**
   close the issue — the user verifies manually and closes it themselves.
 
 `.github/workflows/backend-ci.yml` already runs build + `test:unit` + an
-80% coverage gate on every PR to `master` — PR + green CI before merging is
+80% coverage gate on every PR to `alpha` — PR + green CI before merging is
 this repo's convention for issue-pipeline branches (`/issue-triage`'s
 "Pushing/merging" step), same as it is for any other PR.
 
@@ -176,8 +188,8 @@ returns the highest number across *both* issues and PRs — GitHub's
 as long as nothing else creates an issue/PR in the gap between checking and
 creating (a real but narrow race — if it happens, just redo the
 rename/PR once more against the actual number). **Always branch from
-`origin/master`** (`git fetch origin master` then `git checkout -b ...
-origin/master`), never from whatever branch happens to be checked out —
+`origin/alpha`** (`git fetch origin alpha` then `git checkout -b ...
+origin/alpha`), never from whatever branch happens to be checked out —
 see the callout above. Name and push the branch as
 `GH-<predicted-number>/<github-username>/v1` **first**, then run
 `gh pr create` from it, and confirm the returned PR number matches.

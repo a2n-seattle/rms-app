@@ -3,9 +3,11 @@ name: Backend CI
 
 # Controls when the action will run.
 on:
-  # Triggers the workflow on pull request events but only for the master branch
+  # Triggers the workflow on pull request events but only for the alpha branch
+  # (alpha is this repo's active-development merge target -- see the
+  # "Branching and environment promotion" section in root CLAUDE.md)
   pull_request:
-    branches: [ master ]
+    branches: [ alpha ]
 
 jobs:
   run-unit-test:

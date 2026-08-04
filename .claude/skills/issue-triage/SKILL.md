@@ -157,13 +157,15 @@ earlier in this same session — reuse that result).
    - If a branch matching this pattern already exists (e.g. from a prior
      partial attempt), **ask the user** whether to resume that branch or
      create a new `vN` — don't silently pick one.
-   - **Always branch from `origin/master`, never from whatever branch
-     happens to be checked out** — this repo's default branch is `master`,
-     not `main`. A prior session may have left an unrelated issue's branch
-     active, and branching from that silently drags its commits into the
-     new branch's history. Run `git fetch origin master` first, then
-     create and switch to the new branch from the fetched ref:
-     `git checkout -b GH-<N>/<username>/v<n> origin/master`.
+   - **Always branch from `origin/alpha`, never from whatever branch
+     happens to be checked out** — this repo's default branch is `alpha`,
+     not `main` or `master` (see root CLAUDE.md's "Branching and
+     environment promotion" section). A prior session may have left an
+     unrelated issue's branch active, and branching from that silently
+     drags its commits into the new branch's history. Run
+     `git fetch origin alpha` first, then create and switch to the new
+     branch from the fetched ref:
+     `git checkout -b GH-<N>/<username>/v<n> origin/alpha`.
 
 9. **Implement per the approved plan**, following this repo's existing
    conventions — most importantly the standing testing policy in root
@@ -179,7 +181,7 @@ earlier in this same session — reuse that result).
    auto-close the issue; the user closes it manually after testing.
 
 10. **Pushing/merging**: `.github/workflows/backend-ci.yml` runs build +
-    unit tests + an 80% coverage gate on every PR to `master` — open a PR
+    unit tests + an 80% coverage gate on every PR to `alpha` — open a PR
     with `gh pr create` and wait for that check to go green before merging,
-    rather than pushing directly to `master`. Ask before pushing/merging,
+    rather than pushing directly to `alpha`. Ask before pushing/merging,
     same as normal.
