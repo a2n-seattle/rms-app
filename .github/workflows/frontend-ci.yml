@@ -9,7 +9,14 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    environment: AmplifyCD
+    # No `environment: AmplifyCD` here -- GitHub Actions evaluates a
+    # protected environment's branch policy against the synthetic PR
+    # merge ref (refs/pull/<N>/merge), which can never match a real
+    # branch pattern, so environment-scoped secrets are structurally
+    # unreachable from pull_request-triggered jobs. This job never
+    # deploys anything (ampx generate outputs is read-only; the e2e test
+    # only reads/exercises the already-deployed alpha environment), so it
+    # uses plain repository secrets instead.
 
     strategy:
       matrix:
