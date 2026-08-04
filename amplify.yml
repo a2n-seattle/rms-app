@@ -35,8 +35,12 @@ applications:
             # (where ampx/@aws-amplify/backend-cli actually lives), and
             # generate outputs with --out-dir web -- relative to the new
             # (repo root) cwd, pointing back at the same web/ this phase
-            # started in.
-            - cd .. && npm ci && npx ampx generate outputs --app-id $AWS_APP_ID --branch $AWS_BRANCH --out-dir web
+            # started in. npm install (not ci) to match backend-ci.yml/
+            # backend-cd.yml/frontend-ci.yml's existing convention for
+            # root's package-lock.json, which tends to drift (npm ci
+            # requires an exact lockfile match and fails on any drift;
+            # npm install tolerates and repairs it).
+            - cd .. && npm install && npx ampx generate outputs --app-id $AWS_APP_ID --branch $AWS_BRANCH --out-dir web
             # web/ has no CDK backend of its own; ts-code's Gen 2 backend is
             # deployed independently by .github/workflows/backend-cd.yml,
             # triggered on push to this same "alpha" Git branch (which is
