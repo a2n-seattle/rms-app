@@ -29,6 +29,7 @@ test("reserve an item and see it on the reservations page", async ({ page }) => 
     await expect(page).toHaveURL(/\/browse/)
 
     await page.goto(`/items/${encodeURIComponent(TEST_ITEM_ID!)}`)
+    await expect(page.getByRole("heading", { name: "Reserve this item" })).toBeVisible()
 
     const notes = `e2e-reservation-${Date.now()}`
     const start = new Date(Date.now() + 24 * 60 * 60 * 1000)
