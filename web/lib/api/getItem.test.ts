@@ -6,7 +6,7 @@ import { getItem } from "./getItem"
 
 const originalFetch = global.fetch
 
-afterEach(() => {
+afterEach((): void => {
     global.fetch = originalFetch
 })
 

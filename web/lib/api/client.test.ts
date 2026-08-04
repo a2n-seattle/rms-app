@@ -6,7 +6,7 @@ import { callRmsApi } from "./client"
 
 const originalFetch = global.fetch
 
-afterEach(() => {
+afterEach((): void => {
     global.fetch = originalFetch
 })
 
