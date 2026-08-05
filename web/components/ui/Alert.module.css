@@ -1,0 +1,19 @@
+.alert {
+    margin-top: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-sm);
+    border: 1px solid;
+    font-size: 0.875rem;
+}
+
+.success {
+    background: var(--color-success-bg);
+    border-color: var(--color-success-border);
+    color: var(--color-success-text);
+}
+
+.error {
+    background: var(--color-alert-overdue-bg);
+    border-color: var(--color-alert-overdue-border);
+    color: var(--color-danger);
+}

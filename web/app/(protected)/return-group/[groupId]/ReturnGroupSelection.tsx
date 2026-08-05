@@ -4,12 +4,14 @@ import { useState } from "react"
 import { Table } from "@/components/ui/Table"
 import { Checkbox } from "@/components/ui/Checkbox"
 import { Button } from "@/components/ui/Button"
+import { ActionForm } from "@/components/ui/ActionForm"
+import type { ActionState } from "@/lib/actionState"
 import type { ItemsSchema } from "@/lib/api/types"
 import styles from "./return-group.module.css"
 
 interface ReturnGroupSelectionProps {
     items: ItemsSchema[]
-    returnAction: (formData: FormData) => void
+    returnAction: (prevState: ActionState, formData: FormData) => Promise<ActionState>
 }
 
 export function ReturnGroupSelection({ items, returnAction }: ReturnGroupSelectionProps) {
@@ -87,7 +89,12 @@ export function ReturnGroupSelection({ items, returnAction }: ReturnGroupSelecti
                 </tbody>
             </Table>
 
-            <form action={returnAction} className={styles.actionBar}>
+            {/* On success this action redirects to /dashboard, so the ActionForm's success
+                Alert never actually renders here -- landing back on the dashboard with the
+                item now shown as returned is itself the confirmation. Still wrapped in
+                ActionForm so a rejected return (e.g. a conflicting concurrent return) shows
+                an inline error instead of crashing. */}
+            <ActionForm action={returnAction} successMessage="Item(s) returned successfully." className={styles.actionBar}>
                 {selectedIds.map((id) => (
                     <input key={id} type="hidden" name="ids" value={id} />
                 ))}
@@ -99,7 +106,7 @@ export function ReturnGroupSelection({ items, returnAction }: ReturnGroupSelecti
                 <Button type="submit" disabled={selectedIds.length === 0}>
                     Confirm Return ({selectedIds.length})
                 </Button>
-            </form>
+            </ActionForm>
         </div>
     )
 }

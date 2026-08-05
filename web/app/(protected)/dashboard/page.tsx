@@ -8,11 +8,13 @@ import { borrowFromSchedule } from "@/lib/api/borrowFromSchedule"
 import { deleteReservation } from "@/lib/api/deleteReservation"
 import { extendReservation } from "@/lib/api/extendReservation"
 import { revalidatePath } from "next/cache"
+import { ActionState, runAction } from "@/lib/actionState"
 import { Card } from "@/components/ui/Card"
 import { Table } from "@/components/ui/Table"
 import { Button } from "@/components/ui/Button"
 import { Badge } from "@/components/ui/Badge"
 import { TabList, Tab } from "@/components/ui/Tabs"
+import { ActionForm } from "@/components/ui/ActionForm"
 import styles from "./dashboard.module.css"
 
 type DashboardTab = "borrowed" | "owned" | "scheduled" | "history"
@@ -40,38 +42,44 @@ export default async function DashboardPage({
     ])
     const history = tab === "history" ? await listHistory(session.idToken, { borrower: session.sub }) : undefined
 
-    async function borrowFromScheduleAction(formData: FormData) {
+    async function borrowFromScheduleAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
         "use server"
-        const session = await getSession()
-        if (!session) {
-            return
-        }
-        const scheduleId = formData.get("scheduleId") as string
-        await borrowFromSchedule(session.idToken, { scheduleId })
-        revalidatePath("/dashboard")
+        return runAction(async () => {
+            const session = await getSession()
+            if (!session) {
+                return
+            }
+            const scheduleId = formData.get("scheduleId") as string
+            await borrowFromSchedule(session.idToken, { scheduleId })
+            revalidatePath("/dashboard")
+        })
     }
 
-    async function cancelReservationAction(formData: FormData) {
+    async function cancelReservationAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
         "use server"
-        const session = await getSession()
-        if (!session) {
-            return
-        }
-        const scheduleId = formData.get("scheduleId") as string
-        await deleteReservation(session.idToken, { id: scheduleId })
-        revalidatePath("/dashboard")
+        return runAction(async () => {
+            const session = await getSession()
+            if (!session) {
+                return
+            }
+            const scheduleId = formData.get("scheduleId") as string
+            await deleteReservation(session.idToken, { id: scheduleId })
+            revalidatePath("/dashboard")
+        })
     }
 
-    async function extendReservationAction(formData: FormData) {
+    async function extendReservationAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
         "use server"
-        const session = await getSession()
-        if (!session) {
-            return
-        }
-        const scheduleId = formData.get("scheduleId") as string
-        const newEndTime = new Date(formData.get("newEndTime") as string).getTime()
-        await extendReservation(session.idToken, { id: scheduleId, newEndTime })
-        revalidatePath("/dashboard")
+        return runAction(async () => {
+            const session = await getSession()
+            if (!session) {
+                return
+            }
+            const scheduleId = formData.get("scheduleId") as string
+            const newEndTime = new Date(formData.get("newEndTime") as string).getTime()
+            await extendReservation(session.idToken, { id: scheduleId, newEndTime })
+            revalidatePath("/dashboard")
+        })
     }
 
     return (
@@ -97,16 +105,16 @@ export default async function DashboardPage({
                                 {schedule.itemIds.join(", ")} starts {new Date(schedule.startTime).toLocaleString()}
                             </span>
                             <div className={styles.alertActions}>
-                                <form action={borrowFromScheduleAction}>
+                                <ActionForm action={borrowFromScheduleAction} successMessage="Borrowed successfully.">
                                     <input type="hidden" name="scheduleId" value={schedule.id} />
                                     <Button type="submit">Borrow</Button>
-                                </form>
-                                <form action={cancelReservationAction}>
+                                </ActionForm>
+                                <ActionForm action={cancelReservationAction} successMessage="Reservation cancelled.">
                                     <input type="hidden" name="scheduleId" value={schedule.id} />
                                     <Button type="submit" variant="secondary">
                                         Cancel
                                     </Button>
-                                </form>
+                                </ActionForm>
                             </div>
                         </div>
                     ))}
@@ -208,7 +216,7 @@ export default async function DashboardPage({
                                         <td>{new Date(schedule.endTime).toLocaleString()}</td>
                                         <td className={styles.notes}>{schedule.notes || "—"}</td>
                                         <td>
-                                            <form action={extendReservationAction} className={styles.extendForm}>
+                                            <ActionForm action={extendReservationAction} successMessage="Reservation extended." className={styles.extendForm}>
                                                 <input type="hidden" name="scheduleId" value={schedule.id} />
                                                 <input
                                                     type="datetime-local"
@@ -219,7 +227,7 @@ export default async function DashboardPage({
                                                 <Button type="submit" variant="secondary">
                                                     Extend
                                                 </Button>
-                                            </form>
+                                            </ActionForm>
                                         </td>
                                     </tr>
                                 ))}

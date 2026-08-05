@@ -4,9 +4,11 @@ import { borrowItem } from "@/lib/api/borrowItem"
 import { returnItem } from "@/lib/api/returnItem"
 import { createReservation } from "@/lib/api/createReservation"
 import { revalidatePath } from "next/cache"
+import { ActionState, runAction } from "@/lib/actionState"
 import { Card } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
 import { ButtonLink } from "@/components/ui/ButtonLink"
+import { ActionForm } from "@/components/ui/ActionForm"
 import styles from "./item-detail.module.css"
 
 export default async function SubItemDetailPage({ params }: { params: Promise<{ id: string; subId: string }> }) {
@@ -19,44 +21,50 @@ export default async function SubItemDetailPage({ params }: { params: Promise<{ 
     const { main, items } = await getItem(session.idToken, { key: subId })
     const instance = items.find((i) => i.id === subId)
 
-    async function borrowAction() {
+    async function borrowAction(_prevState: ActionState, _formData: FormData): Promise<ActionState> {
         "use server"
-        const session = await getSession()
-        if (!session) {
-            return
-        }
-        await borrowItem(session.idToken, { ids: [subId], borrower: session.sub })
-        revalidatePath(`/items/${id}/${subId}`)
-    }
-
-    async function returnAction() {
-        "use server"
-        const session = await getSession()
-        if (!session) {
-            return
-        }
-        await returnItem(session.idToken, { ids: [subId], borrower: session.sub })
-        revalidatePath(`/items/${id}/${subId}`)
-    }
-
-    async function reserveAction(formData: FormData) {
-        "use server"
-        const session = await getSession()
-        if (!session) {
-            return
-        }
-        const startTime = new Date(formData.get("start") as string).getTime()
-        const endTime = new Date(formData.get("end") as string).getTime()
-        const notes = formData.get("notes") as string
-
-        await createReservation(session.idToken, {
-            ids: [subId],
-            borrower: session.sub,
-            startTime,
-            endTime,
-            notes: notes || undefined,
+        return runAction(async () => {
+            const session = await getSession()
+            if (!session) {
+                return
+            }
+            await borrowItem(session.idToken, { ids: [subId], borrower: session.sub })
+            revalidatePath(`/items/${id}/${subId}`)
         })
-        revalidatePath(`/items/${id}/${subId}`)
+    }
+
+    async function returnAction(_prevState: ActionState, _formData: FormData): Promise<ActionState> {
+        "use server"
+        return runAction(async () => {
+            const session = await getSession()
+            if (!session) {
+                return
+            }
+            await returnItem(session.idToken, { ids: [subId], borrower: session.sub })
+            revalidatePath(`/items/${id}/${subId}`)
+        })
+    }
+
+    async function reserveAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+        "use server"
+        return runAction(async () => {
+            const session = await getSession()
+            if (!session) {
+                return
+            }
+            const startTime = new Date(formData.get("start") as string).getTime()
+            const endTime = new Date(formData.get("end") as string).getTime()
+            const notes = formData.get("notes") as string
+
+            await createReservation(session.idToken, {
+                ids: [subId],
+                borrower: session.sub,
+                startTime,
+                endTime,
+                notes: notes || undefined,
+            })
+            revalidatePath(`/items/${id}/${subId}`)
+        })
     }
 
     return (
@@ -92,16 +100,16 @@ export default async function SubItemDetailPage({ params }: { params: Promise<{ 
                                         Return
                                     </ButtonLink>
                                 ) : (
-                                    <form action={returnAction}>
+                                    <ActionForm action={returnAction} successMessage="Item returned successfully.">
                                         <Button type="submit" variant="secondary">
                                             Return
                                         </Button>
-                                    </form>
+                                    </ActionForm>
                                 )
                             ) : (
-                                <form action={borrowAction}>
+                                <ActionForm action={borrowAction} successMessage="Item borrowed successfully.">
                                     <Button type="submit">Borrow</Button>
-                                </form>
+                                </ActionForm>
                             )}
                         </div>
                     </>
@@ -109,7 +117,7 @@ export default async function SubItemDetailPage({ params }: { params: Promise<{ 
             </Card>
             <div className={styles.section}>
                 <h2 className={styles.sectionTitle}>Reserve this item</h2>
-                <form action={reserveAction} className={styles.form}>
+                <ActionForm action={reserveAction} successMessage="Reservation created successfully." className={styles.form}>
                     <label className={styles.field}>
                         Start
                         <input type="datetime-local" name="start" required />
@@ -123,7 +131,7 @@ export default async function SubItemDetailPage({ params }: { params: Promise<{ 
                         <input type="text" name="notes" />
                     </label>
                     <Button type="submit">Reserve</Button>
-                </form>
+                </ActionForm>
             </div>
             <a href="/reservations" className={styles.footerLink}>
                 View my reservations

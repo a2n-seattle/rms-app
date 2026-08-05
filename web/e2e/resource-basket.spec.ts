@@ -45,6 +45,10 @@ test("borrow via the resource basket's default all-selected state", async ({ pag
     ])
 
     await expect(page.getByText(TEST_EMAIL!)).toBeVisible()
+    // GH-356: the borrow/reserve forms stay mounted in place across the page's revalidation
+    // (unlike items/[id]/[subId]'s borrow/return toggle), so the inline success indicator is
+    // reliably visible here.
+    await expect(page.getByRole("status")).toContainText("borrowed successfully")
 
     // Clean up: return via the sub-item page so other specs sharing this
     // fixture item see it available again.

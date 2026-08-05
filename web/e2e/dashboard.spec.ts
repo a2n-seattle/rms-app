@@ -33,11 +33,12 @@ test("reserve, see upcoming alert, borrow from it, see it under Currently Borrow
     // chance of drawing an overlapping random start on retry, since only a
     // handful of non-overlapping 1-hour slots exist in a ~60-minute range.
     // That's what actually caused this test to fail in CI: CreateReservation
-    // legitimately 400s on the overlap, and nothing catches that inside the
-    // reserveAction Server Action, so it surfaces as an opaque 500 (RSC
-    // error digest) instead of the validation error itself. A 30-395 day
-    // spread makes any such collision, across retries or across separate CI
-    // runs sharing this same item, astronomically unlikely -- still
+    // legitimately 400s on the overlap. As of GH-356, reserveAction catches
+    // that and returns an inline error instead of crashing (see
+    // borrow-conflict.spec.ts for a dedicated test of that path) -- this
+    // test still avoids the collision entirely via the wide 30-395 day
+    // spread, since a caught-and-displayed conflict is still a failed
+    // reservation as far as this test's own assertions are concerned. Still
     // "upcoming" either way, since only startTime > now matters for that.
     const notes = `e2e-dashboard-${Date.now()}`
     const offsetDays = 30 + Math.floor(Math.random() * 365)
