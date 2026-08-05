@@ -24,13 +24,16 @@ test("reserve, see upcoming alert, borrow from it, see it under Currently Borrow
 
     await page.goto(`/items/${encodeURIComponent(TEST_ITEM_ID!)}`)
 
-    // Reserve starting a few seconds from now so it's already "upcoming"
-    // (startTime in the future) by the time the dashboard loads, but soon
-    // enough the test doesn't have to wait long. Ends far in the future
-    // so it doesn't collide with other e2e specs' reservations on the same
-    // item (see reservations.spec.ts's comment on the same constraint).
+    // Reserve starting several minutes from now -- far enough out that it's
+    // still "upcoming" (startTime in the future) for the whole duration of
+    // this test's polling below, not just at creation time. A too-tight
+    // window (e.g. 10s) can tick past `now` before the poll below ever
+    // succeeds, since each poll iteration does a full page.goto round
+    // trip. Ends far in the future so it doesn't collide with other e2e
+    // specs' reservations on the same item (see reservations.spec.ts's
+    // comment on the same constraint).
     const notes = `e2e-dashboard-${Date.now()}`
-    const start = new Date(Date.now() + 10 * 1000)
+    const start = new Date(Date.now() + 5 * 60 * 1000)
     const end = new Date(Date.now() + (30 + Math.floor(Math.random() * 365)) * 24 * 60 * 60 * 1000)
     const toLocalInputValue = (d: Date) => d.toISOString().slice(0, 16)
 
