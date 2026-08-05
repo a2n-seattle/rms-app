@@ -29,6 +29,7 @@ export interface ItemsSchema {
     history: string[]
     schedule: string[]
     notes: string
+    borrowGroupId?: string
 }
 
 export interface GetItemResult {
@@ -60,6 +61,7 @@ export interface ReturnItemInput {
     ids?: string[]
     borrower?: string
     notes?: string
+    conditions?: { [itemId: string]: string }
 }
 
 export interface ScheduleSchema {
@@ -151,6 +153,7 @@ export interface HistorySchema {
     action: "borrow" | "return"
     notes: string
     timestamp: number
+    condition?: string
 }
 
 export interface ListHistoryInput {
@@ -192,3 +195,11 @@ export interface GetBatchDetailedEntry {
 }
 
 export type GetBatchResult = GetBatchDetailedEntry[]
+
+export interface GetBorrowGroupInput {
+    borrowGroupId?: string
+}
+
+export interface GetBorrowGroupResult {
+    items: ItemsSchema[]
+}

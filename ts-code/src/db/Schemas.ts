@@ -35,6 +35,11 @@ export interface MainSchema {
  * @param returnTime Time item was last returned (epoch milliseconds). 0 while currently borrowed.
  * @param history List of entries in the history table
  * @param schedule List of entries in the schedule table [TODO: Implement Schedule]
+ * @param borrowGroupId The schedule id BorrowFromSchedule consumed to borrow this item, if
+ *   currently borrowed via that path (set on borrow, cleared on return). Lets the batched
+ *   return flow look up "everything borrowed together" without reconstructing it from the
+ *   append-only history log. Optional since items borrowed via the older direct BorrowItem
+ *   path (no reservation involved) never get one.
  */
 export const ITEMS_TABLE: string = process.env.STORAGE_ITEMS_NAME
 export interface ItemsSchema {
@@ -46,7 +51,8 @@ export interface ItemsSchema {
     returnTime: number,
     history: string[],
     schedule: string[],
-    notes: string
+    notes: string,
+    borrowGroupId?: string
 }
 
 export const TAGS_TABLE: string = process.env.STORAGE_TAGS_NAME
@@ -70,6 +76,9 @@ export interface BatchSchema {
  * @param action Either borrow or return the specified.
  * @param notes Optional notes about this action.
  * @param timestamp Time when item was created (in epoch milliseconds)
+ * @param condition Optional condition notes recorded on a "return" action (e.g. "cracked
+ *   screen", "missing a leg") -- surfaced in the History tab so damage is visible after the
+ *   fact. Never set on "borrow" entries.
  */
 export const HISTORY_TABLE: string = process.env.STORAGE_HISTORY_NAME
 export interface HistorySchema {
@@ -79,7 +88,8 @@ export interface HistorySchema {
     borrower: string,
     action: "borrow" | "return",
     notes: string,
-    timestamp: number
+    timestamp: number,
+    condition?: string
 }
 
 /**

@@ -210,6 +210,7 @@ export default async function DashboardPage({
                                     <th>Action</th>
                                     <th>When</th>
                                     <th>Notes</th>
+                                    <th>Condition</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -226,6 +227,7 @@ export default async function DashboardPage({
                                         <td>{entry.action}</td>
                                         <td>{new Date(entry.timestamp).toLocaleString()}</td>
                                         <td className={styles.notes}>{entry.notes || "—"}</td>
+                                        <td className={styles.notes}>{entry.condition || "—"}</td>
                                     </tr>
                                 ))}
                             </tbody>

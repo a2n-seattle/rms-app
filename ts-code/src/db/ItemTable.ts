@@ -179,21 +179,31 @@ export class ItemTable {
 
     /**
      * Special update function, specific for changing the borrower of a item.
+     *
+     * @param borrowGroupId On "borrow", the schedule id BorrowFromSchedule consumed to borrow
+     *   this item (if any) -- recorded on the item so a later batched return can look up
+     *   everything borrowed together. Cleared automatically on "return". Ignored (has no
+     *   effect) when action is "return".
+     * @param condition On "return", optional condition notes to record on the history entry
+     *   (e.g. "cracked screen"). Ignored when action is "borrow".
      */
     public changeBorrower(
         id: string,
         borrower: string,
         action: "borrow" | "return",
-        notes: string
+        notes: string,
+        borrowGroupId?: string,
+        condition?: string
     ) {
-        return this.updateBorrowStatus(id, borrower, action)
-            .then((name: string) => this.createHistoryEntry(name, id, borrower, action, notes))
+        return this.updateBorrowStatus(id, borrower, action, borrowGroupId)
+            .then((name: string) => this.createHistoryEntry(name, id, borrower, action, notes, condition))
     }
 
     private updateBorrowStatus(
         id: string,
         borrower: string,
-        action: "borrow" | "return"
+        action: "borrow" | "return",
+        borrowGroupId?: string
     ): Promise<string> {
         const expectedBorrower: string = (action === "borrow") ? "" : borrower
         const nextBorrower: string = (action === "borrow") ? borrower : ""
@@ -218,6 +228,9 @@ export class ItemTable {
                     .then(() => (action === "borrow")
                         ? this.setItemField(id, "borrowTime", curEpochMs).then(() => this.setItemField(id, "returnTime", 0))
                         : this.setItemField(id, "returnTime", curEpochMs))
+                    .then(() => (action === "borrow" && borrowGroupId)
+                        ? this.setItemField(id, "borrowGroupId", borrowGroupId)
+                        : (action === "return" ? this.removeItemField(id, "borrowGroupId") : Promise.resolve()))
                     .then(() => entry.name)
             })
     }
@@ -256,6 +269,20 @@ export class ItemTable {
         return this.client.update(updateParams)
     }
 
+    private removeItemField(id: string, key: string): Promise<any> {
+        const updateParams: UpdateCommandInput = {
+            TableName: ITEMS_TABLE,
+            Key: {
+                "id": id
+            },
+            UpdateExpression: "REMOVE #key",
+            ExpressionAttributeNames: {
+                "#key": key
+            }
+        }
+        return this.client.update(updateParams)
+    }
+
     /**
      * Create new entry in borrow/return history table
      */
@@ -264,7 +291,8 @@ export class ItemTable {
         id: string,
         borrower: string,
         action: "borrow" | "return",
-        notes: string
+        notes: string,
+        condition?: string
     ): Promise<PutCommandOutput> {
         const curEpochMs: number = Date.now()
         const key: string = `${curEpochMs}-${id}`
@@ -275,7 +303,8 @@ export class ItemTable {
             borrower: borrower,
             action: action,
             notes: notes,
-            timestamp: curEpochMs
+            timestamp: curEpochMs,
+            ...(action === "return" && condition ? { condition } : {})
         }
         const addHistoryParams: PutCommandInput = {
             TableName: HISTORY_TABLE,

@@ -19,6 +19,40 @@ test('will return item correctly when id borrowed', async () => {
     expect(dbClient.getDB()).toEqual(DBSeed.ONE_NAME_RETURNED)
 })
 
+test('will record a per-item condition note on the history entry when provided', async () => {
+    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.ONE_NAME_BORROWED)
+    const api: ReturnItem = new ReturnItem(dbClient)
+
+    Date.now = jest.fn(() => TestTimestamps.RETURN_ITEM)
+
+    await api.execute({
+        ids: [TestConstants.ITEM_ID],
+        borrower: TestConstants.BORROWER,
+        notes: TestConstants.NOTES_2,
+        conditions: { [TestConstants.ITEM_ID]: "cracked screen" }
+    })
+
+    const historyKey = `${TestTimestamps.RETURN_ITEM}-${TestConstants.ITEM_ID}`
+    await expect(dbClient.getDB().history[historyKey]).toMatchObject({ condition: "cracked screen" })
+})
+
+test('will not record a condition note for an item missing from the conditions map', async () => {
+    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.ONE_NAME_BORROWED)
+    const api: ReturnItem = new ReturnItem(dbClient)
+
+    Date.now = jest.fn(() => TestTimestamps.RETURN_ITEM)
+
+    await api.execute({
+        ids: [TestConstants.ITEM_ID],
+        borrower: TestConstants.BORROWER,
+        notes: TestConstants.NOTES_2,
+        conditions: {}
+    })
+
+    const historyKey = `${TestTimestamps.RETURN_ITEM}-${TestConstants.ITEM_ID}`
+    expect(dbClient.getDB().history[historyKey].condition).toBeUndefined()
+})
+
 test('will fail to return item when item is not borrowed', async () => {
     const dbClient: LocalDBClient = new LocalDBClient(DBSeed.ONE_NAME)
     const api: ReturnItem = new ReturnItem(dbClient)

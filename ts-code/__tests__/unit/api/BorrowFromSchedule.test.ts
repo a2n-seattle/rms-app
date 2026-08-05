@@ -18,7 +18,16 @@ test('will borrow item correctly when schedule id exists', async () => {
             notes: TestConstants.NOTES
         })
     ).resolves.toEqual(`Successfully borrowed items from schedule '${scheduleId}'.`)
-    expect(dbClient.getDB()).toEqual(DBSeed.TWO_NAMES_ONE_BATCH_BORROWED)
+
+    // Every item borrowed from this schedule now also records the
+    // schedule's own id as borrowGroupId (see ItemTable.changeBorrower) --
+    // assert per-field with toMatchObject rather than a whole-DB toEqual
+    // against the raw seed constant, since that constant predates this
+    // field.
+    const db = dbClient.getDB()
+    expect(db.items[TestConstants.ITEM_ID]).toMatchObject({ borrowGroupId: scheduleId })
+    expect(db.items[TestConstants.ITEM_ID_2]).toMatchObject({ borrowGroupId: scheduleId })
+    expect(db.schedule).toEqual({})
 })
 
 
