@@ -1,19 +1,19 @@
 import { MAIN_TABLE, MainSchema } from "../db/Schemas"
-import { encodePageToken, decodePageToken } from "../db/PageToken"
+import { decodePageToken } from "../db/PageToken"
+import { scanUntilLimit } from "../db/scanUntilLimit"
 import { DBClient } from "../injection/db/DBClient"
 import { MetricsClient } from "../injection/metrics/MetricsClient"
 import { emitAPIMetrics } from "../metrics/MetricsHelper"
-import { ScanCommandInput, ScanCommandOutput } from "@aws-sdk/lib-dynamodb"
+import { ScanCommandInput } from "@aws-sdk/lib-dynamodb"
 
 const DEFAULT_PAGE_SIZE = 25
 
 /**
  * Lists item types owned by a given Cognito user (matched against
  * `MainSchema.ownerId`, resolved at item-creation time -- see AddItem.ts's
- * owner-by-email Cognito lookup), paginated. Scan+FilterExpression on
- * MainTable, same shape/caveats as ScheduleTable.listByBorrower
- * (FilterExpression applies after Limit, so a short/empty page doesn't
- * mean no more data - keep paging until nextPageToken is undefined).
+ * owner-by-email Cognito lookup), paginated via scanUntilLimit (see
+ * db/scanUntilLimit.ts for the Scan+FilterExpression pagination gotcha it
+ * works around).
  *
  * Items whose owner never resolved to a real Cognito user (a room, "the
  * church", etc. -- `ownerId` left unset) never show up here.
@@ -47,11 +47,7 @@ export class ListMyOwnedItems {
                             ...(input.pageToken ? { ExclusiveStartKey: decodePageToken(input.pageToken) } : {})
                         }
 
-                        return this.client.scan(params)
-                            .then((output: ScanCommandOutput) => ({
-                                items: (output.Items ?? []) as MainSchema[],
-                                nextPageToken: output.LastEvaluatedKey ? encodePageToken(output.LastEvaluatedKey) : undefined
-                            }))
+                        return scanUntilLimit<MainSchema>(this.client, params, input.limit ?? DEFAULT_PAGE_SIZE)
                     })
             },
             ListMyOwnedItems.NAME, this.metrics

@@ -53,3 +53,25 @@ test('will fail when borrower is missing', async () => {
 
     await expect(api.execute({})).rejects.toThrow("Missing required field 'borrower'")
 })
+
+test('will find a match scanned after more than `limit` non-matching items (regression, GH-357)', async () => {
+    // With limit: 1, each raw Scan page only reads 1 item -- "a-nomatch" and "b-nomatch" (sorted
+    // before "z-match") are scanned across two empty-of-matches pages before the real match is
+    // found, exercising the exact "short page, but more data remains" gotcha this guards against.
+    const seed: any = {
+        main: {},
+        items: {
+            "a-nomatch": { id: "a-nomatch", familyId: "f", name: "a-nomatch", notes: "", borrower: "someone-else", borrowTime: 0, returnTime: 0, history: [], schedule: [] },
+            "b-nomatch": { id: "b-nomatch", familyId: "f", name: "b-nomatch", notes: "", borrower: "someone-else", borrowTime: 0, returnTime: 0, history: [], schedule: [] },
+            "z-match": { id: "z-match", familyId: "f", name: "z-match", notes: "", borrower: TestConstants.BORROWER, borrowTime: 0, returnTime: 0, history: [], schedule: [] }
+        },
+        batch: {}, tags: {}, history: {}, schedule: {}, transactions: {}, user: {}
+    }
+    const dbClient: LocalDBClient = new LocalDBClient(seed)
+    const api: ListMyBorrowedItems = new ListMyBorrowedItems(dbClient)
+
+    await expect(api.execute({ borrower: TestConstants.BORROWER, limit: 1 })).resolves.toEqual({
+        items: [seed.items["z-match"]],
+        nextPageToken: undefined
+    })
+})

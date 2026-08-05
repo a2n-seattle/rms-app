@@ -36,7 +36,20 @@ const TAGS_TABLE = "tags-alpha"
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
+// These tables are provisioned at 1 RCU/1 WCU (see resources/seeds' live main-alpha config) --
+// a burst of back-to-back writes throttles almost immediately, so pace every write.
+const WRITE_DELAY_MS = 1100
+
 const client = DynamoDBDocumentClient.from(new DynamoDBClient({ region: REGION }))
+
+function sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function paced<T>(fn: () => Promise<T>): Promise<T> {
+    await sleep(WRITE_DELAY_MS)
+    return fn()
+}
 
 async function scanAll(tableName: string): Promise<Record<string, any>[]> {
     const items: Record<string, any>[] = []
@@ -55,8 +68,10 @@ async function migrateMain(): Promise<Map<string, string>> {
 
     for (const row of rows) {
         if (UUID_RE.test(row.id) && row.nameKey) {
-            // Already migrated.
-            oldToNew.set(row.id, row.id)
+            // Already migrated in a prior (possibly interrupted) run -- map by the
+            // preserved old name (nameKey), not by the row's current (new) id, so
+            // migrateItems/migrateTags's lookups by old name still resolve.
+            oldToNew.set(row.nameKey, row.id)
             continue
         }
 
@@ -71,8 +86,8 @@ async function migrateMain(): Promise<Map<string, string>> {
             name: displayName ?? row.name,
         }
 
-        await client.send(new PutCommand({ TableName: MAIN_TABLE, Item: newRow }))
-        await client.send(new DeleteCommand({ TableName: MAIN_TABLE, Key: { id: row.id } }))
+        await paced(() => client.send(new PutCommand({ TableName: MAIN_TABLE, Item: newRow })))
+        await paced(() => client.send(new DeleteCommand({ TableName: MAIN_TABLE, Key: { id: row.id } })))
         console.log(`main: ${row.id} -> ${newId}`)
     }
 
@@ -95,7 +110,7 @@ async function migrateItems(mainOldToNew: Map<string, string>): Promise<void> {
             continue
         }
 
-        await client.send(new UpdateCommand({
+        await paced(() => client.send(new UpdateCommand({
             TableName: ITEMS_TABLE,
             Key: { id: row.id },
             UpdateExpression: "SET familyId = :familyId, #name = :name REMOVE friendlyName",
@@ -104,7 +119,7 @@ async function migrateItems(mainOldToNew: Map<string, string>): Promise<void> {
                 ":familyId": familyId,
                 ":name": row.friendlyName ?? row.id,
             },
-        }))
+        })))
         console.log(`item ${row.id}: familyId=${familyId}`)
     }
 }
@@ -119,12 +134,12 @@ async function migrateTags(mainOldToNew: Map<string, string>): Promise<void> {
             continue
         }
 
-        await client.send(new UpdateCommand({
+        await paced(() => client.send(new UpdateCommand({
             TableName: TAGS_TABLE,
             Key: { id: row.id },
             UpdateExpression: "SET val = :val",
             ExpressionAttributeValues: { ":val": newVal },
-        }))
+        })))
         console.log(`tag ${row.id}: val -> ${JSON.stringify(newVal)}`)
     }
 }
@@ -140,8 +155,8 @@ async function migrateBatch(): Promise<void> {
         const newId = randomUUID()
         const newRow = { ...row, id: newId, nameKey: row.id, name: row.id }
 
-        await client.send(new PutCommand({ TableName: BATCH_TABLE, Item: newRow }))
-        await client.send(new DeleteCommand({ TableName: BATCH_TABLE, Key: { id: row.id } }))
+        await paced(() => client.send(new PutCommand({ TableName: BATCH_TABLE, Item: newRow })))
+        await paced(() => client.send(new DeleteCommand({ TableName: BATCH_TABLE, Key: { id: row.id } })))
         console.log(`batch: ${row.id} -> ${newId}`)
     }
 }
