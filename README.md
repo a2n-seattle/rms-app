@@ -20,7 +20,8 @@ verification) — this README only covers getting a working local setup.
 - **Node.js** (v20+; this repo has been developed against Node 26 — check
   `node --version`).
 - **AWS CLI** (`aws --version`), for interacting with the deployed `alpha`
-  environment.
+  environment. Not preinstalled on macOS — `brew install awscli` if
+  `aws --version` fails.
 - **GitHub CLI** (`gh --version`), for PRs/issues.
 
 ## Cloning and installing
@@ -94,9 +95,25 @@ policy" — don't use `ampx sandbox` to pre-verify).
 
 ## Frontend (`web/`): local dev
 
+`web/` imports a generated `web/amplify_outputs.json` (gitignored — it's
+build output, not source, per `amplify.yml`) for Cognito/API config. It
+doesn't exist on a fresh clone, and `npm run dev`/`build`/`test` in `web/`
+all fail without it (`Module not found: Can't resolve
+'@/amplify_outputs.json'`). Generate it from the repo root once
+`AWS_PROFILE=rms-alpha` is working (see "AWS CLI setup" above) and you have
+the deployed `alpha` environment's Amplify app id (ask a teammate, or find
+it via `aws amplify list-apps` — it's also stored as the
+`GEN2_AMPLIFY_APP_ID` GitHub Actions secret, but secret values aren't
+readable via `gh`):
+
+```bash
+npx ampx generate outputs --app-id <app-id> --branch alpha --out-dir web
+```
+
+Then:
+
 ```bash
 cd web
-cp .env.local.example .env.local   # sets AMPLIFY_APP_ORIGIN for local dev
 npm run dev          # start the Next.js dev server (http://localhost:3000)
 npm run test         # Jest + React Testing Library
 npm run test:e2e     # Playwright e2e, against a real deployed alpha environment
