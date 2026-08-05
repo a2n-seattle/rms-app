@@ -203,3 +203,8 @@ export interface GetBorrowGroupInput {
 export interface GetBorrowGroupResult {
     items: ItemsSchema[]
 }
+
+export interface ExtendReservationInput {
+    id?: string
+    newEndTime?: number
+}

@@ -55,3 +55,102 @@ test('create() ignores a stale schedule id left on an item after its Schedule ro
         )
     ).resolves.toEqual("new-id")
 })
+
+test('will reject create() when the new range fully contains an existing reservation', async () => {
+    // TWO_NAMES_ONE_BATCH_RESERVED already has a reservation on ITEM_ID
+    // running START_DATE..END_DATE. A new range starting well before and
+    // ending well after that window doesn't have either of its own
+    // endpoints inside the old range, so this only fails if the added
+    // containment clause in validateDate is present.
+    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.TWO_NAMES_ONE_BATCH_RESERVED)
+    const table: ScheduleTable = new ScheduleTable(dbClient)
+
+    await expect(
+        table.create(
+            "new-id",
+            TestConstants.BORROWER_2,
+            [TestConstants.ITEM_ID],
+            TestTimestamps.START_DATE - 100000,
+            TestTimestamps.END_DATE + 100000,
+            TestConstants.NOTES_2
+        )
+    ).rejects.toThrow(`Item ${TestConstants.ITEM_ID} is reserved starting ${TestTimestamps.START_DATE} and ending ${TestTimestamps.END_DATE}`)
+})
+
+test('updateEndTime will extend a reservation in place, preserving its id', async () => {
+    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.TWO_NAMES_ONE_BATCH_RESERVED)
+    const table: ScheduleTable = new ScheduleTable(dbClient)
+
+    const newEndTime = TestTimestamps.END_DATE + 100000
+    await expect(table.updateEndTime(TestConstants.RESERVATION_ID, newEndTime)).resolves.toEqual(TestConstants.RESERVATION_ID)
+
+    await expect(table.get(TestConstants.RESERVATION_ID)).resolves.toMatchObject({
+        id: TestConstants.RESERVATION_ID,
+        startTime: TestTimestamps.START_DATE,
+        endTime: newEndTime
+    })
+})
+
+test('updateEndTime will not conflict with its own pre-extension window', async () => {
+    // Extending RESERVED_SCHEDULE's own endTime shouldn't trip the overlap
+    // check against itself -- its own (pre-extension) window is still
+    // present in each item's schedule[] list at validation time and must
+    // be excluded.
+    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.TWO_NAMES_ONE_BATCH_RESERVED)
+    const table: ScheduleTable = new ScheduleTable(dbClient)
+
+    await expect(
+        table.updateEndTime(TestConstants.RESERVATION_ID, TestTimestamps.END_DATE + 1000)
+    ).resolves.toEqual(TestConstants.RESERVATION_ID)
+})
+
+test('updateEndTime will reject a new end time that conflicts with a different reservation', async () => {
+    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.TWO_NAMES_ONE_BATCH_RESERVED)
+    const table: ScheduleTable = new ScheduleTable(dbClient)
+
+    await table.create(
+        "other-schedule",
+        TestConstants.BORROWER_2,
+        [TestConstants.ITEM_ID],
+        TestTimestamps.END_DATE + 100000,
+        TestTimestamps.END_DATE + 200000,
+        TestConstants.NOTES_2
+    )
+
+    await expect(
+        table.updateEndTime(TestConstants.RESERVATION_ID, TestTimestamps.END_DATE + 150000)
+    ).rejects.toThrow(`Item ${TestConstants.ITEM_ID} is reserved starting ${TestTimestamps.END_DATE + 100000} and ending ${TestTimestamps.END_DATE + 200000}`)
+})
+
+test('updateEndTime will reject a new end time before the reservation start time', async () => {
+    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.TWO_NAMES_ONE_BATCH_RESERVED)
+    const table: ScheduleTable = new ScheduleTable(dbClient)
+
+    await expect(
+        table.updateEndTime(TestConstants.RESERVATION_ID, TestTimestamps.START_DATE - 1000)
+    ).rejects.toThrow(
+        `New end time ${TestTimestamps.START_DATE - 1000} must be after the reservation's start time ${TestTimestamps.START_DATE}`
+    )
+})
+
+test('updateEndTime will fail when the reservation does not exist', async () => {
+    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.EMPTY)
+    const table: ScheduleTable = new ScheduleTable(dbClient)
+
+    await expect(table.updateEndTime(TestConstants.RESERVATION_ID, TestTimestamps.END_DATE)).rejects.toThrow(
+        `Schedule ${TestConstants.RESERVATION_ID} doesn't exist.`
+    )
+})
+
+test('updateEndTime ignores a stale schedule id left on an item after its Schedule row was deleted out-of-band', async () => {
+    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.TWO_NAMES_ONE_BATCH_RESERVED)
+    // A second, unrelated stale reference on the same item, alongside the
+    // reservation actually being extended.
+    dbClient.getDB().items[TestConstants.ITEM_ID].schedule.push("stale-id")
+
+    const table: ScheduleTable = new ScheduleTable(dbClient)
+
+    await expect(
+        table.updateEndTime(TestConstants.RESERVATION_ID, TestTimestamps.END_DATE + 1000)
+    ).resolves.toEqual(TestConstants.RESERVATION_ID)
+})

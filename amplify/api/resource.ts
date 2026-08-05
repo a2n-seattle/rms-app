@@ -32,6 +32,7 @@ export interface ApiFunctions {
     listHistory: Function
     listBatches: Function
     getBorrowGroup: Function
+    extendReservation: Function
 }
 
 export function defineApiGateway(stack: Stack, userPool: IUserPool, functions: ApiFunctions): RestApi {
@@ -67,6 +68,7 @@ export function defineApiGateway(stack: Stack, userPool: IUserPool, functions: A
         ["list-history", functions.listHistory],
         ["list-batches", functions.listBatches],
         ["get-borrow-group", functions.getBorrowGroup],
+        ["extend-reservation", functions.extendReservation],
     ]
 
     routes.forEach(([path, fn]) => {

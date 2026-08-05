@@ -6,6 +6,7 @@ import { listOverdueItems } from "@/lib/api/listOverdueItems"
 import { listHistory } from "@/lib/api/listHistory"
 import { borrowFromSchedule } from "@/lib/api/borrowFromSchedule"
 import { deleteReservation } from "@/lib/api/deleteReservation"
+import { extendReservation } from "@/lib/api/extendReservation"
 import { revalidatePath } from "next/cache"
 import { Card } from "@/components/ui/Card"
 import { Table } from "@/components/ui/Table"
@@ -58,6 +59,18 @@ export default async function DashboardPage({
         }
         const scheduleId = formData.get("scheduleId") as string
         await deleteReservation(session.idToken, { id: scheduleId })
+        revalidatePath("/dashboard")
+    }
+
+    async function extendReservationAction(formData: FormData) {
+        "use server"
+        const session = await getSession()
+        if (!session) {
+            return
+        }
+        const scheduleId = formData.get("scheduleId") as string
+        const newEndTime = new Date(formData.get("newEndTime") as string).getTime()
+        await extendReservation(session.idToken, { id: scheduleId, newEndTime })
         revalidatePath("/dashboard")
     }
 
@@ -184,6 +197,7 @@ export default async function DashboardPage({
                                     <th>Start</th>
                                     <th>End</th>
                                     <th>Notes</th>
+                                    <th>Extend</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -193,6 +207,20 @@ export default async function DashboardPage({
                                         <td>{new Date(schedule.startTime).toLocaleString()}</td>
                                         <td>{new Date(schedule.endTime).toLocaleString()}</td>
                                         <td className={styles.notes}>{schedule.notes || "—"}</td>
+                                        <td>
+                                            <form action={extendReservationAction} className={styles.extendForm}>
+                                                <input type="hidden" name="scheduleId" value={schedule.id} />
+                                                <input
+                                                    type="datetime-local"
+                                                    name="newEndTime"
+                                                    required
+                                                    aria-label={`New end time for reservation ${schedule.id}`}
+                                                />
+                                                <Button type="submit" variant="secondary">
+                                                    Extend
+                                                </Button>
+                                            </form>
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
