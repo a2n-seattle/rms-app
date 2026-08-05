@@ -24,19 +24,24 @@ test("reserve, see upcoming alert, borrow from it, see it under Currently Borrow
 
     await page.goto(`/items/${encodeURIComponent(TEST_ITEM_ID!)}`)
 
-    // Reserve starting several minutes from now -- far enough out that it's
-    // still "upcoming" (startTime in the future) for the whole duration of
-    // this test's polling below, not just at creation time. A too-tight
-    // window (e.g. 10s) can tick past `now` before the poll below ever
-    // succeeds, since each poll iteration does a full page.goto round
-    // trip. A random start offset (not just a random end) matters here
-    // because a prior *failed* run of this exact test can leave an
-    // unconsumed, un-cancelled reservation behind on this shared item (see
-    // the cleanup step below, added specifically to stop that
-    // accumulation) -- randomizing start, not just end, keeps this run
-    // from colliding with any such leftover.
+    // Reserve starting far in the future (30-395 days out, matching
+    // reservations.spec.ts's proven randomization range) rather than a few
+    // minutes from now. A tight offset range combined with a 1-hour window
+    // means Playwright's automatic retry -- which re-runs this whole test,
+    // creating a *second* reservation within seconds of the first's
+    // leftover one if an assertion after creation fails -- has a very high
+    // chance of drawing an overlapping random start on retry, since only a
+    // handful of non-overlapping 1-hour slots exist in a ~60-minute range.
+    // That's what actually caused this test to fail in CI: CreateReservation
+    // legitimately 400s on the overlap, and nothing catches that inside the
+    // reserveAction Server Action, so it surfaces as an opaque 500 (RSC
+    // error digest) instead of the validation error itself. A 30-395 day
+    // spread makes any such collision, across retries or across separate CI
+    // runs sharing this same item, astronomically unlikely -- still
+    // "upcoming" either way, since only startTime > now matters for that.
     const notes = `e2e-dashboard-${Date.now()}`
-    const start = new Date(Date.now() + (5 + Math.floor(Math.random() * 60)) * 60 * 1000)
+    const offsetDays = 30 + Math.floor(Math.random() * 365)
+    const start = new Date(Date.now() + offsetDays * 24 * 60 * 60 * 1000)
     const end = new Date(start.getTime() + 60 * 60 * 1000)
     const toLocalInputValue = (d: Date) => d.toISOString().slice(0, 16)
 
