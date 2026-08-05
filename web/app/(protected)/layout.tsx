@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation"
+import Link from "next/link"
 import { getSession } from "@/lib/session"
 import { SignOutButton } from "@/components/SignOutButton"
 import themeStyles from "@/components/ui/theme.module.css"
@@ -23,6 +24,12 @@ export default async function ProtectedLayout({ children }: { children: React.Re
                     <a href="/reservations" className={styles.navLink}>
                         Reservations
                     </a>
+                    <a href="/return" className={styles.navLink}>
+                        Return
+                    </a>
+                    <Link href="/batches" className={styles.navLink}>
+                        Batches
+                    </Link>
                 </div>
                 <span className={styles.userInfo}>{session.name || session.email}</span>
                 <SignOutButton />

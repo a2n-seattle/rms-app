@@ -1,0 +1,16 @@
+.header {
+    margin-bottom: var(--space-lg);
+}
+
+.title {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.itemLink {
+    font-weight: 500;
+}
+
+.itemLink:hover {
+    color: var(--color-primary);
+}

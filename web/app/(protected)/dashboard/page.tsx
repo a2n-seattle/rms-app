@@ -120,28 +120,33 @@ export default async function DashboardPage({
                     (borrowed.items.length === 0 ? (
                         <p className={styles.empty}>Not currently borrowing anything.</p>
                     ) : (
-                        <Table>
-                            <thead>
-                                <tr>
-                                    <th>Item</th>
-                                    <th>Borrowed</th>
-                                    <th>Notes</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {borrowed.items.map((item) => (
-                                    <tr key={item.id}>
-                                        <td>
-                                            <a href={`/items/${encodeURIComponent(item.id)}`} className={styles.itemLink}>
-                                                {item.friendlyName || item.id}
-                                            </a>
-                                        </td>
-                                        <td>{item.borrowTime ? new Date(item.borrowTime).toLocaleString() : "—"}</td>
-                                        <td className={styles.notes}>{item.notes || "—"}</td>
+                        <>
+                            <a href="/return" className={styles.itemLink}>
+                                Return items
+                            </a>
+                            <Table>
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th>Borrowed</th>
+                                        <th>Notes</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </Table>
+                                </thead>
+                                <tbody>
+                                    {borrowed.items.map((item) => (
+                                        <tr key={item.id}>
+                                            <td>
+                                                <a href={`/items/${encodeURIComponent(item.id)}`} className={styles.itemLink}>
+                                                    {item.friendlyName || item.id}
+                                                </a>
+                                            </td>
+                                            <td>{item.borrowTime ? new Date(item.borrowTime).toLocaleString() : "—"}</td>
+                                            <td className={styles.notes}>{item.notes || "—"}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </Table>
+                        </>
                     ))}
 
                 {tab === "owned" &&

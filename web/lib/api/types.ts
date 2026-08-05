@@ -162,3 +162,32 @@ export interface ListHistoryResult {
     items: HistorySchema[]
     nextPageToken?: string
 }
+
+export interface BatchSchema {
+    id: string
+    val: string[]
+    groups: string[]
+}
+
+export interface ListBatchesInput {
+    limit?: number
+    pageToken?: string
+}
+
+export interface ListBatchesResult {
+    items: BatchSchema[]
+    nextPageToken?: string
+}
+
+export interface GetBatchInput {
+    name?: string
+}
+
+export interface GetBatchDetailedEntry {
+    id: string
+    name: string
+    owner: string
+    borrower: string
+}
+
+export type GetBatchResult = GetBatchDetailedEntry[]
