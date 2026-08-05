@@ -23,10 +23,25 @@ import { definePreSignUpFunction } from "../functions/pre-sign-up/resource"
  * documented, working alternative (AWS's own Pre Sign-up trigger docs,
  * and the common "Google Sign-In with an allowlist" pattern) is to
  * check the mapped `email` attribute's domain suffix instead -- `email`
- * is a real People API field and needs no custom attribute or extra
- * mapping: with loginWith.email enabled and no phone login, Amplify's
- * defineAuth automatically maps Google's email to the standard `email`
- * attribute already. See ts-code/src/handlers/auth/PreSignUp.ts.
+ * is a real People API field, auto-mapped to the standard `email`
+ * attribute by Amplify's defineAuth with no explicit attributeMapping
+ * entry needed. See ts-code/src/handlers/auth/PreSignUp.ts.
+ *
+ * `scopes: ["openid", "profile", "email"]` is required explicitly --
+ * the CDK/Amplify default for a Google IdP is `scopes: ["profile"]`
+ * only (confirmed via aws-cdk-lib's UserPoolIdentityProviderGoogleProps
+ * type), which does NOT include `email`. Without it, Google's OAuth
+ * consent never grants the email scope, so the People API call Cognito
+ * makes never returns an email field at all -- Cognito then rejects the
+ * whole sign-in before even reaching the PreSignUp trigger, with
+ * `error=invalid_request&error_description=attributes+required:+[email]`
+ * on the redirect back to the app (confirmed against a real failed
+ * sign-in attempt; zero Google-federated Cognito users and zero
+ * PreSignUp invocations existed at the time). `profile` supplies the
+ * `name` claim consumed by the `fullname` attributeMapping below;
+ * `openid` is included as the standard baseline scope for a Google
+ * sign-in flow even though Cognito's Google integration goes through
+ * the People API rather than an OIDC userinfo endpoint.
  *
  * loginWith.email stays enabled even though real users only ever see a
  * Google button (web/app/login/page.tsx) -- this pool-level setting is
@@ -76,6 +91,7 @@ export const auth = defineAuth({
             google: {
                 clientId: secret("GOOGLE_CLIENT_ID"),
                 clientSecret: secret("GOOGLE_CLIENT_SECRET"),
+                scopes: ["openid", "profile", "email"],
                 attributeMapping: {
                     fullname: "name",
                 },
