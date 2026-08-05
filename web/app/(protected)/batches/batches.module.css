@@ -1,0 +1,30 @@
+.header {
+    margin-bottom: var(--space-lg);
+}
+
+.title {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.empty {
+    color: var(--color-text-muted);
+    padding: var(--space-md) 0;
+}
+
+.batchLink {
+    font-weight: 500;
+}
+
+.batchLink:hover {
+    color: var(--color-primary);
+}
+
+.footer {
+    margin-top: var(--space-lg);
+}
+
+.loadMore {
+    color: var(--color-primary);
+    font-weight: 500;
+}

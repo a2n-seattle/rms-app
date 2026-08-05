@@ -30,6 +30,7 @@ export interface ApiFunctions {
     listUpcomingReservations: Function
     listOverdueItems: Function
     listHistory: Function
+    listBatches: Function
 }
 
 export function defineApiGateway(stack: Stack, userPool: IUserPool, functions: ApiFunctions): RestApi {
@@ -63,6 +64,7 @@ export function defineApiGateway(stack: Stack, userPool: IUserPool, functions: A
         ["list-upcoming-reservations", functions.listUpcomingReservations],
         ["list-overdue-items", functions.listOverdueItems],
         ["list-history", functions.listHistory],
+        ["list-batches", functions.listBatches],
     ]
 
     routes.forEach(([path, fn]) => {
