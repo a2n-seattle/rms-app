@@ -75,14 +75,27 @@ test("reserve, see upcoming alert, borrow from it, see it under Currently Borrow
     ])
 
     // BorrowFromSchedule deletes the schedule as part of consuming it, so
-    // there's nothing left to clean up on success -- if an assertion above
-    // this point throws instead, the reservation is left dangling on the
-    // shared test item. There's no practical afterEach hook here (the
+    // there's nothing left to clean up on that front -- if an assertion
+    // above this point throws instead, the reservation is left dangling on
+    // the shared test item. There's no practical afterEach hook here (the
     // reservation's schedule id isn't otherwise exposed to the test), so
-    // this is accepted as a known, narrow gap rather than over-engineered
-    // away -- a failed run's leftover reservation only risks a future
-    // *dashboard.spec.ts* run colliding on the exact same random window,
-    // which the randomized start above already makes unlikely.
+    // that part is accepted as a known, narrow gap rather than
+    // over-engineered away -- a failed run's leftover reservation only
+    // risks a future *dashboard.spec.ts* run colliding on the exact same
+    // random window, which the randomized start above already makes
+    // unlikely.
     await page.goto("/dashboard?tab=borrowed")
     await expect(page.getByText(TEST_ITEM_ID!)).toBeVisible()
+
+    // Unlike the reservation above, a successful borrow here has no
+    // automatic cleanup at all -- leaving the shared test item borrowed for
+    // every other spec/run that touches it (confirmed in CI: this left
+    // golden-path.spec.ts and any later re-run of this file finding no
+    // "Borrow" button because the item was already borrowed by this
+    // test). Return it via the sub-item page's direct-return form,
+    // mirroring golden-path.spec.ts/resource-basket.spec.ts's own
+    // cleanup, so this test doesn't leave the item unusable afterward.
+    await page.goto(`/items/${encodeURIComponent(TEST_ITEM_ID!)}`)
+    await page.getByRole("button", { name: "Return" }).click()
+    await expect(page.getByText("(available)")).toBeVisible()
 })
