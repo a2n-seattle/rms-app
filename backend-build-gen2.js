@@ -37,7 +37,15 @@ const API_NAMES = [
                     "GetReservation",
                     "GetBatch",
                     "ListItems",
-                    "ListReservations"
+                    "ListReservations",
+                    "ListMyOwnedItems",
+                    "ListMyBorrowedItems",
+                    "ListUpcomingReservations",
+                    "ListOverdueItems",
+                    "ListHistory",
+                    "ListBatches",
+                    "GetBorrowGroup",
+                    "ExtendReservation"
 ]
 
 function kebabCase(name) {
