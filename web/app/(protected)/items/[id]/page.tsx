@@ -1,14 +1,14 @@
+import { redirect } from "next/navigation"
 import { getSession } from "@/lib/session"
 import { getItem } from "@/lib/api/getItem"
-import { borrowItem } from "@/lib/api/borrowItem"
-import { returnItem } from "@/lib/api/returnItem"
 import { createReservation } from "@/lib/api/createReservation"
+import { borrowFromSchedule } from "@/lib/api/borrowFromSchedule"
 import { revalidatePath } from "next/cache"
 import { Card } from "@/components/ui/Card"
-import { Button } from "@/components/ui/Button"
-import styles from "./item-detail.module.css"
+import { ResourceBasket } from "./ResourceBasket"
+import styles from "./resource-detail.module.css"
 
-export default async function ItemDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ResourceDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const session = await getSession()
     if (!session) {
         return null
@@ -16,26 +16,13 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
 
     const { id } = await params
     const { main, items } = await getItem(session.idToken, { key: id })
-    const instance = items.find((i) => i.id === id)
 
-    async function borrowAction() {
-        "use server"
-        const session = await getSession()
-        if (!session) {
-            return
-        }
-        await borrowItem(session.idToken, { ids: [id], borrower: session.email })
-        revalidatePath(`/items/${id}`)
-    }
-
-    async function returnAction() {
-        "use server"
-        const session = await getSession()
-        if (!session) {
-            return
-        }
-        await returnItem(session.idToken, { ids: [id], borrower: session.email })
-        revalidatePath(`/items/${id}`)
+    // GetItem resolves `key` against either a sub-item id or a family id;
+    // `main.id` is always the resolved family's id either way. If `id`
+    // itself isn't the family id, it was a sub-item id -- redirect to the
+    // nested sub-item route rather than showing the (single-item) basket.
+    if (id !== main.id) {
+        redirect(`/items/${encodeURIComponent(main.id)}/${encodeURIComponent(id)}`)
     }
 
     async function reserveAction(formData: FormData) {
@@ -44,17 +31,42 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
         if (!session) {
             return
         }
+        const ids = formData.getAll("ids") as string[]
         const startTime = new Date(formData.get("start") as string).getTime()
         const endTime = new Date(formData.get("end") as string).getTime()
         const notes = formData.get("notes") as string
 
         await createReservation(session.idToken, {
-            ids: [id],
+            ids,
             borrower: session.email,
             startTime,
             endTime,
             notes: notes || undefined,
         })
+        revalidatePath(`/items/${id}`)
+    }
+
+    async function borrowAction(formData: FormData) {
+        "use server"
+        const session = await getSession()
+        if (!session) {
+            return
+        }
+        const ids = formData.getAll("ids") as string[]
+        const endTime = new Date(formData.get("returnBy") as string).getTime()
+
+        // Per this repo's design: "borrow" is implemented as
+        // create-reservation-then-BorrowFromSchedule, even for an
+        // immediate borrow, so it goes through ScheduleTable.create's
+        // existing double-booking validation rather than a raw borrow
+        // call that could silently conflict with an existing reservation.
+        const scheduleId = await createReservation(session.idToken, {
+            ids,
+            borrower: session.email,
+            startTime: Date.now(),
+            endTime,
+        })
+        await borrowFromSchedule(session.idToken, { scheduleId })
         revalidatePath(`/items/${id}`)
     }
 
@@ -73,49 +85,9 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
                     <span className={styles.metaLabel}>Location</span>
                     <span>{main.location}</span>
                 </div>
-                {instance && (
-                    <>
-                        <div className={styles.metaRow}>
-                            <span className={styles.metaLabel}>Borrower</span>
-                            <span>{instance.borrower || "(available)"}</span>
-                        </div>
-                        <div className={styles.borrowRow}>
-                            {instance.borrower ? (
-                                <form action={returnAction}>
-                                    <Button type="submit" variant="secondary">
-                                        Return
-                                    </Button>
-                                </form>
-                            ) : (
-                                <form action={borrowAction}>
-                                    <Button type="submit">Borrow</Button>
-                                </form>
-                            )}
-                        </div>
-                    </>
-                )}
             </Card>
-            <div className={styles.section}>
-                <h2 className={styles.sectionTitle}>Reserve this item</h2>
-                <form action={reserveAction} className={styles.form}>
-                    <label className={styles.field}>
-                        Start
-                        <input type="datetime-local" name="start" required />
-                    </label>
-                    <label className={styles.field}>
-                        End
-                        <input type="datetime-local" name="end" required />
-                    </label>
-                    <label className={styles.field}>
-                        Notes
-                        <input type="text" name="notes" />
-                    </label>
-                    <Button type="submit">Reserve</Button>
-                </form>
-            </div>
-            <a href="/reservations" className={styles.footerLink}>
-                View my reservations
-            </a>
+
+            <ResourceBasket familyId={main.id} items={items} borrowAction={borrowAction} reserveAction={reserveAction} />
         </div>
     )
 }

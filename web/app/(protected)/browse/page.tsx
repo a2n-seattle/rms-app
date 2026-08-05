@@ -1,6 +1,6 @@
 import { getSession } from "@/lib/session"
 import { listItems } from "@/lib/api/listItems"
-import { Card } from "@/components/ui/Card"
+import { ResourcesTable } from "./ResourcesTable"
 import styles from "./browse.module.css"
 
 export default async function BrowsePage({
@@ -19,19 +19,9 @@ export default async function BrowsePage({
     return (
         <div>
             <div className={styles.header}>
-                <h1 className={styles.title}>Browse Items</h1>
+                <h1 className={styles.title}>Resources</h1>
             </div>
-            <Card>
-                <ul className={styles.list}>
-                    {items.map((item) => (
-                        <li key={item.id}>
-                            <a href={`/items/${encodeURIComponent(item.id)}`} className={styles.itemRow}>
-                                {item.displayName}
-                            </a>
-                        </li>
-                    ))}
-                </ul>
-            </Card>
+            <ResourcesTable items={items} />
             {nextPageToken && (
                 <div className={styles.footer}>
                     <a href={`/browse?page=${encodeURIComponent(nextPageToken)}`} className={styles.loadMore}>
