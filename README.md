@@ -100,13 +100,14 @@ build output, not source, per `amplify.yml`) for Cognito/API config. It
 doesn't exist on a fresh clone, and `npm run dev`/`build`/`test` in `web/`
 all fail without it (`Module not found: Can't resolve
 '@/amplify_outputs.json'`). Generate it from the repo root once
-`AWS_PROFILE=rms-alpha` is working (see "AWS CLI setup" above) and you have
-the deployed `alpha` environment's Amplify app id (ask a teammate, or find
-it via `aws amplify list-apps` — it's also stored as the
-`GEN2_AMPLIFY_APP_ID` GitHub Actions secret, but secret values aren't
-readable via `gh`):
+`AWS_PROFILE=rms-alpha` is working (see "AWS CLI setup" above):
 
 ```bash
+# find the app id — this account has more than one Amplify app, so look
+# for the one with an `alpha` branch, e.g.:
+#   aws amplify list-branches --app-id <candidate-id> --query "branches[].branchName"
+aws amplify list-apps --query "apps[].{id:appId,name:name}" --output table
+
 npx ampx generate outputs --app-id <app-id> --branch alpha --out-dir web
 ```
 
