@@ -54,8 +54,17 @@ test("reserve, see upcoming alert, borrow from it, see it under Currently Borrow
     ])
     // Fail loudly on a rejected reservation (e.g. a genuine overlap with
     // another leftover reservation) instead of silently polling for an
-    // "Upcoming" alert that was never actually created.
-    expect(createResponse.ok(), `create-reservation failed: ${await createResponse.text()}`).toBe(true)
+    // "Upcoming" alert that was never actually created. Only read the
+    // response body on the failure path -- a passing `expect(...)` call's
+    // message argument is still evaluated eagerly by JS regardless of the
+    // assertion's outcome, and by the time a *successful* create's
+    // response is read here the page may already have navigated away
+    // (the Server Action's own redirect/re-render races ahead), which
+    // throws a Playwright "response body not available" protocol error
+    // and fails an otherwise-passing run.
+    if (!createResponse.ok()) {
+        throw new Error(`create-reservation failed: ${await createResponse.text()}`)
+    }
 
     // ListUpcomingReservations scans+filters, eventually consistent --
     // poll rather than assert once (same caveat as reservations.spec.ts).
