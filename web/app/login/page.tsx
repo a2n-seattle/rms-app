@@ -3,10 +3,11 @@
 import { signInWithRedirect } from "aws-amplify/auth"
 import { Hub } from "aws-amplify/utils"
 import { useRouter } from "next/navigation"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 
 export default function LoginPage() {
     const router = useRouter()
+    const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
         // Real users only ever see this Google button -- no password form
@@ -18,6 +19,12 @@ export default function LoginPage() {
         const hubListener = Hub.listen("auth", ({ payload }) => {
             if (payload.event === "signInWithRedirect") {
                 router.replace("/browse")
+            } else if (payload.event === "signInWithRedirect_failure") {
+                // Surfaced because this failure mode was previously
+                // silent -- the OAuth redirect would complete and land
+                // back on /login with no visible error anywhere (not even
+                // the browser console), making it impossible to diagnose.
+                setError(payload.data?.error?.message ?? "Google sign-in failed")
             }
         })
         return hubListener
@@ -27,6 +34,7 @@ export default function LoginPage() {
         <div>
             <h1>RMS</h1>
             <button onClick={() => signInWithRedirect({ provider: "Google" })}>Sign in with Google</button>
+            {error && <p>{error}</p>}
         </div>
     )
 }
