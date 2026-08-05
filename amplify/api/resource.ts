@@ -29,6 +29,7 @@ export interface ApiFunctions {
     listMyBorrowedItems: Function
     listUpcomingReservations: Function
     listOverdueItems: Function
+    listHistory: Function
 }
 
 export function defineApiGateway(stack: Stack, userPool: IUserPool, functions: ApiFunctions): RestApi {
@@ -61,6 +62,7 @@ export function defineApiGateway(stack: Stack, userPool: IUserPool, functions: A
         ["list-my-borrowed-items", functions.listMyBorrowedItems],
         ["list-upcoming-reservations", functions.listUpcomingReservations],
         ["list-overdue-items", functions.listOverdueItems],
+        ["list-history", functions.listHistory],
     ]
 
     routes.forEach(([path, fn]) => {
