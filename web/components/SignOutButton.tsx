@@ -2,6 +2,7 @@
 
 import { signOut } from "aws-amplify/auth"
 import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/Button"
 
 export function SignOutButton() {
     const router = useRouter()
@@ -11,5 +12,9 @@ export function SignOutButton() {
         router.push("/login")
     }
 
-    return <button onClick={handleSignOut}>Sign out</button>
+    return (
+        <Button variant="secondary" onClick={handleSignOut}>
+            Sign out
+        </Button>
+    )
 }

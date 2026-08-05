@@ -1,0 +1,23 @@
+.badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 0.15rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: var(--color-bg);
+    color: var(--color-text-muted);
+    border: 1px solid var(--color-border);
+}
+
+.warning {
+    background: var(--color-alert-bg);
+    color: #7a5b0d;
+    border-color: var(--color-alert-border);
+}
+
+.danger {
+    background: var(--color-alert-overdue-bg);
+    color: #8f2d2d;
+    border-color: var(--color-alert-overdue-border);
+}

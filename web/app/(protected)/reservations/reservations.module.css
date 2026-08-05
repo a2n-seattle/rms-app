@@ -1,0 +1,24 @@
+.header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: var(--space-lg);
+}
+
+.title {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.notes {
+    color: var(--color-text-muted);
+}
+
+.footer {
+    margin-top: var(--space-lg);
+}
+
+.loadMore {
+    color: var(--color-primary);
+    font-weight: 500;
+}

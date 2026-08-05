@@ -1,5 +1,7 @@
 import { getSession } from "@/lib/session"
 import { listItems } from "@/lib/api/listItems"
+import { Card } from "@/components/ui/Card"
+import styles from "./browse.module.css"
 
 export default async function BrowsePage({
     searchParams,
@@ -16,15 +18,27 @@ export default async function BrowsePage({
 
     return (
         <div>
-            <h1>Browse Items</h1>
-            <ul>
-                {items.map((item) => (
-                    <li key={item.id}>
-                        <a href={`/items/${encodeURIComponent(item.id)}`}>{item.displayName}</a>
-                    </li>
-                ))}
-            </ul>
-            {nextPageToken && <a href={`/browse?page=${encodeURIComponent(nextPageToken)}`}>Load more</a>}
+            <div className={styles.header}>
+                <h1 className={styles.title}>Browse Items</h1>
+            </div>
+            <Card>
+                <ul className={styles.list}>
+                    {items.map((item) => (
+                        <li key={item.id}>
+                            <a href={`/items/${encodeURIComponent(item.id)}`} className={styles.itemRow}>
+                                {item.displayName}
+                            </a>
+                        </li>
+                    ))}
+                </ul>
+            </Card>
+            {nextPageToken && (
+                <div className={styles.footer}>
+                    <a href={`/browse?page=${encodeURIComponent(nextPageToken)}`} className={styles.loadMore}>
+                        Load more
+                    </a>
+                </div>
+            )}
         </div>
     )
 }
