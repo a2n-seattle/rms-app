@@ -60,6 +60,16 @@ export class ScheduleTable {
                                 return Promise.all((item.schedule.map((reservationId: string) => {
                                     return this.get(reservationId)
                                         .then((output: ScheduleSchema) => {
+                                        // An id in item.schedule[] can outlive its
+                                        // own Schedule row (e.g. the row was
+                                        // deleted directly, out-of-band, without
+                                        // going through this.delete()'s cleanup of
+                                        // this back-reference) -- skip a stale
+                                        // reference instead of crashing on
+                                        // undefined.startTime below.
+                                        if (!output) {
+                                            return
+                                        }
                                         if (this.validateDate(output.startTime, output.endTime, startTime, endTime)) {
                                             throw Error(`Item ${itemId} is reserved starting ${output.startTime} and ending ${output.endTime}`)
                                         }

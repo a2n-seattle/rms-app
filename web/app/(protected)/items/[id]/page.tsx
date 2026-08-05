@@ -4,6 +4,9 @@ import { borrowItem } from "@/lib/api/borrowItem"
 import { returnItem } from "@/lib/api/returnItem"
 import { createReservation } from "@/lib/api/createReservation"
 import { revalidatePath } from "next/cache"
+import { Card } from "@/components/ui/Card"
+import { Button } from "@/components/ui/Button"
+import styles from "./item-detail.module.css"
 
 export default async function ItemDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const session = await getSession()
@@ -57,40 +60,62 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
 
     return (
         <div>
-            <h1>{main.displayName}</h1>
-            <p>{main.description}</p>
-            <p>Owner: {main.owner}</p>
-            <p>Location: {main.location}</p>
-            {instance && (
-                <>
-                    <p>Borrower: {instance.borrower || "(available)"}</p>
-                    {instance.borrower ? (
-                        <form action={returnAction}>
-                            <button type="submit">Return</button>
-                        </form>
-                    ) : (
-                        <form action={borrowAction}>
-                            <button type="submit">Borrow</button>
-                        </form>
-                    )}
-                </>
-            )}
-            <h2>Reserve this item</h2>
-            <form action={reserveAction}>
-                <label>
-                    Start: <input type="datetime-local" name="start" required />
-                </label>
-                <label>
-                    End: <input type="datetime-local" name="end" required />
-                </label>
-                <label>
-                    Notes: <input type="text" name="notes" />
-                </label>
-                <button type="submit">Reserve</button>
-            </form>
-            <p>
-                <a href="/reservations">View my reservations</a>
-            </p>
+            <div className={styles.header}>
+                <h1 className={styles.title}>{main.displayName}</h1>
+                <p className={styles.description}>{main.description}</p>
+            </div>
+            <Card className={styles.metaCard}>
+                <div className={styles.metaRow}>
+                    <span className={styles.metaLabel}>Owner</span>
+                    <span>{main.owner}</span>
+                </div>
+                <div className={styles.metaRow}>
+                    <span className={styles.metaLabel}>Location</span>
+                    <span>{main.location}</span>
+                </div>
+                {instance && (
+                    <>
+                        <div className={styles.metaRow}>
+                            <span className={styles.metaLabel}>Borrower</span>
+                            <span>{instance.borrower || "(available)"}</span>
+                        </div>
+                        <div className={styles.borrowRow}>
+                            {instance.borrower ? (
+                                <form action={returnAction}>
+                                    <Button type="submit" variant="secondary">
+                                        Return
+                                    </Button>
+                                </form>
+                            ) : (
+                                <form action={borrowAction}>
+                                    <Button type="submit">Borrow</Button>
+                                </form>
+                            )}
+                        </div>
+                    </>
+                )}
+            </Card>
+            <div className={styles.section}>
+                <h2 className={styles.sectionTitle}>Reserve this item</h2>
+                <form action={reserveAction} className={styles.form}>
+                    <label className={styles.field}>
+                        Start
+                        <input type="datetime-local" name="start" required />
+                    </label>
+                    <label className={styles.field}>
+                        End
+                        <input type="datetime-local" name="end" required />
+                    </label>
+                    <label className={styles.field}>
+                        Notes
+                        <input type="text" name="notes" />
+                    </label>
+                    <Button type="submit">Reserve</Button>
+                </form>
+            </div>
+            <a href="/reservations" className={styles.footerLink}>
+                View my reservations
+            </a>
         </div>
     )
 }
