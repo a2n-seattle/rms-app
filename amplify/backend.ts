@@ -19,6 +19,10 @@ import { defineGetReservationFunction } from "./functions/get-reservation/resour
 import { defineGetBatchFunction } from "./functions/get-batch/resource"
 import { defineListItemsFunction } from "./functions/list-items/resource"
 import { defineListReservationsFunction } from "./functions/list-reservations/resource"
+import { defineListMyOwnedItemsFunction } from "./functions/list-my-owned-items/resource"
+import { defineListMyBorrowedItemsFunction } from "./functions/list-my-borrowed-items/resource"
+import { defineListUpcomingReservationsFunction } from "./functions/list-upcoming-reservations/resource"
+import { defineListOverdueItemsFunction } from "./functions/list-overdue-items/resource"
 import { defineApiGateway } from "./api/resource"
 
 /**
@@ -59,6 +63,10 @@ const getReservationFn = defineGetReservationFunction(functionsStack, tables)
 const getBatchFn = defineGetBatchFunction(functionsStack, tables)
 const listItemsFn = defineListItemsFunction(functionsStack, tables)
 const listReservationsFn = defineListReservationsFunction(functionsStack, tables)
+const listMyOwnedItemsFn = defineListMyOwnedItemsFunction(functionsStack, tables)
+const listMyBorrowedItemsFn = defineListMyBorrowedItemsFunction(functionsStack, tables)
+const listUpcomingReservationsFn = defineListUpcomingReservationsFunction(functionsStack, tables)
+const listOverdueItemsFn = defineListOverdueItemsFunction(functionsStack, tables)
 defineSmsRouterFunction(functionsStack, tables)
 
 const apiStack = backend.createStack("ApiStack")
@@ -79,6 +87,10 @@ const api = defineApiGateway(apiStack, backend.auth.resources.userPool, {
     getBatch: getBatchFn,
     listItems: listItemsFn,
     listReservations: listReservationsFn,
+    listMyOwnedItems: listMyOwnedItemsFn,
+    listMyBorrowedItems: listMyBorrowedItemsFn,
+    listUpcomingReservations: listUpcomingReservationsFn,
+    listOverdueItems: listOverdueItemsFn,
 })
 
 // `ampx generate outputs` only surfaces values added via backend.addOutput
