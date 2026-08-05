@@ -4,7 +4,8 @@
             "id": "00000000-0000-0000-0000-000000000001",
             "description": "test description",
             "items": [
-                "123"
+                "123",
+                "12345"
             ],
             "tags": [
                 "tag1"
@@ -13,21 +14,8 @@
             "location": "test location",
             "batch": [],
             "nameKey": "test name",
-            "name": "Test Name"
-        },
-        "00000000-0000-0000-0000-000000000002": {
-            "id": "00000000-0000-0000-0000-000000000002",
-            "description": "test description 2",
-            "tags": [
-                "tag1",
-                "tag2"
-            ],
-            "items": [],
-            "owner": "test owner 2",
-            "location": "test location 2",
-            "batch": [],
-            "nameKey": "test name 2",
-            "name": "test name 2"
+            "name": "Test Name",
+            "ownerId": "test owner"
         }
     },
     "items": {
@@ -41,6 +29,17 @@
             "returnTime": 0,
             "familyId": "00000000-0000-0000-0000-000000000001",
             "name": "123"
+        },
+        "12345": {
+            "id": "12345",
+            "notes": "test note 2",
+            "borrower": "",
+            "history": [],
+            "schedule": [],
+            "borrowTime": 0,
+            "returnTime": 0,
+            "familyId": "00000000-0000-0000-0000-000000000001",
+            "name": "12345"
         }
     },
     "batch": {},
@@ -48,14 +47,7 @@
         "tag1": {
             "id": "tag1",
             "val": [
-                "00000000-0000-0000-0000-000000000001",
-                "00000000-0000-0000-0000-000000000002"
-            ]
-        },
-        "tag2": {
-            "id": "tag2",
-            "val": [
-                "00000000-0000-0000-0000-000000000002"
+                "00000000-0000-0000-0000-000000000001"
             ]
         }
     },

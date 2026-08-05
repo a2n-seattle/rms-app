@@ -11,6 +11,7 @@ const STORAGE_BATCH_NAME="batch"
 const STORAGE_TAGS_NAME="tags"
 const STORAGE_HISTORY_NAME="history"
 const STORAGE_TRANSACTIONS_NAME="transactions"
+const STORAGE_USER_NAME="user"
 
 // Compile Typescript
 exec("jest --json --outputFile=report.json --colors --testPathPattern='.*/unit/.*.test.js'",
@@ -23,7 +24,8 @@ exec("jest --json --outputFile=report.json --colors --testPathPattern='.*/unit/.
             STORAGE_BATCH_NAME,
             STORAGE_TAGS_NAME,
             STORAGE_HISTORY_NAME,
-            STORAGE_TRANSACTIONS_NAME
+            STORAGE_TRANSACTIONS_NAME,
+            STORAGE_USER_NAME
         }
     },
     (error, stdout, stderr) => {

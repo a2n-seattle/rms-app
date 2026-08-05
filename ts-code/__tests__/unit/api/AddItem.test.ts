@@ -3,11 +3,14 @@ import { MainTable } from "../../../src/db/MainTable"
 import { DBSeed, TestConstants} from "../../../__dev__/db/DBTestConstants"
 import { LocalDBClient } from "../../../__dev__/db/LocalDBClient"
 
+const originalGetUniqueId = AddItem.prototype.getUniqueId
+
 test('will add item correctly when name does not exist', async () => {
     const dbClient: LocalDBClient = new LocalDBClient(DBSeed.EMPTY)
     const api: AddItem = new AddItem(dbClient)
 
-    // Mock ID
+    // Mock IDs
+    MainTable.prototype["generateId"] = jest.fn(() => TestConstants.ID);
     AddItem.prototype.getUniqueId = jest.fn(() => Promise.resolve(TestConstants.ITEM_ID));
 
     await expect(
@@ -67,7 +70,8 @@ test('will add different name correctly when name already exists', async () => {
     const dbClient: LocalDBClient = new LocalDBClient(DBSeed.ONE_NAME)
     const api: AddItem = new AddItem(dbClient)
 
-    // Mock ID
+    // Mock IDs
+    MainTable.prototype["generateId"] = jest.fn(() => TestConstants.ID_2);
     AddItem.prototype.getUniqueId = jest.fn(() => Promise.resolve(TestConstants.ITEM_ID_2));
 
     await expect(
@@ -86,8 +90,9 @@ test('will add different name correctly when name already exists', async () => {
 test('will fail to add name when id is not unique', async () => {
     const dbClient: LocalDBClient = new LocalDBClient(DBSeed.ONE_NAME)
     const api: AddItem = new AddItem(dbClient)
-    
-    // Mock ID
+
+    // Mock IDs
+    MainTable.prototype["generateId"] = jest.fn(() => TestConstants.ID_2);
     AddItem.prototype.getUniqueId = jest.fn(() => Promise.resolve(TestConstants.ITEM_ID));
 
     await expect(
@@ -120,7 +125,7 @@ test('will not update main owner/location when adding item to existing name', as
         notes: TestConstants.NOTES_2
     })
 
-    await expect(mainTable.get(TestConstants.NAME)).resolves.toMatchObject({
+    await expect(mainTable.get(TestConstants.ID)).resolves.toMatchObject({
         owner: TestConstants.OWNER,
         location: TestConstants.LOCATION
     })
@@ -131,6 +136,7 @@ test('will add a room-type resource correctly', async () => {
     const api: AddItem = new AddItem(dbClient)
     const mainTable: MainTable = new MainTable(dbClient)
 
+    MainTable.prototype["generateId"] = jest.fn(() => TestConstants.ID);
     AddItem.prototype.getUniqueId = jest.fn(() => Promise.resolve(TestConstants.ITEM_ID));
 
     await api.execute({
@@ -143,7 +149,7 @@ test('will add a room-type resource correctly', async () => {
         type: "room"
     })
 
-    await expect(mainTable.get(TestConstants.NAME)).resolves.toMatchObject({ type: "room" })
+    await expect(mainTable.get(TestConstants.ID)).resolves.toMatchObject({ type: "room" })
 })
 
 test('will fail to add item when item name not passed in', async () => {
@@ -163,4 +169,14 @@ test('will fail to add item when item name not passed in', async () => {
         })
     ).rejects.toThrow("Missing required field 'name'")
     expect(dbClient.getDB()).toEqual(DBSeed.EMPTY)
+})
+
+test('will generate a UUID-format item id with no spaces for a multi-word name', async () => {
+    AddItem.prototype.getUniqueId = originalGetUniqueId
+    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.EMPTY)
+    const api: AddItem = new AddItem(dbClient)
+
+    const id = await api.getUniqueId()
+    expect(id).not.toMatch(/\s/)
+    expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)
 })

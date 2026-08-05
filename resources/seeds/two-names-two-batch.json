@@ -1,8 +1,7 @@
 {
     "main": {
-        "test name": {
-            "id": "test name",
-            "displayName": "Test Name",
+        "00000000-0000-0000-0000-000000000001": {
+            "id": "00000000-0000-0000-0000-000000000001",
             "description": "test description",
             "items": [
                 "123"
@@ -15,11 +14,12 @@
             "batch": [
                 "test batch",
                 "test batch 2"
-            ]
+            ],
+            "nameKey": "test name",
+            "name": "Test Name"
         },
-        "test name 2": {
-            "id": "test name 2",
-            "displayName": "test name 2",
+        "00000000-0000-0000-0000-000000000002": {
+            "id": "00000000-0000-0000-0000-000000000002",
             "description": "test description 2",
             "items": [
                 "12345"
@@ -32,70 +32,77 @@
             "location": "test location 2",
             "batch": [
                 "test batch"
-            ]
+            ],
+            "nameKey": "test name 2",
+            "name": "test name 2"
         }
     },
     "items": {
         "123": {
             "id": "123",
-            "name": "test name",
             "notes": "test note",
             "borrower": "",
             "history": [],
             "schedule": [],
-            "friendlyName": "123",
             "borrowTime": 0,
-            "returnTime": 0
+            "returnTime": 0,
+            "familyId": "00000000-0000-0000-0000-000000000001",
+            "name": "123"
         },
         "12345": {
             "id": "12345",
-            "name": "test name 2",
             "notes": "test note 2",
             "borrower": "",
             "history": [],
             "schedule": [],
-            "friendlyName": "12345",
             "borrowTime": 0,
-            "returnTime": 0
+            "returnTime": 0,
+            "familyId": "00000000-0000-0000-0000-000000000002",
+            "name": "12345"
         }
     },
     "batch": {
-        "test batch": {
-            "id": "test batch",
+        "00000000-0000-0000-0000-000000000101": {
+            "id": "00000000-0000-0000-0000-000000000101",
             "val": [
                 "123",
                 "12345"
             ],
             "groups": [
                 "group1"
-            ]
+            ],
+            "nameKey": "test batch",
+            "name": "test batch"
         },
-        "test batch 2": {
-            "id": "test batch 2",
+        "00000000-0000-0000-0000-000000000102": {
+            "id": "00000000-0000-0000-0000-000000000102",
             "val": [
                 "123"
             ],
             "groups": [
                 "group1"
-            ]
+            ],
+            "nameKey": "test batch 2",
+            "name": "test batch 2"
         }
     },
     "tags": {
         "tag1": {
             "id": "tag1",
             "val": [
-                "test name",
-                "test name 2"
+                "00000000-0000-0000-0000-000000000001",
+                "00000000-0000-0000-0000-000000000002"
             ]
         },
         "tag2": {
             "id": "tag2",
             "val": [
-                "test name 2"
+                "00000000-0000-0000-0000-000000000002"
             ]
         }
     },
     "history": {},
     "schedule": {},
-    "transactions": {}
+    "transactions": {},
+    "user": {}
 }

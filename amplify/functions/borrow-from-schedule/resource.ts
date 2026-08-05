@@ -17,6 +17,6 @@ export function defineBorrowFromScheduleFunction(stack: Stack, tables: RmsTables
         "BorrowFromSchedule",
         "handlers/api/BorrowFromSchedule.handler",
         tables,
-        ["main", "items", "tags", "batch", "history", "schedule"]
+        ["main", "items", "tags", "batch", "history", "schedule", "user"]
     )
 }

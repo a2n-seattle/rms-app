@@ -1,5 +1,7 @@
+import { MainTable } from "../db/MainTable"
 import { TagTable } from "../db/TagTable"
 import { TransactionsTable } from "../db/TransactionsTable"
+import { MainSchema } from "../db/Schemas"
 import { DBClient } from "../injection/db/DBClient"
 import { MetricsClient } from "../injection/metrics/MetricsClient"
 import { emitAPIMetrics } from "../metrics/MetricsHelper"
@@ -10,11 +12,13 @@ import { emitAPIMetrics } from "../metrics/MetricsHelper"
 export class UpdateTags {
     public static NAME: string = "update tags"
 
+    private readonly mainTable: MainTable
     private readonly tagTable: TagTable
     private readonly transactionsTable: TransactionsTable
     private readonly metrics?: MetricsClient
 
     public constructor(client: DBClient, metrics?: MetricsClient) {
+        this.mainTable = new MainTable(client)
         this.tagTable = new TagTable(client)
         this.transactionsTable = new TransactionsTable(client)
         this.metrics = metrics
@@ -45,7 +49,13 @@ export class UpdateTags {
         return emitAPIMetrics(
             () => {
                 return this.performAllFVAs(input)
-                    .then(() => this.tagTable.update(input.name, input.tags))
+                    .then(() => this.mainTable.getByNameConsistent(input.name))
+                    .then((entry: MainSchema) => {
+                        if (!entry) {
+                            throw Error(`Could not find '${input.name}' in the database.`)
+                        }
+                        return this.tagTable.update(entry.id, input.tags)
+                    })
                     .then(() => `Successfully updated tags for '${input.name}'`)
             },
             UpdateTags.NAME, this.metrics

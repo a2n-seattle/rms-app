@@ -1,12 +1,15 @@
 import { MAIN_TABLE, ITEMS_TABLE, ItemsSchema, HistorySchema, HISTORY_TABLE, MainSchema } from "./Schemas";
 import { DBClient } from "../injection/db/DBClient"
+import { MainTable } from "./MainTable"
 import { DeleteCommandInput, GetCommandInput, GetCommandOutput, PutCommandInput, PutCommandOutput, UpdateCommandInput } from "@aws-sdk/lib-dynamodb"
 
 export class ItemTable {
     private readonly client: DBClient
+    private readonly mainTable: MainTable
 
     public constructor(client: DBClient) {
         this.client = client
+        this.mainTable = new MainTable(client)
     }
 
     /**
@@ -14,9 +17,9 @@ export class ItemTable {
      */
     public create(
         id: string,
-        name: string,
+        familyId: string,
         notes: string,
-        friendlyName?: string
+        name?: string
     ): Promise<PutCommandOutput> {
         return this.get(id)
             .then((entry: ItemsSchema) => {
@@ -26,7 +29,7 @@ export class ItemTable {
                     const mainParams: UpdateCommandInput = {
                         TableName: MAIN_TABLE,
                         Key: {
-                            "id": name.toLowerCase()
+                            "id": familyId
                         },
                         UpdateExpression: "SET #key = list_append(#key, :val)",
                         ExpressionAttributeNames: {
@@ -39,8 +42,8 @@ export class ItemTable {
 
                     const item: ItemsSchema = {
                         id: id,
-                        name: name.toLowerCase(),
-                        friendlyName: friendlyName ?? id,
+                        familyId: familyId,
+                        name: name ?? id,
                         notes: notes,
                         borrower: "",
                         borrowTime: 0,
@@ -61,7 +64,7 @@ export class ItemTable {
     }
 
     /**
-     * Delete Item if exists. Returns corresponding name of item
+     * Delete Item if exists. Returns corresponding family id of item
      */
     public delete(
         id: string
@@ -79,7 +82,7 @@ export class ItemTable {
                     const getMainParams: GetCommandInput = {
                         TableName: MAIN_TABLE,
                         Key: {
-                            "id": entry.name
+                            "id": entry.familyId
                         }
                     }
 
@@ -87,7 +90,7 @@ export class ItemTable {
                         .then(() => this.client.get(getMainParams))
                         .then((output: GetCommandOutput) => {
                             const item: MainSchema = output.Item as MainSchema
-                            
+
                             if (item) {
                                 const idx: number = item.items.indexOf(id)
 
@@ -98,7 +101,7 @@ export class ItemTable {
                                 const updateMainParams: UpdateCommandInput = {
                                     TableName: MAIN_TABLE,
                                     Key: {
-                                        "id": entry.name
+                                        "id": entry.familyId
                                     },
                                     UpdateExpression: `REMOVE #key[${idx}]`,
                                     ExpressionAttributeNames: {
@@ -107,9 +110,9 @@ export class ItemTable {
                                 }
                                 return this.client.update(updateMainParams)
                             } else {
-                                throw Error(`Unable to find name ${entry.name}`)
+                                throw Error(`Unable to find item family ${entry.familyId}`)
                             }
-                        }).then(() => entry.name)
+                        }).then(() => entry.familyId)
                 } else {
                     throw Error(`Item ${id} doesn't exist.`)
                 }
@@ -117,7 +120,7 @@ export class ItemTable {
     }
 
     /**
-     * Get name from id
+     * Get item by id
      */
     public get(
         id: string
@@ -196,7 +199,9 @@ export class ItemTable {
         condition?: string
     ) {
         return this.updateBorrowStatus(id, borrower, action, borrowGroupId)
-            .then((name: string) => this.createHistoryEntry(name, id, borrower, action, notes, condition))
+            .then((familyId: string) => this.mainTable.get(familyId)
+                .then((main: MainSchema) =>
+                    this.createHistoryEntry(main?.name ?? familyId, id, borrower, action, notes, condition)))
     }
 
     private updateBorrowStatus(
@@ -231,7 +236,7 @@ export class ItemTable {
                     .then(() => (action === "borrow" && borrowGroupId)
                         ? this.setItemField(id, "borrowGroupId", borrowGroupId)
                         : (action === "return" ? this.removeItemField(id, "borrowGroupId") : Promise.resolve()))
-                    .then(() => entry.name)
+                    .then(() => entry.familyId)
             })
     }
 
@@ -284,7 +289,8 @@ export class ItemTable {
     }
 
     /**
-     * Create new entry in borrow/return history table
+     * Create new entry in borrow/return history table. `name` is the item family's resolved
+     * display name (not an id) so history entries stay human-readable.
      */
      private createHistoryEntry(
         name: string,

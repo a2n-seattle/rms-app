@@ -18,7 +18,7 @@ test("will call the list-my-owned-items route with the given input", async () =>
     })
     global.fetch = mockFetch as unknown as typeof fetch
 
-    const result = await listMyOwnedItems("token", { owner: "a@b.com" })
+    const result = await listMyOwnedItems("token", { ownerId: "a@b.com" })
 
     expect(result).toEqual({ items: [], nextPageToken: undefined })
     const [url] = mockFetch.mock.calls[0]

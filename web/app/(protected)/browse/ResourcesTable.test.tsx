@@ -4,7 +4,8 @@ import type { MainSchema } from "@/lib/api/types"
 
 const CHAIRS: MainSchema = {
     id: "chairs",
-    displayName: "Chairs",
+    nameKey: "chairs",
+    name: "Chairs",
     description: "",
     owner: "facilities",
     location: "Room A",
@@ -15,7 +16,8 @@ const CHAIRS: MainSchema = {
 
 const PROJECTORS: MainSchema = {
     id: "projectors",
-    displayName: "Projectors",
+    nameKey: "projectors",
+    name: "Projectors",
     description: "",
     owner: "av-team",
     location: "Room B",
@@ -26,7 +28,8 @@ const PROJECTORS: MainSchema = {
 
 const CONFERENCE_ROOM: MainSchema = {
     id: "conference-room",
-    displayName: "Conference Room",
+    nameKey: "conference-room",
+    name: "Conference Room",
     description: "",
     owner: "facilities",
     location: "Floor 2",

@@ -33,12 +33,12 @@ export default async function DashboardPage({
         : "borrowed"
 
     const [borrowed, owned, upcoming, overdue] = await Promise.all([
-        listMyBorrowedItems(session.idToken, { borrower: session.email }),
-        listMyOwnedItems(session.idToken, { owner: session.email }),
-        listUpcomingReservations(session.idToken, { borrower: session.email }),
-        listOverdueItems(session.idToken, { borrower: session.email }),
+        listMyBorrowedItems(session.idToken, { borrower: session.sub }),
+        listMyOwnedItems(session.idToken, { ownerId: session.sub }),
+        listUpcomingReservations(session.idToken, { borrower: session.sub }),
+        listOverdueItems(session.idToken, { borrower: session.sub }),
     ])
-    const history = tab === "history" ? await listHistory(session.idToken, { borrower: session.email }) : undefined
+    const history = tab === "history" ? await listHistory(session.idToken, { borrower: session.sub }) : undefined
 
     async function borrowFromScheduleAction(formData: FormData) {
         "use server"
@@ -85,7 +85,7 @@ export default async function DashboardPage({
                     {overdue.items.map((item) => (
                         <div key={item.id} className={`${styles.alert} ${styles.alertOverdue}`}>
                             <span className={styles.alertText}>
-                                <Badge variant="danger">Overdue</Badge> {item.friendlyName || item.id} is overdue for
+                                <Badge variant="danger">Overdue</Badge> {item.name || item.id} is overdue for
                                 return
                             </span>
                         </div>
@@ -150,7 +150,7 @@ export default async function DashboardPage({
                                         <tr key={item.id}>
                                             <td>
                                                 <a href={`/items/${encodeURIComponent(item.id)}`} className={styles.itemLink}>
-                                                    {item.friendlyName || item.id}
+                                                    {item.name || item.id}
                                                 </a>
                                             </td>
                                             <td>{item.borrowTime ? new Date(item.borrowTime).toLocaleString() : "—"}</td>
@@ -177,7 +177,7 @@ export default async function DashboardPage({
                             <tbody>
                                 {owned.items.map((main) => (
                                     <tr key={main.id}>
-                                        <td>{main.displayName}</td>
+                                        <td>{main.name}</td>
                                         <td>{main.location}</td>
                                         <td>{main.items.length}</td>
                                     </tr>

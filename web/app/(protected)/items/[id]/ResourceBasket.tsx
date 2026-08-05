@@ -72,7 +72,7 @@ export function ResourceBasket({ familyId, items, isRoom, borrowAction, reserveA
                             </td>
                             <td>
                                 <a href={`/items/${encodeURIComponent(familyId)}/${encodeURIComponent(item.id)}`} className={styles.itemLink}>
-                                    {item.friendlyName || item.id}
+                                    {item.name || item.id}
                                 </a>
                             </td>
                             {!isRoom && <td>{item.borrower || "(available)"}</td>}

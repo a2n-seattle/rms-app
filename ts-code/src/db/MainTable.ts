@@ -1,6 +1,7 @@
-import { MAIN_TABLE,  MainSchema } from "./Schemas"
+import { randomUUID } from "crypto"
+import { MAIN_TABLE, MainSchema } from "./Schemas"
 import { DBClient } from "../injection/db/DBClient"
-import { DeleteCommandInput, DeleteCommandOutput, GetCommandInput, GetCommandOutput, PutCommandInput, PutCommandOutput, UpdateCommandInput, UpdateCommandOutput } from "@aws-sdk/lib-dynamodb"
+import { DeleteCommandInput, DeleteCommandOutput, GetCommandInput, GetCommandOutput, PutCommandInput, ScanCommandInput, ScanCommandOutput, UpdateCommandInput, UpdateCommandOutput } from "@aws-sdk/lib-dynamodb"
 
 export class MainTable {
     private readonly client: DBClient
@@ -10,7 +11,7 @@ export class MainTable {
     }
 
     /**
-     * Create new description for item family.
+     * Create new description for item family. Id is a random UUID, independent of name.
      *
      * Tags, Items, and Batch are initialized as empty.
      */
@@ -20,10 +21,12 @@ export class MainTable {
         owner: string,
         location: string,
         type?: "item" | "room"
-    ): Promise<PutCommandOutput> {
+    ): Promise<string> {
+        const id = this.generateId()
         const item: MainSchema = {
-            id: name.toLowerCase(),
-            displayName: name,
+            id,
+            nameKey: name.toLowerCase(),
+            name: name,
             description: description,
             owner: owner,
             location: location,
@@ -36,28 +39,28 @@ export class MainTable {
             TableName: MAIN_TABLE,
             Item: item
         }
-        return this.client.put(params)
+        return this.client.put(params).then(() => id)
     }
 
     /**
-     * Delete description
+     * Delete description, by id.
      *
      * Checks that Tags and Items are empty before proceeding.
      */
     public delete(
-        name: string
+        id: string
     ): Promise<DeleteCommandOutput> {
-        return this.getConsistent(name)
+        return this.getConsistent(id)
             .then((entry: MainSchema) => {
                 if (entry.items.length !== 0) {
-                    throw Error(`Entry '${name}' still contains items.`)
+                    throw Error(`Entry '${id}' still contains items.`)
                 } else if (entry.tags.length !== 0) {
-                    throw Error(`Entry '${name}' still contains tags.`)
+                    throw Error(`Entry '${id}' still contains tags.`)
                 } else {
                     const params: DeleteCommandInput = {
                         TableName: MAIN_TABLE,
                         Key: {
-                            "id": name.toLowerCase()
+                            "id": id
                         }
                     }
                     return this.client.delete(params)
@@ -66,15 +69,15 @@ export class MainTable {
     }
 
     /**
-     * Get description of given item type, by name.
+     * Get description of given item type, by id.
      */
     public get(
-        name: string
+        id: string
     ): Promise<MainSchema> {
         const params: GetCommandInput = {
             TableName: MAIN_TABLE,
             Key: {
-                "id": name.toLowerCase()
+                "id": id
             }
         }
         return this.client.get(params)
@@ -82,15 +85,15 @@ export class MainTable {
     }
 
     /**
-     * Get description of given item type, by name.
+     * Get description of given item type, by id.
      */
      public getConsistent(
-        name: string
+        id: string
     ): Promise<MainSchema> {
         const params: GetCommandInput = {
             TableName: MAIN_TABLE,
             Key: {
-                "id": name.toLowerCase()
+                "id": id
             },
             ConsistentRead: true
         }
@@ -99,17 +102,57 @@ export class MainTable {
     }
 
     /**
-     * Update name level attribute
+     * Get description of given item type, by name (case-insensitive exact match).
+     *
+     * Implemented as a Scan+FilterExpression on `nameKey` -- no GSI is available (see
+     * storage/tables.ts), and these tables are small church-inventory catalogs, so an
+     * unpaginated Scan is an acceptable, infra-free tradeoff. Known limitation: doesn't
+     * loop over LastEvaluatedKey, so a match beyond the first Scan page (~1MB) is missed.
+     */
+    public getByName(
+        name: string
+    ): Promise<MainSchema | undefined> {
+        return this.scanByNameKey(name, false)
+    }
+
+    /**
+     * Consistent-read variant of getByName. Note DynamoDB Scan's ConsistentRead only
+     * guarantees consistency within the (unpaginated) page actually scanned.
+     */
+    public getByNameConsistent(
+        name: string
+    ): Promise<MainSchema | undefined> {
+        return this.scanByNameKey(name, true)
+    }
+
+    private scanByNameKey(name: string, consistentRead: boolean): Promise<MainSchema | undefined> {
+        const params: ScanCommandInput = {
+            TableName: MAIN_TABLE,
+            FilterExpression: "#key = :val",
+            ExpressionAttributeNames: {
+                "#key": "nameKey"
+            },
+            ExpressionAttributeValues: {
+                ":val": name.toLowerCase()
+            },
+            ConsistentRead: consistentRead
+        }
+        return this.client.scan(params)
+            .then((output: ScanCommandOutput) => (output.Items?.[0] as MainSchema) ?? undefined)
+    }
+
+    /**
+     * Update id-level attribute
      */
     public update(
-        name: string,
+        id: string,
         key: string,
         val: string
     ): Promise<UpdateCommandOutput> {
         const params: UpdateCommandInput = {
             TableName: MAIN_TABLE,
             Key: {
-                "id": name.toLowerCase()
+                "id": id
             },
             UpdateExpression: "SET #key = :val",
             ConditionExpression: 'attribute_exists(#key)',
@@ -121,5 +164,13 @@ export class MainTable {
             }
         }
         return this.client.update(params)
+    }
+
+    /**
+     * Test seam: overridden in unit tests (`MainTable.prototype.generateId = jest.fn(...)`)
+     * for deterministic ids, mirroring AddItem's existing getUniqueId prototype-patch pattern.
+     */
+    protected generateId(): string {
+        return randomUUID()
     }
 }

@@ -3,18 +3,22 @@ import { MainTable } from "../../../src/db/MainTable"
 import { DBSeed, TestConstants, TestTimestamps } from "../../../__dev__/db/DBTestConstants"
 import { LocalDBClient } from "../../../__dev__/db/LocalDBClient"
 
-test('will default friendlyName to id when not provided', async () => {
+beforeEach(() => {
+    MainTable.prototype["generateId"] = jest.fn(() => TestConstants.ID)
+})
+
+test('will default name to id when not provided', async () => {
     const dbClient: LocalDBClient = new LocalDBClient(DBSeed.EMPTY)
     const mainTable: MainTable = new MainTable(dbClient)
     const itemTable: ItemTable = new ItemTable(dbClient)
 
-    await mainTable.create(TestConstants.DISPLAYNAME, TestConstants.DESCRIPTION, TestConstants.OWNER, TestConstants.LOCATION)
-    await itemTable.create(TestConstants.ITEM_ID, TestConstants.DISPLAYNAME, TestConstants.NOTES)
+    const familyId = await mainTable.create(TestConstants.DISPLAYNAME, TestConstants.DESCRIPTION, TestConstants.OWNER, TestConstants.LOCATION)
+    await itemTable.create(TestConstants.ITEM_ID, familyId, TestConstants.NOTES)
 
     await expect(itemTable.get(TestConstants.ITEM_ID)).resolves.toEqual({
         id: TestConstants.ITEM_ID,
-        name: TestConstants.NAME,
-        friendlyName: TestConstants.ITEM_ID,
+        familyId: TestConstants.ID,
+        name: TestConstants.ITEM_ID,
         borrower: "",
         borrowTime: 0,
         returnTime: 0,
@@ -24,18 +28,18 @@ test('will default friendlyName to id when not provided', async () => {
     })
 })
 
-test('will use provided friendlyName instead of defaulting to id', async () => {
+test('will use provided name instead of defaulting to id', async () => {
     const dbClient: LocalDBClient = new LocalDBClient(DBSeed.EMPTY)
     const mainTable: MainTable = new MainTable(dbClient)
     const itemTable: ItemTable = new ItemTable(dbClient)
 
-    await mainTable.create(TestConstants.DISPLAYNAME, TestConstants.DESCRIPTION, TestConstants.OWNER, TestConstants.LOCATION)
-    await itemTable.create(TestConstants.ITEM_ID, TestConstants.DISPLAYNAME, TestConstants.NOTES, TestConstants.FRIENDLY_NAME)
+    const familyId = await mainTable.create(TestConstants.DISPLAYNAME, TestConstants.DESCRIPTION, TestConstants.OWNER, TestConstants.LOCATION)
+    await itemTable.create(TestConstants.ITEM_ID, familyId, TestConstants.NOTES, TestConstants.FRIENDLY_NAME)
 
     await expect(itemTable.get(TestConstants.ITEM_ID)).resolves.toEqual({
         id: TestConstants.ITEM_ID,
-        name: TestConstants.NAME,
-        friendlyName: TestConstants.FRIENDLY_NAME,
+        familyId: TestConstants.ID,
+        name: TestConstants.FRIENDLY_NAME,
         borrower: "",
         borrowTime: 0,
         returnTime: 0,

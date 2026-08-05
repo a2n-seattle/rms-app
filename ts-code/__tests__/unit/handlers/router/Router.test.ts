@@ -13,6 +13,8 @@ import { ReturnItem } from "../../../../src/api/ReturnItem"
 import { SearchItem, searchItemItem } from "../../../../src/api/SearchItem"
 import { UpdateTags } from "../../../../src/api/UpdateTags"
 import { ItemsSchema, MainSchema, ScheduleSchema } from "../../../../src/db/Schemas"
+import { MainTable } from "../../../../src/db/MainTable"
+import { BatchTable } from "../../../../src/db/BatchTable"
 import { ADVANCED_HELP_MENU, BASIC_HELP_MENU, HELP_MENU, Router } from "../../../../src/handlers/router/Router"
 import { DBSeed, TestConstants, TestTimestamps } from "../../../../__dev__/db/DBTestConstants"
 import { LocalDBClient } from "../../../../__dev__/db/LocalDBClient"
@@ -118,7 +120,8 @@ test('will add item correctly when name does not exist', async () => {
     const dbClient: LocalDBClient = new LocalDBClient(DBSeed.EMPTY)
     const router: Router = new Router(dbClient)
 
-    // Mock ID
+    // Mock IDs
+    MainTable.prototype["generateId"] = jest.fn(() => TestConstants.ID);
     AddItem.prototype.getUniqueId = jest.fn(() => Promise.resolve(TestConstants.ITEM_ID));
 
     await router.processRequest(AddItem.NAME, TestConstants.NUMBER)
@@ -177,8 +180,9 @@ test('will get item correctly when given valid id', async () => {
     const router: Router = new Router(dbClient)
 
     const expectedMain: MainSchema = {
-        id: TestConstants.NAME,
-        displayName: TestConstants.DISPLAYNAME,
+        id: TestConstants.ID,
+        nameKey: TestConstants.NAME,
+        name: TestConstants.DISPLAYNAME,
         description: TestConstants.DESCRIPTION,
         owner: TestConstants.OWNER,
         location: TestConstants.LOCATION,
@@ -188,8 +192,8 @@ test('will get item correctly when given valid id', async () => {
     }
     const expectedItem: ItemsSchema = {
         id: TestConstants.ITEM_ID,
-        name: TestConstants.NAME,
-        friendlyName: TestConstants.ITEM_ID,
+        familyId: TestConstants.ID,
+        name: TestConstants.ITEM_ID,
         borrower: "",
         borrowTime: 0,
         returnTime: 0,
@@ -230,8 +234,9 @@ test('will search item correctly when using router', async () => {
     const router: Router = new Router(dbClient)
 
     const expected: MainSchema = {
-        id: TestConstants.NAME,
-        displayName: TestConstants.DISPLAYNAME,
+        id: TestConstants.ID,
+        nameKey: TestConstants.NAME,
+        name: TestConstants.DISPLAYNAME,
         description: TestConstants.DESCRIPTION,
         owner: TestConstants.OWNER,
         location: TestConstants.LOCATION,
@@ -375,13 +380,14 @@ test('will delete reservation correctly when using router', async () => {
             return router.processRequest(TestConstants.RESERVATION_ID, TestConstants.NUMBER)
         }).then((output: string) => {
             expect(output).toEqual(`Successfully deleted reservation '${TestConstants.RESERVATION_ID}'.`)
-            expect(dbClient.getDB()).toEqual(DBSeed.TWO_NAMES_ONE_BATCH)
+            expect(dbClient.getDB()).toMatchObject(DBSeed.TWO_NAMES_ONE_BATCH)
         })
 })
 
 test('will create batch correctly when using router', async () => {
     const dbClient: LocalDBClient = new LocalDBClient(DBSeed.TWO_NAMES)
     const router: Router = new Router(dbClient)
+    BatchTable.prototype["generateId"] = jest.fn(() => TestConstants.BATCH_ID)
 
     await router.processRequest(CreateBatch.NAME, TestConstants.NUMBER)
         .then((output: string) => {

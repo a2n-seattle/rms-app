@@ -3,6 +3,7 @@ import { Stack, Duration } from "aws-cdk-lib"
 import { Function, Runtime, Code } from "aws-cdk-lib/aws-lambda"
 import { ITable } from "aws-cdk-lib/aws-dynamodb"
 import { PolicyStatement } from "aws-cdk-lib/aws-iam"
+import { IUserPool } from "aws-cdk-lib/aws-cognito"
 import { RmsTables } from "../storage/tables"
 
 /**
@@ -31,7 +32,8 @@ export function defineApiFunction(
     functionName: string,
     handler: string,
     tables: RmsTables,
-    tableNames: (keyof RmsTables)[]
+    tableNames: (keyof RmsTables)[],
+    userPool?: IUserPool
 ): Function {
     const fn = new Function(stack, `${functionName}Function`, {
         functionName: `${functionName}-alpha`,
@@ -39,15 +41,29 @@ export function defineApiFunction(
         handler,
         code: functionCode(functionDir),
         timeout: Duration.seconds(25),
-        environment: Object.fromEntries(
-            tableNames.map((name) => [
-                `STORAGE_${name.toUpperCase()}_NAME`,
-                (tables[name] as ITable).tableName,
-            ])
-        ),
+        environment: {
+            ...Object.fromEntries(
+                tableNames.map((name) => [
+                    `STORAGE_${name.toUpperCase()}_NAME`,
+                    (tables[name] as ITable).tableName,
+                ])
+            ),
+            ...(userPool ? { AUTH_USER_POOL_ID: userPool.userPoolId } : {}),
+        },
     })
 
     tableNames.forEach((name) => (tables[name] as ITable).grantReadWriteData(fn))
+
+    // Owner/borrower identity resolution (GH-353/GH-358): ListUsers has no
+    // resource-level IAM support scoped to a specific pool other than the
+    // pool ARN itself (AWS's documented pattern), so this grants read-only
+    // lookup access to the whole pool, not per-user.
+    if (userPool) {
+        fn.addToRolePolicy(new PolicyStatement({
+            actions: ["cognito-idp:ListUsers"],
+            resources: [userPool.userPoolArn],
+        }))
+    }
 
     // Every API operation emits duration/error metrics via
     // CloudWatchClient (ts-code/src/injection/metrics/CloudWatchClient.ts)

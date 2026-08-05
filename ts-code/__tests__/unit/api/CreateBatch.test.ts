@@ -1,6 +1,11 @@
 import { CreateBatch } from "../../../src/api/CreateBatch"
+import { BatchTable } from "../../../src/db/BatchTable"
 import { DBSeed, TestConstants } from "../../../__dev__/db/DBTestConstants"
 import { LocalDBClient } from "../../../__dev__/db/LocalDBClient"
+
+beforeEach(() => {
+    BatchTable.prototype["generateId"] = jest.fn(() => TestConstants.BATCH_ID)
+})
 
 test('will create batch correctly when items exist', async () => {
     const dbClient: LocalDBClient = new LocalDBClient(DBSeed.TWO_NAMES)
@@ -33,6 +38,7 @@ test('will override existing batch when batch already exist', async () => {
 test('will create batch correctly when a batch already exists', async () => {
     const dbClient: LocalDBClient = new LocalDBClient(DBSeed.TWO_NAMES_ONE_BATCH)
     const api: CreateBatch = new CreateBatch(dbClient)
+    BatchTable.prototype["generateId"] = jest.fn(() => TestConstants.BATCH_ID_2)
 
     await expect(
         api.execute({

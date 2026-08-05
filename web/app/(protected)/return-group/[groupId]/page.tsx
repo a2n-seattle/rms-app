@@ -34,7 +34,7 @@ export default async function ReturnGroupPage({ params }: { params: Promise<{ gr
 
         await returnItem(session.idToken, {
             ids,
-            borrower: session.email,
+            borrower: session.sub,
             notes: notes || undefined,
             conditions: Object.keys(conditions).length > 0 ? conditions : undefined,
         })

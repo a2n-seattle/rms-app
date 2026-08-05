@@ -1,12 +1,18 @@
 /**
- * @param id Name of item type. This needs to be unique.
+ * @param id Random UUID, independent of `name`. Stable even if `name` is edited later.
+ * @param nameKey Lowercased `name`, used as an exact-match Scan filter target for
+ *   `MainTable.getByName`/`getByNameConsistent` (no GSI is available -- see storage/tables.ts --
+ *   so name-based lookup goes through a Scan rather than a direct Get).
+ * @param name Human-readable display name of this item family.
  * @param description Optional description of item.
- * @param owner Name of the owner of this item type, or where it's stored.
+ * @param owner Name of the owner of this item type, or where it's stored (free text -- may not
+ *   resolve to a real Cognito user, e.g. a room name or "the church").
+ * @param ownerId Cognito `sub` of the owner, when `owner` was resolved against the user pool at
+ *   creation time. Absent when `owner` didn't match a real user (rooms, "the church", etc).
  * @param location Location where this item type is stored.
- * @param batch List of batches this item type is part of.
+ * @param batch List of batch names this item type is part of.
  * @param tags Tags to categorize item.
  * @param items List of IDs of all items of this item type.
- * @param id ID of item. User specified.
  * @param type Whether this resource is a borrowable "item" or a
  *   reservable-only "room" (rooms are never borrowed/returned or flagged
  *   overdue). Optional and treated as "item" when absent -- existing rows
@@ -17,9 +23,11 @@
 export const MAIN_TABLE: string = process.env.STORAGE_MAIN_NAME
 export interface MainSchema {
     id: string,
-    displayName: string,
+    nameKey: string,
+    name: string,
     description: string,
     owner: string,
+    ownerId?: string,
     location: string,
     batch: string[],
     tags: string[],
@@ -28,9 +36,12 @@ export interface MainSchema {
 }
 
 /**
- * @param friendlyName Human-readable label for this specific item instance.
+ * @param id Random UUID, independent of `familyId`/`name`.
+ * @param familyId FK into MainTable -- the id of the item family this instance belongs to.
+ * @param name Human-readable label for this specific item instance. Defaults to the
+ *   generated item id when not provided.
  * @param notes Notes specific to this item.
- * @param borrower Current borrower of item. Blank if available. Initialized as blank.
+ * @param borrower Current borrower of item -- Cognito `sub`. Blank if available. Initialized as blank.
  * @param borrowTime Time item was last borrowed (epoch milliseconds). 0 if never borrowed.
  * @param returnTime Time item was last returned (epoch milliseconds). 0 while currently borrowed.
  * @param history List of entries in the history table
@@ -44,8 +55,8 @@ export interface MainSchema {
 export const ITEMS_TABLE: string = process.env.STORAGE_ITEMS_NAME
 export interface ItemsSchema {
     id: string,
+    familyId: string,
     name: string,
-    friendlyName: string,
     borrower: string,
     borrowTime: number,
     returnTime: number,
@@ -55,17 +66,46 @@ export interface ItemsSchema {
     borrowGroupId?: string
 }
 
+/**
+ * @param id The tag's own string value -- an intentional natural key, tags are deduplicated
+ *   and looked up directly by their string content.
+ * @param val List of MainTable ids tagged with this value.
+ */
 export const TAGS_TABLE: string = process.env.STORAGE_TAGS_NAME
 export interface TagsSchema {
     id: string,
     val: string[]
 }
 
+/**
+ * @param id Random UUID, independent of `name`.
+ * @param nameKey Lowercased `name`, exact-match Scan filter target (see MainSchema.nameKey).
+ * @param name Human-readable batch name.
+ * @param val List of item ids in this batch.
+ * @param groups List of group labels for this batch.
+ */
 export const BATCH_TABLE: string = process.env.STORAGE_BATCH_NAME
 export interface BatchSchema {
     id: string,
+    nameKey: string,
+    name: string,
     val: string[],
     groups: string[]
+}
+
+/**
+ * @param id Cognito `sub` of the user.
+ * @param owned MainTable ids owned by this user (only populated when `MainSchema.owner`
+ *   resolved to this user's Cognito account at item-creation time).
+ * @param reserved ScheduleTable ids currently reserved by this user.
+ * @param borrowed ItemsTable ids currently borrowed by this user.
+ */
+export const USER_TABLE: string = process.env.STORAGE_USER_NAME
+export interface UserSchema {
+    id: string,
+    owned: string[],
+    reserved: string[],
+    borrowed: string[]
 }
 
 /**

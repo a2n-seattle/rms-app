@@ -11,7 +11,7 @@ test('will delete reservation correctly when reservation exist', async () => {
             id: TestConstants.RESERVATION_ID
         })
     ).resolves.toEqual(`Successfully deleted reservation '${TestConstants.RESERVATION_ID}'.`)
-    expect(dbClient.getDB()).toEqual(DBSeed.TWO_NAMES_ONE_BATCH)
+    expect(dbClient.getDB()).toMatchObject(DBSeed.TWO_NAMES_ONE_BATCH)
 })
 
 test('will fail to delete reservation when id is invalid', async () => {

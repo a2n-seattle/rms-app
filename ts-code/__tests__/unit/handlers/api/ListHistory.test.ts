@@ -10,7 +10,7 @@ const HISTORY_ENTRY_1: HistorySchema = {
     borrower: TestConstants.BORROWER,
     itemId: TestConstants.ITEM_ID,
     id: "1000000000010-123",
-    name: TestConstants.NAME,
+    name: TestConstants.DISPLAYNAME,
     notes: TestConstants.NOTES,
     timestamp: 1000000000010
 }

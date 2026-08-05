@@ -6,7 +6,8 @@ import { MainSchema } from "../../../src/db/Schemas"
 function mainEntry(id: string): MainSchema {
     return {
         id,
-        displayName: id,
+        nameKey: id,
+        name: id,
         description: "",
         owner: "",
         location: "",
@@ -42,7 +43,7 @@ test('will list all items in one page when limit exceeds table size', async () =
     const api: ListItems = new ListItems(dbClient)
 
     const result: ListItemsResult = await api.execute({})
-    expect(result.items.map((i) => i.id).sort()).toEqual([TestConstants.NAME, TestConstants.NAME_2].sort())
+    expect(result.items.map((i) => i.id).sort()).toEqual([TestConstants.ID, TestConstants.ID_2].sort())
     expect(result.nextPageToken).toBeUndefined()
 })
 

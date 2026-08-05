@@ -17,6 +17,6 @@ export function defineBorrowItemFunction(stack: Stack, tables: RmsTables): Funct
         "BorrowItem",
         "handlers/api/BorrowItem.handler",
         tables,
-        ["main", "items", "tags", "batch", "history", "schedule"]
+        ["main", "items", "tags", "batch", "history", "schedule", "user"]
     )
 }

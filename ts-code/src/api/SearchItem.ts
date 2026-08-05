@@ -61,39 +61,39 @@ export class SearchItem {
     public execute(scratch: ScratchInterface): Promise<SearchItemReturn> {
         return emitAPIMetrics(
             () => {
-                const names: TagMap = {}
-                
+                const ids: TagMap = {}
+
                 return Promise.all(scratch.tags.map((tag: string, index: number) => {
                     return this.tagTable.get(tag)
                         .then((search: TagsSchema) => {
                             if (search && search.val) {
-                                search.val.forEach((name: string) => {
-                                    if (Object.keys(names).includes(name)) {
-                                        names[name] = {
-                                            name: name,
-                                            occurrences: names[name].occurrences + 1,
-                                            relevance: Math.min(names[name].relevance, index)
+                                search.val.forEach((id: string) => {
+                                    if (Object.keys(ids).includes(id)) {
+                                        ids[id] = {
+                                            id: id,
+                                            occurrences: ids[id].occurrences + 1,
+                                            relevance: Math.min(ids[id].relevance, index)
                                         }
                                     } else {
-                                        names[name] = {
-                                            name: name,
+                                        ids[id] = {
+                                            id: id,
                                             occurrences: 1,
                                             relevance: index
                                         }
                                     }
                                 })
-                                
+
                             }
                         })
                 })).then(() => {
-                    return Promise.all(Object.values(names)
+                    return Promise.all(Object.values(ids)
                         .sort((a: TagObject, b: TagObject) => {
                             return (b.occurrences - a.occurrences) + (a.relevance - b.relevance) * 0.01
                         }).slice(0, MAX_LIST_SIZE)
-                        .map((value: TagObject) => this.mainTable.get(value.name)))
+                        .map((value: TagObject) => this.mainTable.get(value.id)))
                 }).then((entry: MainSchema[]) => {
                     return {
-                        map: names,
+                        map: ids,
                         entries: entry
                     }
                 })
@@ -117,22 +117,22 @@ export interface SearchItemReturn {
 }
 
 interface TagMap {
-    [name: string]: TagObject
+    [id: string]: TagObject
 }
 
 /**
- * @param name Name of item
+ * @param id Id of item family
  * @param occurrences Number of relevant tags
  * @param relevance Number of lowest index
  */
 interface TagObject {
-    name: string
+    id: string
     occurrences: number,
     relevance: number
 }
 
 export function searchItemItem(main: MainSchema, occurrences: number): string {
-    return `\nName: ${main.displayName}`
+    return `\nName: ${main.name}`
         + `\n  # of relevant tags: ${occurrences}`
         + `\n  Item IDs: ${main.tags.toString()}`
 }

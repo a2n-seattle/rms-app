@@ -1,10 +1,13 @@
+import { randomUUID } from "crypto"
 import { MainTable } from "../db/MainTable"
 import { ItemTable } from "../db/ItemTable"
 import { TagTable } from "../db/TagTable"
+import { UserTable } from "../db/UserTable"
 import { TransactionsTable } from "../db/TransactionsTable"
-import { MainSchema, ItemsSchema } from "../db/Schemas"
+import { MainSchema } from "../db/Schemas"
 import { DBClient } from "../injection/db/DBClient"
 import { MetricsClient } from "../injection/metrics/MetricsClient"
+import { UserDirectoryClient } from "../injection/cognito/UserDirectoryClient"
 import { emitAPIMetrics } from "../metrics/MetricsHelper"
 
 /**
@@ -16,15 +19,19 @@ export class AddItem {
     private readonly mainTable: MainTable
     private readonly itemTable: ItemTable
     private readonly tagTable: TagTable
+    private readonly userTable: UserTable
     private readonly transactionsTable: TransactionsTable
     private readonly metrics?: MetricsClient
+    private readonly userDirectory?: UserDirectoryClient
 
-    public constructor(client: DBClient, metrics?: MetricsClient) {
+    public constructor(client: DBClient, metrics?: MetricsClient, userDirectory?: UserDirectoryClient) {
         this.mainTable = new MainTable(client)
         this.itemTable = new ItemTable(client)
         this.tagTable = new TagTable(client)
+        this.userTable = new UserTable(client)
         this.transactionsTable = new TransactionsTable(client)
         this.metrics = metrics
+        this.userDirectory = userDirectory
     }
 
     public router(number: string, request: string, scratch?: AddItemInput): string | Promise<string> {
@@ -33,7 +40,7 @@ export class AddItem {
                 .then(() => "Name of item:")
         } else if (scratch.name === undefined) {
             return this.transactionsTable.appendToScratch(number, "name", request)
-                .then(() => this.mainTable.get(request))
+                .then(() => this.mainTable.getByName(request))
                 .then((item: MainSchema) => {
                     if (item) {
                         // Item already exists. Just append new item.
@@ -71,7 +78,6 @@ export class AddItem {
 
     /**
      * Required params in scratch object:
-     * @param id Intended ID of item
      * @param name Name of Item
      * @param description Optional description about the item
      * @param tags Tags to query the item with
@@ -89,44 +95,56 @@ export class AddItem {
         return emitAPIMetrics(
             () => {
                 return this.performAllFVAs(input)
-                    .then(() => this.mainTable.getConsistent(input.name.toLowerCase()))
+                    .then(() => this.mainTable.getByNameConsistent(input.name))
                     .then((entry: MainSchema) => {
                         if (entry) {
-                        // Object Exists. No need to add description, owner, or location
-                            return
+                            // Object Exists. No need to add description, owner, or location
+                            return entry.id
                         } else {
-                        // Add new Object
-                        return this.mainTable.create(input.name, input.description, input.owner, input.location, input.type)
-                            .then(() => this.tagTable.create(input.name, input.tags))
+                            // Add new Object
+                            return this.mainTable.create(input.name, input.description, input.owner, input.location, input.type)
+                                .then((familyId: string) =>
+                                    this.tagTable.create(familyId, input.tags)
+                                        .then(() => this.resolveOwner(familyId, input.owner))
+                                        .then(() => familyId))
                         }
-                    }).then(() => this.getUniqueId(input.name))
-                    .then((id: string) => {
-                        return this.itemTable.create(id, input.name, input.notes, input.friendlyName)
-                            .then(() => id)
                     })
+                    .then((familyId: string) =>
+                        this.getUniqueId()
+                            .then((id: string) => this.itemTable.create(id, familyId, input.notes, input.friendlyName).then(() => id))
+                    )
             },
             AddItem.NAME, this.metrics
         )
     }
 
     /**
-     * @private Generates random unique Id
-     * @param id Random Id generator
+     * Attempts to resolve `owner` (free text) against the Cognito user pool by email. On a
+     * match, records `ownerId` on the family and indexes it in UserTable.owned. On no match
+     * (a room, "the church", etc.), leaves `ownerId` unset -- `owner` stays as display fallback.
      */
-    public getUniqueId(name: string): Promise<string> {
-        const hex = Math.floor(Math.random() * 16777215).toString(16) // Random Hex Code
-        const codeName = name.toLowerCase().replace(" ", "_") // To Lowercase
-        const id = `${codeName}-${hex}`
-        return this.itemTable.get(id)
-            .then((item: ItemsSchema) => {
-                if (item) {
-                    // Item Returned
-                    return this.getUniqueId(name)
-                } else {
-                    // No Item Returned
-                    return id;
+    private resolveOwner(familyId: string, owner: string): Promise<void> {
+        if (!this.userDirectory) {
+            return Promise.resolve()
+        }
+        return this.userDirectory.findByEmail(owner)
+            .then((user): Promise<void> => {
+                if (!user) {
+                    return Promise.resolve()
                 }
+                return this.mainTable.update(familyId, "ownerId", user.sub)
+                    .then(() => this.userTable.addOwned(user.sub, familyId))
+                    .then((): void => undefined)
             })
+    }
+
+    /**
+     * Generates a random unique item id, independent of name.
+     */
+    public getUniqueId(): Promise<string> {
+        const id = randomUUID()
+        return this.itemTable.get(id)
+            .then((item) => item ? this.getUniqueId() : id)
     }
 
     private performAllFVAs(input: AddItemInput): Promise<void> {
@@ -141,7 +159,6 @@ export class AddItem {
 
 export interface AddItemInput {
     name?: string,
-    displayName?:string,
     createItem?: boolean,
     description?: string,
     tags?: string[],

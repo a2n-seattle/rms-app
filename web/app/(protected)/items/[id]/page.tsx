@@ -39,7 +39,7 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
 
         await createReservation(session.idToken, {
             ids,
-            borrower: session.email,
+            borrower: session.sub,
             startTime,
             endTime,
             notes: notes || undefined,
@@ -63,7 +63,7 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
         // call that could silently conflict with an existing reservation.
         const scheduleId = await createReservation(session.idToken, {
             ids,
-            borrower: session.email,
+            borrower: session.sub,
             startTime: Date.now(),
             endTime,
         })
@@ -75,7 +75,7 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
         <div>
             <div className={styles.header}>
                 <h1 className={styles.title}>
-                    {main.displayName} {main.type === "room" && <Badge>Room</Badge>}
+                    {main.name} {main.type === "room" && <Badge>Room</Badge>}
                 </h1>
                 <p className={styles.description}>{main.description}</p>
             </div>

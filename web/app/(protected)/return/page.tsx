@@ -11,7 +11,7 @@ export default async function ReturnPage() {
         return null
     }
 
-    const { items } = await listMyBorrowedItems(session.idToken, { borrower: session.email })
+    const { items } = await listMyBorrowedItems(session.idToken, { borrower: session.sub })
 
     async function returnAction(formData: FormData) {
         "use server"
@@ -22,7 +22,7 @@ export default async function ReturnPage() {
         const ids = formData.getAll("ids") as string[]
         const notes = formData.get("notes") as string
 
-        await returnItem(session.idToken, { ids, borrower: session.email, notes: notes || undefined })
+        await returnItem(session.idToken, { ids, borrower: session.sub, notes: notes || undefined })
         revalidatePath("/return")
         revalidatePath("/dashboard")
     }

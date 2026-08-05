@@ -39,8 +39,8 @@ export class GetBatch {
                         return Promise.all(ids.map((id: string) => {
                             return this.itemTable.get(id)
                                 .then((itemEntry: ItemsSchema) => {
-                                    return this.mainTable.get(itemEntry.name)
-                                        .then((mainEntry: MainSchema) => getBatchItem(id, mainEntry.displayName, mainEntry.owner, itemEntry.borrower))
+                                    return this.mainTable.get(itemEntry.familyId)
+                                        .then((mainEntry: MainSchema) => getBatchItem(id, mainEntry.name, mainEntry.owner, itemEntry.borrower))
                                 })
                         })).then((items: string[]) => `batch: ${scratch.name}` + items.join(""))
                     })
@@ -80,10 +80,10 @@ export class GetBatch {
                 return Promise.all(ids.map((id: string) => {
                     return this.itemTable.get(id)
                         .then((itemEntry: ItemsSchema) => {
-                            return this.mainTable.get(itemEntry.name)
+                            return this.mainTable.get(itemEntry.familyId)
                                 .then((mainEntry: MainSchema): GetBatchDetailedEntry => ({
                                     id,
-                                    name: mainEntry.displayName,
+                                    name: mainEntry.name,
                                     owner: mainEntry.owner,
                                     borrower: itemEntry.borrower
                                 }))

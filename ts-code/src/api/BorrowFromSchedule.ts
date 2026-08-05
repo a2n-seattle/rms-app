@@ -1,4 +1,5 @@
 import { ScheduleTable } from "../db/ScheduleTable"
+import { UserTable } from "../db/UserTable"
 import { DBClient } from "../injection/db/DBClient"
 import { MetricsClient } from "../injection/metrics/MetricsClient"
 import { emitAPIMetrics } from "../metrics/MetricsHelper"
@@ -9,11 +10,13 @@ export class BorrowFromSchedule {
 
     private readonly scheduleTable: ScheduleTable
     private readonly itemTable: ItemTable
+    private readonly userTable: UserTable
     private readonly metrics?: MetricsClient
 
     public constructor(client: DBClient, metrics?: MetricsClient) {
         this.scheduleTable = new ScheduleTable(client)
         this.itemTable = new ItemTable(client)
+        this.userTable = new UserTable(client)
         this.metrics = metrics
     }
 
@@ -21,7 +24,7 @@ export class BorrowFromSchedule {
      * Required params in scratch object:
      * @param scheduleId schedule ID
      * @param notes Notes about this action
-     * 
+     *
      * @returns Promise that resolves to a string indicating success or failure
      * @throws Error if schedule ID is not found
      */
@@ -45,7 +48,8 @@ export class BorrowFromSchedule {
                         // before some items were actually updated.
                         return Promise.all(schedule.itemIds.map((id: string) =>
                             this.itemTable.changeBorrower(id, schedule.borrower, "borrow", input.notes, input.scheduleId)
-                        ))
+                                .then(() => this.userTable.addBorrowed(schedule.borrower, id))
+                        )).then(() => this.userTable.removeReserved(schedule.borrower, input.scheduleId))
                     }).then(() => this.scheduleTable.delete(input.scheduleId))
                     .then(() => {
                         return `Successfully borrowed items from schedule '${input.scheduleId}'.`

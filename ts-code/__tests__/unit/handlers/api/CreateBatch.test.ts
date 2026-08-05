@@ -1,5 +1,6 @@
 import getClients from "../../../../src/handlers/api/APIHelper"
 import { handler } from "../../../../src/handlers/api/CreateBatch"
+import { BatchTable } from "../../../../src/db/BatchTable"
 import { DBSeed, TestConstants} from "../../../../__dev__/db/DBTestConstants"
 import { LocalDBClient } from "../../../../__dev__/db/LocalDBClient"
 import { LocalMetricsClient } from "../../../../__dev__/metrics/LocalMetricsClient"
@@ -10,6 +11,7 @@ test('will create batch correctly when using handler', async () => {
 
     getClients.getDBClient = jest.fn(() => dbClient)
     getClients.getMetricsClient = jest.fn(() => metricsClient)
+    BatchTable.prototype["generateId"] = jest.fn(() => TestConstants.BATCH_ID)
 
     await expect(
         handler({

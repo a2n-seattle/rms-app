@@ -10,30 +10,30 @@ export class TagTable {
     }
 
     /**
-     * Adds tags to given name
+     * Adds tags to given item family id
      */
     public create(
-        name: string,
+        id: string,
         tags: string[]
     ): Promise<any> {
         tags = tags === undefined ? [] : tags
-        return Promise.all(tags.map((tag: string) => this.createSingleTag(name.toLowerCase(), tag)))
+        return Promise.all(tags.map((tag: string) => this.createSingleTag(id, tag)))
     }
 
     private createSingleTag(
-        name: string,
+        id: string,
         tag: string
     ): Promise<any> {
         return this.getConsistent(tag)
             .then((tagEntry: TagsSchema) => {
-                if (tagEntry && tagEntry.val.includes(name)) {
+                if (tagEntry && tagEntry.val.includes(id)) {
                     // Contains tag already. Do nothing.
                     return
                 } else {
                     const mainParams: UpdateCommandInput = {
                         TableName: MAIN_TABLE,
                         Key: {
-                            "id": name
+                            "id": id
                         },
                         UpdateExpression: "SET #key = list_append(#key, :val)",
                         ExpressionAttributeNames: {
@@ -58,7 +58,7 @@ export class TagTable {
                                         "#key": "val"
                                     },
                                     ExpressionAttributeValues: {
-                                        ":val": [name.toLowerCase()]
+                                        ":val": [id]
                                     }
                                 }
                                 return this.client.update(updateParam)
@@ -66,7 +66,7 @@ export class TagTable {
                                 // Index doesn't exists, so put
                                 const putItem: TagsSchema = {
                                     id: tag,
-                                    val: [name.toLowerCase()]
+                                    val: [id]
                                 }
                                 const putParam: PutCommandInput = {
                                     TableName: TAGS_TABLE,
@@ -80,33 +80,33 @@ export class TagTable {
     }
 
     /**
-     * Delete tags from given name
+     * Delete tags from given item family id
      */
     public delete(
-        name: string,
+        id: string,
         tags: string[]
     ): Promise<any> {
-        return tags.reduce((prev: Promise<any>, tag: string) => prev.then(() => this.deleteSingleTag(name.toLowerCase(), tag)), Promise.resolve())
+        return tags.reduce((prev: Promise<any>, tag: string) => prev.then(() => this.deleteSingleTag(id, tag)), Promise.resolve())
     }
 
     private deleteSingleTag(
-        name: string,
+        id: string,
         tag: string
     ): Promise<any> {
         return this.getConsistent(tag)
             .then((tagEntry: TagsSchema) => {
-                if (tagEntry && tagEntry.val.includes(name)) {
+                if (tagEntry && tagEntry.val.includes(id)) {
                     const mainGetParams: GetCommandInput = {
                         TableName: MAIN_TABLE,
                         Key: {
-                            "id": name.toLowerCase()
+                            "id": id
                         }
                     }
 
                     return this.client.get(mainGetParams)
                         .then((output: GetCommandOutput) => {
                             const item: MainSchema = output.Item as MainSchema
-                            
+
                             if (item) {
                                 const idx: number = item.tags.indexOf(tag)
 
@@ -114,11 +114,11 @@ export class TagTable {
                                     throw Error(`Unable to find id ${tag} in main`)
                                 }
 
-                                
+
                                 const updateMainParams: UpdateCommandInput = {
                                     TableName: MAIN_TABLE,
                                     Key: {
-                                        "id": name.toLowerCase()
+                                        "id": id
                                     },
                                     UpdateExpression: `REMOVE #key[${idx}]`,
                                     ExpressionAttributeNames: {
@@ -127,7 +127,7 @@ export class TagTable {
                                 }
                                 return this.client.update(updateMainParams)
                             } else {
-                                throw Error(`Unable to find name ${name.toLowerCase()}`)
+                                throw Error(`Unable to find item family ${id}`)
                             }
                         }).then(() => {
                             if (tagEntry.val.length === 1) {
@@ -139,7 +139,7 @@ export class TagTable {
                                 }
                                 return this.client.delete(tagDeleteParams)
                             } else {
-                                const idx: number = tagEntry.val.indexOf(name)
+                                const idx: number = tagEntry.val.indexOf(id)
 
                                 if (idx < 0 || idx >= tagEntry.val.length) {
                                     throw Error(`Unable to find id ${tag} in main`)
@@ -166,13 +166,13 @@ export class TagTable {
     }
 
     public update(
-        name: string,
+        id: string,
         tags: string[]
     ): Promise<any> {
         const mainParam: GetCommandInput = {
             TableName: MAIN_TABLE,
             Key: {
-                "id": name.toLowerCase()
+                "id": id
             }
         }
         return this.client.get(mainParam)
@@ -181,16 +181,16 @@ export class TagTable {
                     const entry: MainSchema = data.Item as MainSchema
                     const createTags = tags.filter((newTag: string) => !entry.tags.includes(newTag))
                     const deleteTags = entry.tags.filter((curTag: string) => !tags.includes(curTag))
-                    return this.delete(name, deleteTags)
-                        .then(() => this.create(name, createTags))
+                    return this.delete(id, deleteTags)
+                        .then(() => this.create(id, createTags))
                 } else {
-                    throw Error(`Could not find '${name}' in the database.`)
+                    throw Error(`Could not find '${id}' in the database.`)
                 }
             })
     }
 
     /**
-     * Get list of names from tag
+     * Get list of item family ids from tag
      */
     public get(
         tag: string
@@ -206,7 +206,7 @@ export class TagTable {
     }
 
     /**
-     * Get list of names from tag
+     * Get list of item family ids from tag
      */
      public getConsistent(
         tag: string
