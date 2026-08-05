@@ -6,6 +6,7 @@ import { createReservation } from "@/lib/api/createReservation"
 import { revalidatePath } from "next/cache"
 import { Card } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
+import { ButtonLink } from "@/components/ui/ButtonLink"
 import styles from "./item-detail.module.css"
 
 export default async function SubItemDetailPage({ params }: { params: Promise<{ id: string; subId: string }> }) {
@@ -81,11 +82,22 @@ export default async function SubItemDetailPage({ params }: { params: Promise<{ 
                         </div>
                         <div className={styles.borrowRow}>
                             {instance.borrower ? (
-                                <form action={returnAction}>
-                                    <Button type="submit" variant="secondary">
+                                instance.borrowGroupId ? (
+                                    // Borrowed as part of a reservation-backed group
+                                    // (BorrowFromSchedule) -- send to the batched
+                                    // return confirmation instead of returning just
+                                    // this one item, since everything in the group
+                                    // was borrowed together.
+                                    <ButtonLink href={`/return-group/${encodeURIComponent(instance.borrowGroupId)}`} variant="secondary">
                                         Return
-                                    </Button>
-                                </form>
+                                    </ButtonLink>
+                                ) : (
+                                    <form action={returnAction}>
+                                        <Button type="submit" variant="secondary">
+                                            Return
+                                        </Button>
+                                    </form>
+                                )
                             ) : (
                                 <form action={borrowAction}>
                                     <Button type="submit">Borrow</Button>

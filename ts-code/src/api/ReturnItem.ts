@@ -44,7 +44,10 @@ export class ReturnItem {
      * Required params in scratch object:
      * @param ids IDs of Items
      * @param borrower Name of borrower
-     * @param notes Notes about this action
+     * @param notes Notes about this action, shared across every returned item
+     * @param conditions Optional per-item condition notes (e.g. "cracked screen"), keyed by
+     *   item id -- recorded on that item's history entry. An id in `ids` with no matching
+     *   entry here is returned with no condition note, same as before this field existed.
      */
     public execute(input: ReturnItemInput): Promise<string> {
         return emitAPIMetrics(
@@ -52,7 +55,7 @@ export class ReturnItem {
                     return this.performAllFVAs(input)
                         .then(() => {
                             return Promise.all(input.ids.map((id: string) =>
-                                this.itemTable.changeBorrower(id, input.borrower, "return", input.notes)
+                                this.itemTable.changeBorrower(id, input.borrower, "return", input.notes, undefined, input.conditions?.[id])
                             ))
                         })
                         .then(() => `Successfully returned items '${input.ids.toString()}'.`)
@@ -76,5 +79,6 @@ export class ReturnItem {
 export interface ReturnItemInput {
     ids?: string[],
     borrower?: string,
-    notes?: string
+    notes?: string,
+    conditions?: { [itemId: string]: string }
 }

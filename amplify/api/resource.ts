@@ -31,6 +31,7 @@ export interface ApiFunctions {
     listOverdueItems: Function
     listHistory: Function
     listBatches: Function
+    getBorrowGroup: Function
 }
 
 export function defineApiGateway(stack: Stack, userPool: IUserPool, functions: ApiFunctions): RestApi {
@@ -65,6 +66,7 @@ export function defineApiGateway(stack: Stack, userPool: IUserPool, functions: A
         ["list-overdue-items", functions.listOverdueItems],
         ["list-history", functions.listHistory],
         ["list-batches", functions.listBatches],
+        ["get-borrow-group", functions.getBorrowGroup],
     ]
 
     routes.forEach(([path, fn]) => {

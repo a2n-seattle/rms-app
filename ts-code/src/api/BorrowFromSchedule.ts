@@ -34,9 +34,18 @@ export class BorrowFromSchedule {
                         if (schedule == undefined) {
                             throw new Error(`Reservation not found. id: '${input.scheduleId}' is invalid`)
                         }
-                        schedule.itemIds.map((id: string) =>
-                            this.itemTable.changeBorrower(id, schedule.borrower, "borrow", input.notes)
-                        )
+                        // Every item borrowed from this schedule records the
+                        // schedule's own id as its borrowGroupId, so a later
+                        // batched return can look up everything borrowed
+                        // together (see ItemTable.changeBorrower). Must wait
+                        // for every item to be marked borrowed before
+                        // deleting the schedule below -- previously this map
+                        // wasn't awaited, so the schedule could be deleted
+                        // (or the request could resolve as "successful")
+                        // before some items were actually updated.
+                        return Promise.all(schedule.itemIds.map((id: string) =>
+                            this.itemTable.changeBorrower(id, schedule.borrower, "borrow", input.notes, input.scheduleId)
+                        ))
                     }).then(() => this.scheduleTable.delete(input.scheduleId))
                     .then(() => {
                         return `Successfully borrowed items from schedule '${input.scheduleId}'.`

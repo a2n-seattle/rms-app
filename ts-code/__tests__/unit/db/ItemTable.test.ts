@@ -74,3 +74,65 @@ test('will set returnTime and keep borrowTime on return', async () => {
         returnTime: TestTimestamps.RETURN_ITEM
     })
 })
+
+test('will record borrowGroupId on borrow when provided', async () => {
+    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.ONE_NAME)
+    const itemTable: ItemTable = new ItemTable(dbClient)
+
+    Date.now = jest.fn(() => TestTimestamps.BORROW_ITEM)
+
+    await itemTable.changeBorrower(TestConstants.ITEM_ID, TestConstants.BORROWER, "borrow", TestConstants.NOTES, TestConstants.RESERVATION_ID)
+
+    await expect(itemTable.get(TestConstants.ITEM_ID)).resolves.toMatchObject({
+        borrowGroupId: TestConstants.RESERVATION_ID
+    })
+})
+
+test('will not set borrowGroupId on borrow when not provided', async () => {
+    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.ONE_NAME)
+    const itemTable: ItemTable = new ItemTable(dbClient)
+
+    Date.now = jest.fn(() => TestTimestamps.BORROW_ITEM)
+
+    await itemTable.changeBorrower(TestConstants.ITEM_ID, TestConstants.BORROWER, "borrow", TestConstants.NOTES)
+
+    const entry = await itemTable.get(TestConstants.ITEM_ID)
+    expect(entry.borrowGroupId).toBeUndefined()
+})
+
+test('will clear borrowGroupId on return', async () => {
+    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.ONE_NAME_BORROWED)
+    const itemTable: ItemTable = new ItemTable(dbClient)
+    dbClient.getDB().items[TestConstants.ITEM_ID].borrowGroupId = TestConstants.RESERVATION_ID
+
+    Date.now = jest.fn(() => TestTimestamps.RETURN_ITEM)
+
+    await itemTable.changeBorrower(TestConstants.ITEM_ID, TestConstants.BORROWER, "return", TestConstants.NOTES)
+
+    const entry = await itemTable.get(TestConstants.ITEM_ID)
+    expect(entry.borrowGroupId).toBeUndefined()
+})
+
+test('will record condition on the history entry on return when provided', async () => {
+    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.ONE_NAME_BORROWED)
+    const itemTable: ItemTable = new ItemTable(dbClient)
+
+    Date.now = jest.fn(() => TestTimestamps.RETURN_ITEM)
+
+    await itemTable.changeBorrower(TestConstants.ITEM_ID, TestConstants.BORROWER, "return", TestConstants.NOTES, undefined, "cracked screen")
+
+    const historyKey = `${TestTimestamps.RETURN_ITEM}-${TestConstants.ITEM_ID}`
+    await expect(dbClient.getDB().history[historyKey]).toMatchObject({ condition: "cracked screen" })
+})
+
+test('will not record condition on the history entry on borrow', async () => {
+    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.ONE_NAME)
+    const itemTable: ItemTable = new ItemTable(dbClient)
+
+    Date.now = jest.fn(() => TestTimestamps.BORROW_ITEM)
+
+    await itemTable.changeBorrower(TestConstants.ITEM_ID, TestConstants.BORROWER, "borrow", TestConstants.NOTES, undefined, "cracked screen")
+
+    const historyKey = `${TestTimestamps.BORROW_ITEM}-${TestConstants.ITEM_ID}`
+    expect(dbClient.getDB().history[historyKey].condition).toBeUndefined()
+})
