@@ -10,11 +10,12 @@ import styles from "./resource-detail.module.css"
 interface ResourceBasketProps {
     familyId: string
     items: ItemsSchema[]
+    isRoom?: boolean
     borrowAction: (formData: FormData) => void
     reserveAction: (formData: FormData) => void
 }
 
-export function ResourceBasket({ familyId, items, borrowAction, reserveAction }: ResourceBasketProps) {
+export function ResourceBasket({ familyId, items, isRoom, borrowAction, reserveAction }: ResourceBasketProps) {
     const [selected, setSelected] = useState<Set<string>>(new Set(items.map((item) => item.id)))
 
     function toggle(id: string) {
@@ -59,7 +60,7 @@ export function ResourceBasket({ familyId, items, borrowAction, reserveAction }:
                     <tr>
                         <th className={styles.checkboxCell}></th>
                         <th>Item</th>
-                        <th>Borrower</th>
+                        {!isRoom && <th>Borrower</th>}
                         <th>Notes</th>
                     </tr>
                 </thead>
@@ -74,25 +75,27 @@ export function ResourceBasket({ familyId, items, borrowAction, reserveAction }:
                                     {item.friendlyName || item.id}
                                 </a>
                             </td>
-                            <td>{item.borrower || "(available)"}</td>
+                            {!isRoom && <td>{item.borrower || "(available)"}</td>}
                             <td>{item.notes || "—"}</td>
                         </tr>
                     ))}
                 </tbody>
             </Table>
 
-            <form action={borrowAction} className={styles.actionBar}>
-                {selectedIds.map((id) => (
-                    <input key={id} type="hidden" name="ids" value={id} />
-                ))}
-                <label className={styles.field}>
-                    Return by
-                    <input type="datetime-local" name="returnBy" required />
-                </label>
-                <Button type="submit" disabled={selectedIds.length === 0}>
-                    Borrow Selected ({selectedIds.length})
-                </Button>
-            </form>
+            {!isRoom && (
+                <form action={borrowAction} className={styles.actionBar}>
+                    {selectedIds.map((id) => (
+                        <input key={id} type="hidden" name="ids" value={id} />
+                    ))}
+                    <label className={styles.field}>
+                        Return by
+                        <input type="datetime-local" name="returnBy" required />
+                    </label>
+                    <Button type="submit" disabled={selectedIds.length === 0}>
+                        Borrow Selected ({selectedIds.length})
+                    </Button>
+                </form>
+            )}
 
             <form action={reserveAction} className={styles.actionBar}>
                 {selectedIds.map((id) => (

@@ -24,6 +24,18 @@ const PROJECTORS: MainSchema = {
     items: ["proj-1"],
 }
 
+const CONFERENCE_ROOM: MainSchema = {
+    id: "conference-room",
+    displayName: "Conference Room",
+    description: "",
+    owner: "facilities",
+    location: "Floor 2",
+    batch: [],
+    tags: [],
+    items: ["conference-room"],
+    type: "room",
+}
+
 test("shows all resources with no filter", () => {
     render(<ResourcesTable items={[CHAIRS, PROJECTORS]} />)
 
@@ -55,4 +67,10 @@ test("shows empty state when nothing matches", () => {
     fireEvent.change(screen.getByLabelText("Filter resources"), { target: { value: "nonexistent" } })
 
     expect(screen.getByText("No resources match.")).not.toBeNull()
+})
+
+test("shows a Room badge for room-type resources only", () => {
+    render(<ResourcesTable items={[CHAIRS, CONFERENCE_ROOM]} />)
+
+    expect(screen.getByText("Room")).not.toBeNull()
 })

@@ -7,6 +7,12 @@
  * @param tags Tags to categorize item.
  * @param items List of IDs of all items of this item type.
  * @param id ID of item. User specified.
+ * @param type Whether this resource is a borrowable "item" or a
+ *   reservable-only "room" (rooms are never borrowed/returned or flagged
+ *   overdue). Optional and treated as "item" when absent -- existing rows
+ *   predate this field, and there's no CDK-managed schema to backfill
+ *   (see storage/tables.ts), so every read site must fall back rather than
+ *   assume this is always set.
  */
 export const MAIN_TABLE: string = process.env.STORAGE_MAIN_NAME
 export interface MainSchema {
@@ -17,7 +23,8 @@ export interface MainSchema {
     location: string,
     batch: string[],
     tags: string[],
-    items: string[]
+    items: string[],
+    type?: "item" | "room"
 }
 
 /**

@@ -19,3 +19,32 @@ test('will create main entry with owner, location, and empty batch', async () =>
         items: []
     })
 })
+
+test('will create main entry with no type field when type is omitted', async () => {
+    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.EMPTY)
+    const table: MainTable = new MainTable(dbClient)
+
+    await table.create(TestConstants.DISPLAYNAME, TestConstants.DESCRIPTION, TestConstants.OWNER, TestConstants.LOCATION)
+
+    const entry = await table.get(TestConstants.NAME)
+    expect(entry.type).toBeUndefined()
+})
+
+test('will create main entry with type "room" when specified', async () => {
+    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.EMPTY)
+    const table: MainTable = new MainTable(dbClient)
+
+    await table.create(TestConstants.DISPLAYNAME, TestConstants.DESCRIPTION, TestConstants.OWNER, TestConstants.LOCATION, "room")
+
+    await expect(table.get(TestConstants.NAME)).resolves.toEqual({
+        id: TestConstants.NAME,
+        displayName: TestConstants.DISPLAYNAME,
+        description: TestConstants.DESCRIPTION,
+        owner: TestConstants.OWNER,
+        location: TestConstants.LOCATION,
+        batch: [],
+        tags: [],
+        items: [],
+        type: "room"
+    })
+})

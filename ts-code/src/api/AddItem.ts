@@ -96,7 +96,7 @@ export class AddItem {
                             return
                         } else {
                         // Add new Object
-                        return this.mainTable.create(input.name, input.description, input.owner, input.location)
+                        return this.mainTable.create(input.name, input.description, input.owner, input.location, input.type)
                             .then(() => this.tagTable.create(input.name, input.tags))
                         }
                     }).then(() => this.getUniqueId(input.name))
@@ -148,5 +148,6 @@ export interface AddItemInput {
     owner?: string,
     location?: string,
     friendlyName?: string,
-    notes?: string
+    notes?: string,
+    type?: "item" | "room"
 }
