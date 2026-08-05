@@ -16,6 +16,7 @@ export enum DBSeed {
     TWO_NAMES_ONE_BATCH_RETURNED = require("../../../resources/seeds/two-names-one-batch-returned.json"),
     TWO_NAMES_ONE_BATCH_MODIFIED = require("../../../resources/seeds/two-names-one-batch-modified.json"),
     TWO_NAMES_ONE_BATCH_RESERVED = require("../../../resources/seeds/two-names-one-batch-reserved.json"),
+    TWO_NAMES_ONE_BATCH_BORROWED_OVERDUE = require("../../../resources/seeds/two-names-one-batch-borrowed-overdue.json"),
     TWO_NAMES_TWO_BATCH = require("../../../resources/seeds/two-names-two-batch.json")
 }
 
