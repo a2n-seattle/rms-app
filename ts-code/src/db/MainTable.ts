@@ -18,7 +18,8 @@ export class MainTable {
         name: string,
         description: string,
         owner: string,
-        location: string
+        location: string,
+        type?: "item" | "room"
     ): Promise<PutCommandOutput> {
         const item: MainSchema = {
             id: name.toLowerCase(),
@@ -28,7 +29,8 @@ export class MainTable {
             location: location,
             batch: [],
             tags: [],
-            items: []
+            items: [],
+            ...(type ? { type } : {})
         }
         const params: PutCommandInput = {
             TableName: MAIN_TABLE,

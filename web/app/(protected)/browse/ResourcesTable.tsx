@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react"
 import { Table } from "@/components/ui/Table"
+import { Badge } from "@/components/ui/Badge"
 import type { MainSchema } from "@/lib/api/types"
 import styles from "./browse.module.css"
 
@@ -50,6 +51,7 @@ export function ResourcesTable({ items }: { items: MainSchema[] }) {
                                     <a href={`/items/${encodeURIComponent(item.id)}`} className={styles.itemLink}>
                                         {item.displayName}
                                     </a>
+                                    {item.type === "room" && <Badge>Room</Badge>}
                                 </td>
                                 <td>{item.location}</td>
                                 <td>{item.items.length}</td>

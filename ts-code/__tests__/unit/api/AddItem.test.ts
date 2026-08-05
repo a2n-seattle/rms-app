@@ -126,6 +126,26 @@ test('will not update main owner/location when adding item to existing name', as
     })
 })
 
+test('will add a room-type resource correctly', async () => {
+    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.EMPTY)
+    const api: AddItem = new AddItem(dbClient)
+    const mainTable: MainTable = new MainTable(dbClient)
+
+    AddItem.prototype.getUniqueId = jest.fn(() => Promise.resolve(TestConstants.ITEM_ID));
+
+    await api.execute({
+        name: TestConstants.DISPLAYNAME,
+        description: TestConstants.DESCRIPTION,
+        tags: [TestConstants.TAG],
+        owner: TestConstants.OWNER,
+        location: TestConstants.LOCATION,
+        notes: TestConstants.NOTES,
+        type: "room"
+    })
+
+    await expect(mainTable.get(TestConstants.NAME)).resolves.toMatchObject({ type: "room" })
+})
+
 test('will fail to add item when item name not passed in', async () => {
     const dbClient: LocalDBClient = new LocalDBClient(DBSeed.EMPTY)
     const api: AddItem = new AddItem(dbClient)

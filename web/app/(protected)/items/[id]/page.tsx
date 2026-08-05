@@ -5,6 +5,7 @@ import { createReservation } from "@/lib/api/createReservation"
 import { borrowFromSchedule } from "@/lib/api/borrowFromSchedule"
 import { revalidatePath } from "next/cache"
 import { Card } from "@/components/ui/Card"
+import { Badge } from "@/components/ui/Badge"
 import { ResourceBasket } from "./ResourceBasket"
 import styles from "./resource-detail.module.css"
 
@@ -73,7 +74,9 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
     return (
         <div>
             <div className={styles.header}>
-                <h1 className={styles.title}>{main.displayName}</h1>
+                <h1 className={styles.title}>
+                    {main.displayName} {main.type === "room" && <Badge>Room</Badge>}
+                </h1>
                 <p className={styles.description}>{main.description}</p>
             </div>
             <Card className={styles.metaCard}>
@@ -87,7 +90,13 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
                 </div>
             </Card>
 
-            <ResourceBasket familyId={main.id} items={items} borrowAction={borrowAction} reserveAction={reserveAction} />
+            <ResourceBasket
+                familyId={main.id}
+                items={items}
+                isRoom={main.type === "room"}
+                borrowAction={borrowAction}
+                reserveAction={reserveAction}
+            />
         </div>
     )
 }

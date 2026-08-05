@@ -67,3 +67,19 @@ test("Select all restores the full selection after Select none", () => {
 
     expect(screen.getByText("2 of 2 selected")).not.toBeNull()
 })
+
+test("hides Borrow Selected and the Borrower column for a room", () => {
+    render(
+        <ResourceBasket
+            familyId="conference-room"
+            items={[ITEM_1, ITEM_2]}
+            isRoom
+            borrowAction={jest.fn()}
+            reserveAction={jest.fn()}
+        />
+    )
+
+    expect(screen.queryByRole("button", { name: /Borrow Selected/ })).toBeNull()
+    expect(screen.queryByText("Borrower")).toBeNull()
+    expect(screen.getByRole("button", { name: "Reserve Selected (2)" })).not.toBeNull()
+})

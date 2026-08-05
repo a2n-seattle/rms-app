@@ -27,6 +27,7 @@
 
 .itemLink {
     font-weight: 500;
+    margin-right: var(--space-sm);
 }
 
 .itemLink:hover {

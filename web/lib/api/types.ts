@@ -16,6 +16,7 @@ export interface MainSchema {
     batch: string[]
     tags: string[]
     items: string[]
+    type?: "item" | "room"
 }
 
 export interface ItemsSchema {
