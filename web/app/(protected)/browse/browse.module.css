@@ -10,22 +10,37 @@
     font-weight: 700;
 }
 
-.list {
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-sm);
+.filterBar {
+    margin-bottom: var(--space-md);
 }
 
-.itemRow {
-    display: block;
-    padding: var(--space-md);
+.filterInput {
+    width: 100%;
+    max-width: 20rem;
+    padding: 0.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
     color: var(--color-text);
+    font: inherit;
+}
+
+.itemLink {
     font-weight: 500;
 }
 
-.itemRow:hover {
+.itemLink:hover {
     color: var(--color-primary);
+}
+
+.tagList {
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+}
+
+.empty {
+    color: var(--color-text-muted);
+    padding: var(--space-md) 0;
 }
 
 .footer {
