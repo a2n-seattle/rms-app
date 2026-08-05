@@ -23,6 +23,7 @@ import { defineListMyOwnedItemsFunction } from "./functions/list-my-owned-items/
 import { defineListMyBorrowedItemsFunction } from "./functions/list-my-borrowed-items/resource"
 import { defineListUpcomingReservationsFunction } from "./functions/list-upcoming-reservations/resource"
 import { defineListOverdueItemsFunction } from "./functions/list-overdue-items/resource"
+import { defineListHistoryFunction } from "./functions/list-history/resource"
 import { defineApiGateway } from "./api/resource"
 
 /**
@@ -67,6 +68,7 @@ const listMyOwnedItemsFn = defineListMyOwnedItemsFunction(functionsStack, tables
 const listMyBorrowedItemsFn = defineListMyBorrowedItemsFunction(functionsStack, tables)
 const listUpcomingReservationsFn = defineListUpcomingReservationsFunction(functionsStack, tables)
 const listOverdueItemsFn = defineListOverdueItemsFunction(functionsStack, tables)
+const listHistoryFn = defineListHistoryFunction(functionsStack, tables)
 defineSmsRouterFunction(functionsStack, tables)
 
 const apiStack = backend.createStack("ApiStack")
@@ -91,6 +93,7 @@ const api = defineApiGateway(apiStack, backend.auth.resources.userPool, {
     listMyBorrowedItems: listMyBorrowedItemsFn,
     listUpcomingReservations: listUpcomingReservationsFn,
     listOverdueItems: listOverdueItemsFn,
+    listHistory: listHistoryFn,
 })
 
 // `ampx generate outputs` only surfaces values added via backend.addOutput

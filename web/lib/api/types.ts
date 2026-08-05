@@ -88,3 +88,77 @@ export interface CreateReservationInput {
     endTime?: number
     notes?: string
 }
+
+export interface BorrowFromScheduleInput {
+    scheduleId?: string
+    notes?: string
+}
+
+export interface DeleteReservationInput {
+    id?: string
+}
+
+export interface ListMyOwnedItemsInput {
+    owner?: string
+    limit?: number
+    pageToken?: string
+}
+
+export interface ListMyOwnedItemsResult {
+    items: MainSchema[]
+    nextPageToken?: string
+}
+
+export interface ListMyBorrowedItemsInput {
+    borrower?: string
+    limit?: number
+    pageToken?: string
+}
+
+export interface ListMyBorrowedItemsResult {
+    items: ItemsSchema[]
+    nextPageToken?: string
+}
+
+export interface ListUpcomingReservationsInput {
+    borrower?: string
+    limit?: number
+    pageToken?: string
+}
+
+export interface ListUpcomingReservationsResult {
+    items: ScheduleSchema[]
+    nextPageToken?: string
+}
+
+export interface ListOverdueItemsInput {
+    borrower?: string
+    limit?: number
+    pageToken?: string
+}
+
+export interface ListOverdueItemsResult {
+    items: ItemsSchema[]
+    nextPageToken?: string
+}
+
+export interface HistorySchema {
+    id: string
+    name: string
+    itemId: string
+    borrower: string
+    action: "borrow" | "return"
+    notes: string
+    timestamp: number
+}
+
+export interface ListHistoryInput {
+    borrower?: string
+    limit?: number
+    pageToken?: string
+}
+
+export interface ListHistoryResult {
+    items: HistorySchema[]
+    nextPageToken?: string
+}

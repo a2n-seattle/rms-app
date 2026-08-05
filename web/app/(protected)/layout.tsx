@@ -14,6 +14,9 @@ export default async function ProtectedLayout({ children }: { children: React.Re
         <div className={themeStyles.appShell}>
             <nav className={styles.nav}>
                 <div className={styles.navLinks}>
+                    <a href="/dashboard" className={styles.navLink}>
+                        Dashboard
+                    </a>
                     <a href="/browse" className={styles.navLink}>
                         Browse
                     </a>
