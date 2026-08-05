@@ -46,41 +46,7 @@ export class ScheduleTable {
                         throw Error("Duplicate itemIds were passed in")
                     }
 
-                    return Promise.all((itemIds.map((itemId: string) => {
-                        const getItemsParams: GetCommandInput = {
-                            TableName: ITEMS_TABLE,
-                            Key: {
-                                "id": itemId
-                            }
-                        }
-                        return this.client.get(getItemsParams)
-                        .then((output: GetCommandOutput) => {
-                            const item: ItemsSchema = output.Item as ItemsSchema
-                            if (item) {
-                                return Promise.all((item.schedule.map((reservationId: string) => {
-                                    return this.get(reservationId)
-                                        .then((output: ScheduleSchema) => {
-                                        // An id in item.schedule[] can outlive its
-                                        // own Schedule row (e.g. the row was
-                                        // deleted directly, out-of-band, without
-                                        // going through this.delete()'s cleanup of
-                                        // this back-reference) -- skip a stale
-                                        // reference instead of crashing on
-                                        // undefined.startTime below.
-                                        if (!output) {
-                                            return
-                                        }
-                                        if (this.validateDate(output.startTime, output.endTime, startTime, endTime)) {
-                                            throw Error(`Item ${itemId} is reserved starting ${output.startTime} and ending ${output.endTime}`)
-                                        }
-                                        })
-                                })))
-                            } else {
-                                throw Error(`Unable to find itemId ${itemId}`)
-                            }
-                        })
-                        .then(() => itemId)
-                    })))
+                    return this.validateNoOverlap(itemIds, startTime, endTime)
                     .then(() => this.client.put(indexParams))
                     .then(() => Promise.all((itemIds.map((itemId: string) => {
                         const getItemsParams: GetCommandInput = {
@@ -116,6 +82,98 @@ export class ScheduleTable {
                     .then(() => id)
                 }
             })
+    }
+
+    /**
+     * Updates an existing reservation's endTime in place, preserving its id
+     * and every other field. Reuses the same overlap validation as create()
+     * (validateNoOverlap), excluding the reservation being extended itself
+     * from that check -- otherwise every extension would trivially conflict
+     * with its own pre-extension window, since that window is still present
+     * in each item's schedule[] list at validation time.
+     */
+    public updateEndTime(
+        id: string,
+        newEndTime: number
+    ): Promise<string> {
+        return this.get(id)
+            .then((entry: ScheduleSchema) => {
+                if (!entry) {
+                    throw Error(`Schedule ${id} doesn't exist.`)
+                }
+                if (newEndTime <= entry.startTime) {
+                    throw Error(`New end time ${newEndTime} must be after the reservation's start time ${entry.startTime}`)
+                }
+
+                return this.validateNoOverlap(entry.itemIds, entry.startTime, newEndTime, id)
+                    .then(() => {
+                        const updateParams: UpdateCommandInput = {
+                            TableName: SCHEDULE_TABLE,
+                            Key: {
+                                "id": id
+                            },
+                            UpdateExpression: "SET #key = :val",
+                            ExpressionAttributeNames: {
+                                "#key": "endTime"
+                            },
+                            ExpressionAttributeValues: {
+                                ":val": newEndTime
+                            }
+                        }
+                        return this.client.update(updateParams)
+                    })
+                    .then(() => id)
+            })
+    }
+
+    /**
+     * Throws if (startTime, endTime) overlaps any existing reservation on
+     * any of itemIds, per validateDate. excludeScheduleId skips a
+     * reservation with that id from the check -- used by updateEndTime so
+     * extending a reservation doesn't conflict with its own current window.
+     */
+    private validateNoOverlap(
+        itemIds: string[],
+        startTime: number,
+        endTime: number,
+        excludeScheduleId?: string
+    ): Promise<void> {
+        return Promise.all(itemIds.map((itemId: string): Promise<void[]> => {
+            const getItemsParams: GetCommandInput = {
+                TableName: ITEMS_TABLE,
+                Key: {
+                    "id": itemId
+                }
+            }
+            return this.client.get(getItemsParams)
+                .then((output: GetCommandOutput): Promise<void[]> => {
+                    const item: ItemsSchema = output.Item as ItemsSchema
+                    if (item) {
+                        return Promise.all(item.schedule
+                            .filter((reservationId: string) => reservationId !== excludeScheduleId)
+                            .map((reservationId: string): Promise<void> => {
+                                return this.get(reservationId)
+                                    .then((output: ScheduleSchema) => {
+                                        // An id in item.schedule[] can outlive its
+                                        // own Schedule row (e.g. the row was
+                                        // deleted directly, out-of-band, without
+                                        // going through this.delete()'s cleanup of
+                                        // this back-reference) -- skip a stale
+                                        // reference instead of crashing on
+                                        // undefined.startTime below.
+                                        if (!output) {
+                                            return
+                                        }
+                                        if (this.validateDate(output.startTime, output.endTime, startTime, endTime)) {
+                                            throw Error(`Item ${itemId} is reserved starting ${output.startTime} and ending ${output.endTime}`)
+                                        }
+                                    })
+                            }))
+                    } else {
+                        throw Error(`Unable to find itemId ${itemId}`)
+                    }
+                })
+        })).then((): void => undefined)
     }
 
     /**
@@ -245,7 +303,17 @@ export class ScheduleTable {
             const oldEndTime = new Date(endDate1)
             const newStartTime = new Date(startDate2)
             const newEndTime = new Date(endDate2)
-            return (newStartTime >= oldStartTime && newStartTime <= oldEndTime) || (newEndTime >= oldStartTime && newEndTime <= oldEndTime)
+            // Catches a new endpoint falling inside the old range, AND (added
+            // for ExtendReservation) the reverse: the new range fully
+            // containing the old range, with neither new endpoint inside the
+            // old range (e.g. extending a reservation's endTime out past
+            // another reservation that started and ended entirely within the
+            // extension). Without this second clause, an extension could
+            // silently swallow another reservation whole instead of being
+            // rejected.
+            return (newStartTime >= oldStartTime && newStartTime <= oldEndTime)
+                || (newEndTime >= oldStartTime && newEndTime <= oldEndTime)
+                || (newStartTime <= oldStartTime && newEndTime >= oldEndTime)
     }
 }
 
