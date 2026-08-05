@@ -1,10 +1,11 @@
 import { ITEMS_TABLE, ItemsSchema, ScheduleSchema } from "../db/Schemas"
-import { encodePageToken, decodePageToken } from "../db/PageToken"
+import { decodePageToken } from "../db/PageToken"
+import { scanUntilLimit } from "../db/scanUntilLimit"
 import { ScheduleTable } from "../db/ScheduleTable"
 import { DBClient } from "../injection/db/DBClient"
 import { MetricsClient } from "../injection/metrics/MetricsClient"
 import { emitAPIMetrics } from "../metrics/MetricsHelper"
-import { ScanCommandInput, ScanCommandOutput } from "@aws-sdk/lib-dynamodb"
+import { ScanCommandInput } from "@aws-sdk/lib-dynamodb"
 
 const DEFAULT_PAGE_SIZE = 25
 
@@ -15,8 +16,10 @@ const DEFAULT_PAGE_SIZE = 25
  * `schedule` entries (its reservation history/associations) is a
  * ScheduleSchema whose endTime has already passed. Scans ItemsSchema
  * unfiltered (no single-equality FilterExpression covers "borrower is
- * this borrower AND some linked schedule is overdue" in one pass), then
- * filters + cross-references ScheduleTable in-memory per page.
+ * this borrower AND some linked schedule is overdue" in one pass); the
+ * borrower+overdue check happens in scanUntilLimit's predicate instead
+ * (see db/scanUntilLimit.ts), so a match beyond the first raw scanned page
+ * is still found rather than silently dropped.
  */
 export class ListOverdueItems {
     public static NAME: string = "list overdue items"
@@ -42,18 +45,12 @@ export class ListOverdueItems {
                             ...(input.pageToken ? { ExclusiveStartKey: decodePageToken(input.pageToken) } : {})
                         }
 
-                        return this.client.scan(params)
-                            .then((output: ScanCommandOutput) => {
-                                const borrowedByUser: ItemsSchema[] = ((output.Items ?? []) as ItemsSchema[])
-                                    .filter((item: ItemsSchema) => item.borrower === input.borrower)
-
-                                return Promise.all(borrowedByUser.map((item: ItemsSchema) =>
-                                    this.isOverdue(item).then((overdue: boolean) => (overdue ? item : undefined))
-                                )).then((maybeOverdue: (ItemsSchema | undefined)[]) => ({
-                                    items: maybeOverdue.filter((item): item is ItemsSchema => item !== undefined),
-                                    nextPageToken: output.LastEvaluatedKey ? encodePageToken(output.LastEvaluatedKey) : undefined
-                                }))
-                            })
+                        return scanUntilLimit<ItemsSchema>(
+                            this.client,
+                            params,
+                            input.limit ?? DEFAULT_PAGE_SIZE,
+                            (item) => item.borrower === input.borrower && this.isOverdue(item)
+                        )
                     })
             },
             ListOverdueItems.NAME, this.metrics

@@ -42,3 +42,21 @@ test('will fail when owner is missing', async () => {
 
     await expect(api.execute({})).rejects.toThrow("Missing required field 'ownerId'")
 })
+
+test('will find a match scanned after more than `limit` non-matching items (regression, GH-357)', async () => {
+    const seed: any = {
+        main: {
+            "a-nomatch": { id: "a-nomatch", nameKey: "a", name: "a", description: "", owner: "x", ownerId: "someone-else", location: "", batch: [], tags: [], items: [] },
+            "b-nomatch": { id: "b-nomatch", nameKey: "b", name: "b", description: "", owner: "x", ownerId: "someone-else", location: "", batch: [], tags: [], items: [] },
+            "z-match": { id: "z-match", nameKey: "z", name: "z", description: "", owner: "x", ownerId: TestConstants.OWNER, location: "", batch: [], tags: [], items: [] }
+        },
+        items: {}, batch: {}, tags: {}, history: {}, schedule: {}, transactions: {}, user: {}
+    }
+    const dbClient: LocalDBClient = new LocalDBClient(seed)
+    const api: ListMyOwnedItems = new ListMyOwnedItems(dbClient)
+
+    await expect(api.execute({ ownerId: TestConstants.OWNER, limit: 1 })).resolves.toEqual({
+        items: [seed.main["z-match"]],
+        nextPageToken: undefined
+    })
+})

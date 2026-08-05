@@ -32,6 +32,25 @@ test('will return no reservations when borrower has none', async () => {
     })
 })
 
+test('will find a match scanned after more than `limit` non-matching reservations (regression, GH-357)', async () => {
+    const seed: any = {
+        main: {}, items: {}, batch: {}, tags: {}, history: {},
+        schedule: {
+            "a-nomatch": { id: "a-nomatch", borrower: "someone-else", itemIds: [], startTime: 0, endTime: 1 },
+            "b-nomatch": { id: "b-nomatch", borrower: "someone-else", itemIds: [], startTime: 0, endTime: 1 },
+            "z-match": { id: "z-match", borrower: TestConstants.BORROWER, itemIds: [], startTime: 0, endTime: 1 }
+        },
+        transactions: {}, user: {}
+    }
+    const dbClient: LocalDBClient = new LocalDBClient(seed)
+    const table: ScheduleTable = new ScheduleTable(dbClient)
+
+    await expect(table.listByBorrower(TestConstants.BORROWER, 1)).resolves.toEqual({
+        items: [seed.schedule["z-match"]],
+        nextPageToken: undefined
+    })
+})
+
 test('create() ignores a stale schedule id left on an item after its Schedule row was deleted out-of-band', async () => {
     // Simulates deleting a row directly from the Schedule table without
     // going through ScheduleTable.delete's cleanup of the item's

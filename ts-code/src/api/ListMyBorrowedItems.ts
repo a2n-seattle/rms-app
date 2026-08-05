@@ -1,15 +1,17 @@
 import { ITEMS_TABLE, ItemsSchema } from "../db/Schemas"
-import { encodePageToken, decodePageToken } from "../db/PageToken"
+import { decodePageToken } from "../db/PageToken"
+import { scanUntilLimit } from "../db/scanUntilLimit"
 import { DBClient } from "../injection/db/DBClient"
 import { MetricsClient } from "../injection/metrics/MetricsClient"
 import { emitAPIMetrics } from "../metrics/MetricsHelper"
-import { ScanCommandInput, ScanCommandOutput } from "@aws-sdk/lib-dynamodb"
+import { ScanCommandInput } from "@aws-sdk/lib-dynamodb"
 
 const DEFAULT_PAGE_SIZE = 25
 
 /**
- * Lists items currently borrowed by a given borrower, paginated. Same
- * Scan+FilterExpression shape/caveats as ScheduleTable.listByBorrower.
+ * Lists items currently borrowed by a given borrower, paginated via
+ * scanUntilLimit (see db/scanUntilLimit.ts for the Scan+FilterExpression
+ * pagination gotcha it works around).
  */
 export class ListMyBorrowedItems {
     public static NAME: string = "list my borrowed items"
@@ -40,11 +42,7 @@ export class ListMyBorrowedItems {
                             ...(input.pageToken ? { ExclusiveStartKey: decodePageToken(input.pageToken) } : {})
                         }
 
-                        return this.client.scan(params)
-                            .then((output: ScanCommandOutput) => ({
-                                items: (output.Items ?? []) as ItemsSchema[],
-                                nextPageToken: output.LastEvaluatedKey ? encodePageToken(output.LastEvaluatedKey) : undefined
-                            }))
+                        return scanUntilLimit<ItemsSchema>(this.client, params, input.limit ?? DEFAULT_PAGE_SIZE)
                     })
             },
             ListMyBorrowedItems.NAME, this.metrics

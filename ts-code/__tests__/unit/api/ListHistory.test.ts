@@ -49,3 +49,25 @@ test('will fail when borrower is missing', async () => {
 
     await expect(api.execute({})).rejects.toThrow("Missing required field 'borrower'")
 })
+
+test('will find a match scanned after more than `limit` non-matching entries (regression, GH-357)', async () => {
+    const seed: any = {
+        main: {},
+        items: {},
+        batch: {},
+        tags: {},
+        history: {
+            "a-nomatch": { id: "a-nomatch", name: "x", itemId: "x", borrower: "someone-else", action: "borrow", notes: "", timestamp: 1 },
+            "b-nomatch": { id: "b-nomatch", name: "x", itemId: "x", borrower: "someone-else", action: "borrow", notes: "", timestamp: 1 },
+            "z-match": { id: "z-match", name: "x", itemId: "x", borrower: TestConstants.BORROWER, action: "borrow", notes: "", timestamp: 1 }
+        },
+        schedule: {}, transactions: {}, user: {}
+    }
+    const dbClient: LocalDBClient = new LocalDBClient(seed)
+    const api: ListHistory = new ListHistory(dbClient)
+
+    await expect(api.execute({ borrower: TestConstants.BORROWER, limit: 1 })).resolves.toEqual({
+        items: [seed.history["z-match"]],
+        nextPageToken: undefined
+    })
+})

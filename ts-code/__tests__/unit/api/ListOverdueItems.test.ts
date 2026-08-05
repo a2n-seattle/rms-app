@@ -53,3 +53,27 @@ test('will fail when borrower is missing', async () => {
 
     await expect(api.execute({})).rejects.toThrow("Missing required field 'borrower'")
 })
+
+test('will find an overdue match scanned after more than `limit` non-matching items (regression, GH-357)', async () => {
+    const seed: any = {
+        main: {},
+        items: {
+            "a-nomatch": { id: "a-nomatch", familyId: "f", name: "a-nomatch", notes: "", borrower: "someone-else", borrowTime: 0, returnTime: 0, history: [], schedule: [] },
+            "b-nomatch": { id: "b-nomatch", familyId: "f", name: "b-nomatch", notes: "", borrower: "someone-else", borrowTime: 0, returnTime: 0, history: [], schedule: [] },
+            "z-match": { id: "z-match", familyId: "f", name: "z-match", notes: "", borrower: TestConstants.BORROWER, borrowTime: 0, returnTime: 0, history: [], schedule: ["sched-1"] }
+        },
+        batch: {}, tags: {},
+        history: {},
+        schedule: {
+            "sched-1": { id: "sched-1", borrower: TestConstants.BORROWER, itemIds: ["z-match"], startTime: 0, endTime: 1 }
+        },
+        transactions: {}, user: {}
+    }
+    const dbClient: LocalDBClient = new LocalDBClient(seed)
+    const api: ListOverdueItems = new ListOverdueItems(dbClient)
+
+    await expect(api.execute({ borrower: TestConstants.BORROWER, limit: 1 })).resolves.toEqual({
+        items: [seed.items["z-match"]],
+        nextPageToken: undefined
+    })
+})

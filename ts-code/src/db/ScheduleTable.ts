@@ -1,7 +1,8 @@
 import { SCHEDULE_TABLE, ScheduleSchema, ITEMS_TABLE, ItemsSchema } from "./Schemas";
 import { DBClient } from "../injection/db/DBClient"
-import { DeleteCommandInput, GetCommandInput, GetCommandOutput, PutCommandInput, ScanCommandInput, ScanCommandOutput, UpdateCommandInput } from "@aws-sdk/lib-dynamodb"
-import { encodePageToken, decodePageToken } from "./PageToken"
+import { DeleteCommandInput, GetCommandInput, GetCommandOutput, PutCommandInput, ScanCommandInput, UpdateCommandInput } from "@aws-sdk/lib-dynamodb"
+import { decodePageToken } from "./PageToken"
+import { scanUntilLimit } from "./scanUntilLimit"
 
 const DEFAULT_PAGE_SIZE = 25
 
@@ -282,11 +283,7 @@ export class ScheduleTable {
             ...(pageToken ? { ExclusiveStartKey: decodePageToken(pageToken) } : {})
         }
 
-        return this.client.scan(params)
-            .then((output: ScanCommandOutput) => ({
-                items: (output.Items ?? []) as ScheduleSchema[],
-                nextPageToken: output.LastEvaluatedKey ? encodePageToken(output.LastEvaluatedKey) : undefined
-            }))
+        return scanUntilLimit<ScheduleSchema>(this.client, params, limit)
     }
 
     /**

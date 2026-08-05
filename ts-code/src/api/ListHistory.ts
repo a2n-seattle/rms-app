@@ -1,16 +1,18 @@
 import { HISTORY_TABLE, HistorySchema } from "../db/Schemas"
-import { encodePageToken, decodePageToken } from "../db/PageToken"
+import { decodePageToken } from "../db/PageToken"
+import { scanUntilLimit } from "../db/scanUntilLimit"
 import { DBClient } from "../injection/db/DBClient"
 import { MetricsClient } from "../injection/metrics/MetricsClient"
 import { emitAPIMetrics } from "../metrics/MetricsHelper"
-import { ScanCommandInput, ScanCommandOutput } from "@aws-sdk/lib-dynamodb"
+import { ScanCommandInput } from "@aws-sdk/lib-dynamodb"
 
 const DEFAULT_PAGE_SIZE = 25
 
 /**
- * Lists borrow/return history entries for a given borrower, paginated.
- * Same Scan+FilterExpression shape/caveats as ScheduleTable.listByBorrower
- * (no GSI on HistorySchema.borrower today).
+ * Lists borrow/return history entries for a given borrower, paginated via
+ * scanUntilLimit (no GSI on HistorySchema.borrower today -- see
+ * db/scanUntilLimit.ts for the Scan+FilterExpression pagination gotcha it
+ * works around).
  */
 export class ListHistory {
     public static NAME: string = "list history"
@@ -41,11 +43,7 @@ export class ListHistory {
                             ...(input.pageToken ? { ExclusiveStartKey: decodePageToken(input.pageToken) } : {})
                         }
 
-                        return this.client.scan(params)
-                            .then((output: ScanCommandOutput) => ({
-                                items: (output.Items ?? []) as HistorySchema[],
-                                nextPageToken: output.LastEvaluatedKey ? encodePageToken(output.LastEvaluatedKey) : undefined
-                            }))
+                        return scanUntilLimit<HistorySchema>(this.client, params, input.limit ?? DEFAULT_PAGE_SIZE)
                     })
             },
             ListHistory.NAME, this.metrics
