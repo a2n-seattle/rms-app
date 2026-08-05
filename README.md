@@ -22,7 +22,8 @@ verification) — this README only covers getting a working local setup.
 - **AWS CLI** (`aws --version`), for interacting with the deployed `alpha`
   environment. Not preinstalled on macOS — `brew install awscli` if
   `aws --version` fails.
-- **GitHub CLI** (`gh --version`), for PRs/issues.
+- **GitHub CLI** (`gh --version`), for PRs/issues. Not preinstalled on
+  macOS — `brew install gh` if `gh --version` fails.
 
 ## Cloning and installing
 
