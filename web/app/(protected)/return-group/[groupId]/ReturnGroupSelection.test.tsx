@@ -4,8 +4,8 @@ import type { ItemsSchema } from "@/lib/api/types"
 
 const ITEM_1: ItemsSchema = {
     id: "chair-1",
-    name: "chairs",
-    friendlyName: "Chair 1",
+    familyId: "chairs",
+    name: "Chair 1",
     borrower: "a@b.com",
     borrowTime: 1000000000010,
     returnTime: 0,
@@ -17,8 +17,8 @@ const ITEM_1: ItemsSchema = {
 
 const ITEM_2: ItemsSchema = {
     id: "chair-2",
-    name: "chairs",
-    friendlyName: "Chair 2",
+    familyId: "chairs",
+    name: "Chair 2",
     borrower: "a@b.com",
     borrowTime: 1000000000010,
     returnTime: 0,

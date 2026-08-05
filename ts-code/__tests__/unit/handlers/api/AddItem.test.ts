@@ -1,4 +1,5 @@
 import { AddItem } from "../../../../src/api/AddItem"
+import { MainTable } from "../../../../src/db/MainTable"
 import getClients from "../../../../src/handlers/api/APIHelper"
 import { handler } from "../../../../src/handlers/api/AddItem"
 import { DBSeed, TestConstants } from "../../../../__dev__/db/DBTestConstants"
@@ -12,7 +13,8 @@ test('will add item correctly when using handler', async () => {
     getClients.getDBClient = jest.fn(() => dbClient)
     getClients.getMetricsClient = jest.fn(() => metricsClient)
 
-    // Mock ID
+    // Mock IDs
+    MainTable.prototype["generateId"] = jest.fn(() => TestConstants.ID);
     AddItem.prototype.getUniqueId = jest.fn(() => Promise.resolve(TestConstants.ITEM_ID));
 
     await expect(

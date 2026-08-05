@@ -5,8 +5,8 @@ import { ItemsSchema } from "../../../src/db/Schemas"
 
 const OVERDUE_ITEM: ItemsSchema = {
     id: TestConstants.ITEM_ID,
-    name: TestConstants.NAME,
-    friendlyName: TestConstants.ITEM_ID,
+    familyId: TestConstants.ID,
+    name: TestConstants.ITEM_ID,
     notes: TestConstants.NOTES,
     borrower: TestConstants.BORROWER,
     borrowTime: 1000000000010,

@@ -14,7 +14,8 @@ import {
     TAGS_TABLE, TagsSchema,
     TRANSACTIONS_TABLE, TransactionsSchema,
     HISTORY_TABLE, HistorySchema,
-    SCHEDULE_TABLE, ScheduleSchema
+    SCHEDULE_TABLE, ScheduleSchema,
+    USER_TABLE, UserSchema
 } from "../../src/db/Schemas"
 
 // Mimics the shape of aws-sdk v2's StringSet, since this local mock
@@ -32,6 +33,7 @@ interface LocalDB {
     history: { [key: string]: HistorySchema },
     schedule: { [key: string]: ScheduleSchema}
     transactions: { [key: string]: TransactionsSchema }
+    user: { [key: string]: UserSchema }
 }
 
 /**
@@ -95,6 +97,10 @@ export class LocalDBClient implements DBClient {
                 const val: TransactionsSchema = params.Item as TransactionsSchema
                 const key: string = val.number
                 this.db.transactions[key] = val
+            } else if (params.TableName === USER_TABLE) {
+                const val: UserSchema = params.Item as UserSchema
+                const key: string = val.id
+                this.db.user[key] = val
             } else {
                 throw new Error("Invalid Table Name: " + params.TableName)
             }
@@ -245,6 +251,8 @@ export class LocalDBClient implements DBClient {
             return this.db.schedule
         } else if (tableName == TRANSACTIONS_TABLE) {
             return this.db.transactions
+        } else if (tableName === USER_TABLE) {
+            return this.db.user
         } else {
             throw new Error("Invalid Table Name")
         }

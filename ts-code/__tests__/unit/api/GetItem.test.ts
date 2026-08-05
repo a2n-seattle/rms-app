@@ -6,10 +6,11 @@ import { LocalDBClient } from "../../../__dev__/db/LocalDBClient"
 test('will get item correctly when id exists', async () => {
     const dbClient: LocalDBClient = new LocalDBClient(DBSeed.ONE_NAME_TWO_ITEMS)
     const api: GetItem = new GetItem(dbClient)
-    
+
     const expectedMain: MainSchema = {
-        id: TestConstants.NAME,
-        displayName: TestConstants.DISPLAYNAME,
+        id: TestConstants.ID,
+        nameKey: TestConstants.NAME,
+        name: TestConstants.DISPLAYNAME,
         description: TestConstants.DESCRIPTION,
         owner: TestConstants.OWNER,
         location: TestConstants.LOCATION,
@@ -20,8 +21,8 @@ test('will get item correctly when id exists', async () => {
     const expectedItems: ItemsSchema[] = [
         {
             id: TestConstants.ITEM_ID,
-            name: TestConstants.NAME,
-            friendlyName: TestConstants.ITEM_ID,
+            familyId: TestConstants.ID,
+            name: TestConstants.ITEM_ID,
             borrower: "",
             borrowTime: 0,
             returnTime: 0,
@@ -45,8 +46,9 @@ test('will get item correctly when name exists', async () => {
     const api: GetItem = new GetItem(dbClient)
 
     const expectedMain: MainSchema = {
-        id: TestConstants.NAME,
-        displayName: TestConstants.DISPLAYNAME,
+        id: TestConstants.ID,
+        nameKey: TestConstants.NAME,
+        name: TestConstants.DISPLAYNAME,
         description: TestConstants.DESCRIPTION,
         owner: TestConstants.OWNER,
         location: TestConstants.LOCATION,
@@ -57,8 +59,8 @@ test('will get item correctly when name exists', async () => {
     const expectedItems: ItemsSchema[] = [
         {
             id: TestConstants.ITEM_ID,
-            name: TestConstants.NAME,
-            friendlyName: TestConstants.ITEM_ID,
+            familyId: TestConstants.ID,
+            name: TestConstants.ITEM_ID,
             borrower: "",
             borrowTime: 0,
             returnTime: 0,
@@ -68,8 +70,8 @@ test('will get item correctly when name exists', async () => {
         },
         {
             id: TestConstants.ITEM_ID_2,
-            name: TestConstants.NAME,
-            friendlyName: TestConstants.ITEM_ID_2,
+            familyId: TestConstants.ID,
+            name: TestConstants.ITEM_ID_2,
             borrower: "",
             borrowTime: 0,
             returnTime: 0,
@@ -79,7 +81,7 @@ test('will get item correctly when name exists', async () => {
         }
     ]
     const expected: ReturnObject = new ReturnObject(expectedMain, expectedItems)
-    
+
     await expect(
         api.execute({
             key: TestConstants.NAME
@@ -91,7 +93,7 @@ test('will get item correctly when name exists', async () => {
 test('will throw excpetion when key is invalid', async () => {
     const dbClient: LocalDBClient = new LocalDBClient(DBSeed.ONE_NAME)
     const api: GetItem = new GetItem(dbClient)
-    
+
     await expect(
         api.execute({
             key: TestConstants.BAD_REQUEST

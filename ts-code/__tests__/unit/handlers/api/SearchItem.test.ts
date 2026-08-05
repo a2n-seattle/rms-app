@@ -18,16 +18,17 @@ test('will search item by tags correctly when using handler', async () => {
     ).resolves.toEqual({
         statusCode: 200,
         body: JSON.stringify({
-            map: { [TestConstants.NAME_2]: { name: TestConstants.NAME_2, occurrences: 1, relevance: 0 } },
+            map: { [TestConstants.ID_2]: { id: TestConstants.ID_2, occurrences: 1, relevance: 0 } },
             entries: [{
-                id: TestConstants.NAME_2,
-                displayName: TestConstants.NAME_2,
+                id: TestConstants.ID_2,
                 description: TestConstants.DESCRIPTION_2,
                 items: [TestConstants.ITEM_ID_2],
                 tags: [TestConstants.TAG, TestConstants.TAG_2],
                 owner: TestConstants.OWNER_2,
                 location: TestConstants.LOCATION_2,
-                batch: []
+                batch: [],
+                nameKey: TestConstants.NAME_2,
+                name: TestConstants.NAME_2
             }]
         })
     })

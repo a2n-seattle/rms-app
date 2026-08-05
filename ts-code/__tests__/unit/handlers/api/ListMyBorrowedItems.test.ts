@@ -7,26 +7,26 @@ import { ItemsSchema } from "../../../../src/db/Schemas"
 
 const BORROWED_ITEM_1: ItemsSchema = {
     id: TestConstants.ITEM_ID,
-    name: TestConstants.NAME,
     notes: TestConstants.NOTES,
     borrower: TestConstants.BORROWER,
     history: ["1000000000010-123"],
     schedule: [],
-    friendlyName: TestConstants.ITEM_ID,
     borrowTime: 1000000000010,
-    returnTime: 0
+    returnTime: 0,
+    familyId: TestConstants.ID,
+    name: TestConstants.ITEM_ID
 }
 
 const BORROWED_ITEM_2: ItemsSchema = {
     id: TestConstants.ITEM_ID_2,
-    name: TestConstants.NAME_2,
     notes: TestConstants.NOTES_2,
     borrower: TestConstants.BORROWER,
     history: ["1000000000010-12345"],
     schedule: [],
-    friendlyName: TestConstants.ITEM_ID_2,
     borrowTime: 1000000000010,
-    returnTime: 0
+    returnTime: 0,
+    familyId: TestConstants.ID_2,
+    name: TestConstants.ITEM_ID_2
 }
 
 test('will list borrowed items correctly when using handler', async () => {

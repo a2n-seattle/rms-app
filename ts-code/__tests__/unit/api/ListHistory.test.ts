@@ -5,7 +5,7 @@ import { HistorySchema } from "../../../src/db/Schemas"
 
 const HISTORY_ENTRY_1: HistorySchema = {
     id: "1000000000010-123",
-    name: TestConstants.NAME,
+    name: TestConstants.DISPLAYNAME,
     itemId: TestConstants.ITEM_ID,
     borrower: TestConstants.BORROWER,
     action: "borrow",

@@ -4,7 +4,9 @@ import { LocalDBClient } from "../../../__dev__/db/LocalDBClient"
 import { BatchSchema } from "../../../src/db/Schemas"
 
 const TEST_BATCH: BatchSchema = {
-    id: TestConstants.BATCH,
+    id: TestConstants.BATCH_ID,
+    nameKey: TestConstants.BATCH,
+    name: TestConstants.BATCH,
     val: ["123", "12345"],
     groups: [TestConstants.GROUP]
 }

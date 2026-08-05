@@ -37,9 +37,10 @@ export interface RmsTables {
     history: ITable
     schedule: ITable
     transactions: ITable
+    user: ITable
 }
 
-const UNIFORM_TABLE_NAMES = ["main", "items", "tags", "batch", "history", "schedule"] as const
+const UNIFORM_TABLE_NAMES = ["main", "items", "tags", "batch", "history", "schedule", "user"] as const
 
 export function defineTables(stack: Stack, awsAccountId: string, awsRegion: string, envSuffix: string): RmsTables {
     const tableArn = (name: string) =>

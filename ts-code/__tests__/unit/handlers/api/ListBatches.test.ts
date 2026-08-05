@@ -6,9 +6,11 @@ import { LocalMetricsClient } from "../../../../__dev__/metrics/LocalMetricsClie
 import { BatchSchema } from "../../../../src/db/Schemas"
 
 const TEST_BATCH: BatchSchema = {
-    id: TestConstants.BATCH,
+    id: TestConstants.BATCH_ID,
     val: ["123", "12345"],
-    groups: [TestConstants.GROUP]
+    groups: [TestConstants.GROUP],
+    nameKey: TestConstants.BATCH,
+    name: TestConstants.BATCH
 }
 
 test('will list batches correctly when using handler', async () => {

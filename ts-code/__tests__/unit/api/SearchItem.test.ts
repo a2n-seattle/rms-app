@@ -10,12 +10,12 @@ test('will search item correctly when tag exists', async () => {
         tags: [ TestConstants.TAG_2, TestConstants.TAG ]
     }).then((search: SearchItemReturn) => {
         expect(Object.keys(search.map).length).toEqual(2)
-        expect(search.map[TestConstants.NAME].occurrences).toEqual(1)
-        expect(search.map[TestConstants.NAME].relevance).toEqual(1)
-        expect(search.map[TestConstants.NAME_2].occurrences).toEqual(2)
-        expect(search.map[TestConstants.NAME_2].relevance).toEqual(0)
-        expect(search.entries[0].id).toEqual(TestConstants.NAME_2)
-        expect(search.entries[1].id).toEqual(TestConstants.NAME)
+        expect(search.map[TestConstants.ID].occurrences).toEqual(1)
+        expect(search.map[TestConstants.ID].relevance).toEqual(1)
+        expect(search.map[TestConstants.ID_2].occurrences).toEqual(2)
+        expect(search.map[TestConstants.ID_2].relevance).toEqual(0)
+        expect(search.entries[0].id).toEqual(TestConstants.ID_2)
+        expect(search.entries[1].id).toEqual(TestConstants.ID)
     })
     expect(dbClient.getDB()).toEqual(DBSeed.TWO_NAMES)
 })

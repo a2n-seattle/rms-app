@@ -22,7 +22,7 @@ test('will delete item correctly when name has two items', async () => {
         api.execute({
             id: TestConstants.ITEM_ID_2,
         })
-    ).resolves.toEqual(`Deleted a '${TestConstants.NAME}' from the inventory.`)
+    ).resolves.toEqual(`Deleted a '${TestConstants.DISPLAYNAME}' from the inventory.`)
     expect(dbClient.getDB()).toEqual(DBSeed.ONE_NAME)
 })
 

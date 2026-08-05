@@ -37,8 +37,8 @@ export default async function BatchesPage({
                             {items.map((batch) => (
                                 <tr key={batch.id}>
                                     <td>
-                                        <a href={`/batches/${encodeURIComponent(batch.id)}`} className={styles.batchLink}>
-                                            {batch.id}
+                                        <a href={`/batches/${encodeURIComponent(batch.name)}`} className={styles.batchLink}>
+                                            {batch.name}
                                         </a>
                                     </td>
                                     <td>{batch.val.length}</td>

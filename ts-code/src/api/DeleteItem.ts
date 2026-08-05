@@ -1,6 +1,7 @@
 import { MainTable } from "../db/MainTable"
 import { ItemTable } from "../db/ItemTable"
 import { TagTable } from "../db/TagTable"
+import { UserTable } from "../db/UserTable"
 import { TransactionsTable } from "../db/TransactionsTable"
 import { MainSchema } from "../db/Schemas"
 import { DBClient } from "../injection/db/DBClient"
@@ -16,6 +17,7 @@ export class DeleteItem {
     private readonly mainTable: MainTable
     private readonly itemTable: ItemTable
     private readonly tagTable: TagTable
+    private readonly userTable: UserTable
     private readonly transactionsTable: TransactionsTable
     private readonly metrics?: MetricsClient
 
@@ -23,6 +25,7 @@ export class DeleteItem {
         this.mainTable = new MainTable(client)
         this.itemTable = new ItemTable(client)
         this.tagTable = new TagTable(client)
+        this.userTable = new UserTable(client)
         this.transactionsTable = new TransactionsTable(client)
         this.metrics = metrics
     }
@@ -52,17 +55,18 @@ export class DeleteItem {
             () => {
                 return this.performAllFVAs(input)
                     .then(() => this.itemTable.delete(input.id))
-                    .then((name: string) => this.mainTable.get(name))
+                    .then((familyId: string) => this.mainTable.get(familyId))
                     .then((entry: MainSchema) => {
                         if (entry.items.length == 0) {
                             return this.tagTable.delete(entry.id, entry.tags)
                                 .then(() => this.mainTable.delete(entry.id))
-                                .then(() => entry.id)
+                                .then(() => entry.ownerId ? this.userTable.removeOwned(entry.ownerId, entry.id) : Promise.resolve())
+                                .then(() => entry)
                         } else {
-                            return entry.id
+                            return entry
                         }
                     })
-                    .then((name: string) => `Deleted a '${name}' from the inventory.`)
+                    .then((entry: MainSchema) => `Deleted a '${entry.name}' from the inventory.`)
             },
             DeleteItem.NAME, this.metrics
         )

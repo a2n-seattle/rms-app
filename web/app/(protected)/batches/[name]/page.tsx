@@ -32,7 +32,7 @@ export default async function BatchDetailPage({ params }: { params: Promise<{ na
                         {entries.map((entry) => (
                             <tr key={entry.id}>
                                 <td>
-                                    <a href={`/items/${encodeURIComponent(entry.name)}/${encodeURIComponent(entry.id)}`} className={styles.itemLink}>
+                                    <a href={`/items/${encodeURIComponent(entry.id)}/${encodeURIComponent(entry.id)}`} className={styles.itemLink}>
                                         {entry.id}
                                     </a>
                                 </td>

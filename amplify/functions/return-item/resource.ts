@@ -17,6 +17,6 @@ export function defineReturnItemFunction(stack: Stack, tables: RmsTables): Funct
         "ReturnItem",
         "handlers/api/ReturnItem.handler",
         tables,
-        ["main", "items", "tags", "batch", "history", "schedule"]
+        ["main", "items", "tags", "batch", "history", "schedule", "user"]
     )
 }

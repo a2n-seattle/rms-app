@@ -16,7 +16,7 @@ export function ResourcesTable({ items }: { items: MainSchema[] }) {
         }
         return items.filter(
             (item) =>
-                item.displayName.toLowerCase().includes(needle) || item.tags.some((tag) => tag.toLowerCase().includes(needle))
+                item.name.toLowerCase().includes(needle) || item.tags.some((tag) => tag.toLowerCase().includes(needle))
         )
     }, [items, filter])
 
@@ -49,7 +49,7 @@ export function ResourcesTable({ items }: { items: MainSchema[] }) {
                             <tr key={item.id}>
                                 <td>
                                     <a href={`/items/${encodeURIComponent(item.id)}`} className={styles.itemLink}>
-                                        {item.displayName}
+                                        {item.name}
                                     </a>
                                     {item.type === "room" && <Badge>Room</Badge>}
                                 </td>

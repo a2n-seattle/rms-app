@@ -1,4 +1,5 @@
 import { ScheduleTable } from "../db/ScheduleTable"
+import { UserTable } from "../db/UserTable"
 import { TransactionsTable } from "../db/TransactionsTable"
 import { ScheduleSchema } from "../db/Schemas"
 import { DBClient } from "../injection/db/DBClient"
@@ -12,11 +13,13 @@ export class CreateReservation {
     public static NAME: string = "create reservation"
 
     private readonly scheduleTable: ScheduleTable
+    private readonly userTable: UserTable
     private readonly transactionsTable: TransactionsTable
     private readonly metrics?: MetricsClient
 
     public constructor(client: DBClient, metrics?: MetricsClient) {
         this.scheduleTable = new ScheduleTable(client)
+        this.userTable = new UserTable(client)
         this.transactionsTable = new TransactionsTable(client)
         this.metrics = metrics
     }
@@ -64,6 +67,7 @@ export class CreateReservation {
                 .then((id: string) => {
                     return this.scheduleTable
                         .create(id, input.borrower, input.ids, input.startTime, input.endTime, input.notes)
+                        .then(() => this.userTable.addReserved(input.borrower, id))
                         .then(() => id)
                 })
             },

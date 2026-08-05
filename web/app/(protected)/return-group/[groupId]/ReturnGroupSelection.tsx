@@ -68,8 +68,8 @@ export function ReturnGroupSelection({ items, returnAction }: ReturnGroupSelecti
                                 <Checkbox checked={selected.has(item.id)} onChange={() => toggle(item.id)} />
                             </td>
                             <td>
-                                <a href={`/items/${encodeURIComponent(item.name)}/${encodeURIComponent(item.id)}`} className={styles.itemLink}>
-                                    {item.friendlyName || item.id}
+                                <a href={`/items/${encodeURIComponent(item.id)}/${encodeURIComponent(item.id)}`} className={styles.itemLink}>
+                                    {item.name || item.id}
                                 </a>
                             </td>
                             <td>
@@ -79,7 +79,7 @@ export function ReturnGroupSelection({ items, returnAction }: ReturnGroupSelecti
                                     placeholder="e.g. cracked screen"
                                     value={conditions[item.id] ?? ""}
                                     onChange={(e) => setConditions((prev) => ({ ...prev, [item.id]: e.target.value }))}
-                                    aria-label={`Condition notes for ${item.friendlyName || item.id}`}
+                                    aria-label={`Condition notes for ${item.name || item.id}`}
                                 />
                             </td>
                         </tr>

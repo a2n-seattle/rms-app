@@ -8,10 +8,15 @@ import { ScanCommandInput, ScanCommandOutput } from "@aws-sdk/lib-dynamodb"
 const DEFAULT_PAGE_SIZE = 25
 
 /**
- * Lists item types owned by a given owner, paginated. Scan+FilterExpression
- * on MainTable, same shape/caveats as ScheduleTable.listByBorrower
+ * Lists item types owned by a given Cognito user (matched against
+ * `MainSchema.ownerId`, resolved at item-creation time -- see AddItem.ts's
+ * owner-by-email Cognito lookup), paginated. Scan+FilterExpression on
+ * MainTable, same shape/caveats as ScheduleTable.listByBorrower
  * (FilterExpression applies after Limit, so a short/empty page doesn't
  * mean no more data - keep paging until nextPageToken is undefined).
+ *
+ * Items whose owner never resolved to a real Cognito user (a room, "the
+ * church", etc. -- `ownerId` left unset) never show up here.
  */
 export class ListMyOwnedItems {
     public static NAME: string = "list my owned items"
@@ -32,12 +37,12 @@ export class ListMyOwnedItems {
                         const params: ScanCommandInput = {
                             TableName: MAIN_TABLE,
                             Limit: input.limit ?? DEFAULT_PAGE_SIZE,
-                            FilterExpression: "#owner = :owner",
+                            FilterExpression: "#ownerId = :ownerId",
                             ExpressionAttributeNames: {
-                                "#owner": "owner"
+                                "#ownerId": "ownerId"
                             },
                             ExpressionAttributeValues: {
-                                ":owner": input.owner
+                                ":ownerId": input.ownerId
                             },
                             ...(input.pageToken ? { ExclusiveStartKey: decodePageToken(input.pageToken) } : {})
                         }
@@ -55,8 +60,8 @@ export class ListMyOwnedItems {
 
     private performAllFVAs(input: ListMyOwnedItemsInput): Promise<void> {
         return new Promise((resolve, reject) => {
-            if (input.owner == undefined) {
-                reject(new Error("Missing required field 'owner'"))
+            if (input.ownerId == undefined) {
+                reject(new Error("Missing required field 'ownerId'"))
             }
             resolve()
         })
@@ -64,7 +69,7 @@ export class ListMyOwnedItems {
 }
 
 export interface ListMyOwnedItemsInput {
-    owner?: string,
+    ownerId?: string,
     limit?: number,
     pageToken?: string
 }

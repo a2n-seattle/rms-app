@@ -17,6 +17,6 @@ export function defineDeleteItemFunction(stack: Stack, tables: RmsTables): Funct
         "DeleteItem",
         "handlers/api/DeleteItem.handler",
         tables,
-        ["main", "items", "tags", "batch", "history", "schedule"]
+        ["main", "items", "tags", "batch", "history", "schedule", "user"]
     )
 }

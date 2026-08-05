@@ -17,14 +17,15 @@ test('will list items correctly when using handler', async () => {
         statusCode: 200,
         body: JSON.stringify({
             items: [{
-                id: TestConstants.NAME,
-                displayName: TestConstants.DISPLAYNAME,
+                id: TestConstants.ID,
                 description: TestConstants.DESCRIPTION,
                 items: [TestConstants.ITEM_ID],
                 tags: [TestConstants.TAG],
                 owner: TestConstants.OWNER,
                 location: TestConstants.LOCATION,
-                batch: []
+                batch: [],
+                nameKey: TestConstants.NAME,
+                name: TestConstants.DISPLAYNAME
             }],
             nextPageToken: undefined
         })

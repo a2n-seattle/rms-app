@@ -17,6 +17,7 @@
     "@aws-amplify/react-native": "^1.1.8",
     "@aws-amplify/ui-react": "^6.11.1",
     "@aws-sdk/client-cloudwatch": "^3.797.0",
+    "@aws-sdk/client-cognito-identity-provider": "^3.1104.0",
     "@aws-sdk/client-dynamodb": "^3.797.0",
     "@aws-sdk/client-dynamodb-streams": "^3.797.0",
     "@aws-sdk/client-lambda": "^3.797.0",

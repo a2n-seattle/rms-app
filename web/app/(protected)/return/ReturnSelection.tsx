@@ -68,8 +68,8 @@ export function ReturnSelection({ items, returnAction }: ReturnSelectionProps) {
                                 <Checkbox checked={selected.has(item.id)} onChange={() => toggle(item.id)} />
                             </td>
                             <td>
-                                <a href={`/items/${encodeURIComponent(item.name)}/${encodeURIComponent(item.id)}`} className={styles.itemLink}>
-                                    {item.friendlyName || item.id}
+                                <a href={`/items/${encodeURIComponent(item.id)}/${encodeURIComponent(item.id)}`} className={styles.itemLink}>
+                                    {item.name || item.id}
                                 </a>
                             </td>
                             <td>{item.borrowTime ? new Date(item.borrowTime).toLocaleString() : "—"}</td>

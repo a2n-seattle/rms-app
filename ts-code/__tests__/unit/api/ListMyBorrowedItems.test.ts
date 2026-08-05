@@ -5,8 +5,8 @@ import { ItemsSchema } from "../../../src/db/Schemas"
 
 const BORROWED_ITEM_1: ItemsSchema = {
     id: TestConstants.ITEM_ID,
-    name: TestConstants.NAME,
-    friendlyName: TestConstants.ITEM_ID,
+    familyId: TestConstants.ID,
+    name: TestConstants.ITEM_ID,
     notes: TestConstants.NOTES,
     borrower: TestConstants.BORROWER,
     borrowTime: 1000000000010,
@@ -17,8 +17,8 @@ const BORROWED_ITEM_1: ItemsSchema = {
 
 const BORROWED_ITEM_2: ItemsSchema = {
     id: TestConstants.ITEM_ID_2,
-    name: TestConstants.NAME_2,
-    friendlyName: TestConstants.ITEM_ID_2,
+    familyId: TestConstants.ID_2,
+    name: TestConstants.ITEM_ID_2,
     notes: TestConstants.NOTES_2,
     borrower: TestConstants.BORROWER,
     borrowTime: 1000000000010,

@@ -17,6 +17,6 @@ export function defineCreateReservationFunction(stack: Stack, tables: RmsTables)
         "CreateReservation",
         "handlers/api/CreateReservation.handler",
         tables,
-        ["main", "items", "tags", "batch", "history", "schedule"]
+        ["main", "items", "tags", "batch", "history", "schedule", "user"]
     )
 }

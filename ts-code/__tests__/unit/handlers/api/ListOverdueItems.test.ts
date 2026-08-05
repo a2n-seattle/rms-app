@@ -7,14 +7,14 @@ import { ItemsSchema } from "../../../../src/db/Schemas"
 
 const OVERDUE_ITEM: ItemsSchema = {
     id: TestConstants.ITEM_ID,
-    name: TestConstants.NAME,
     notes: TestConstants.NOTES,
     borrower: TestConstants.BORROWER,
     history: ["1000000000010-123"],
     schedule: ["123-12345"],
-    friendlyName: TestConstants.ITEM_ID,
     borrowTime: 1000000000010,
-    returnTime: 0
+    returnTime: 0,
+    familyId: TestConstants.ID,
+    name: TestConstants.ITEM_ID
 }
 
 test('will list overdue items correctly when using handler', async () => {

@@ -25,7 +25,7 @@ export default async function SubItemDetailPage({ params }: { params: Promise<{ 
         if (!session) {
             return
         }
-        await borrowItem(session.idToken, { ids: [subId], borrower: session.email })
+        await borrowItem(session.idToken, { ids: [subId], borrower: session.sub })
         revalidatePath(`/items/${id}/${subId}`)
     }
 
@@ -35,7 +35,7 @@ export default async function SubItemDetailPage({ params }: { params: Promise<{ 
         if (!session) {
             return
         }
-        await returnItem(session.idToken, { ids: [subId], borrower: session.email })
+        await returnItem(session.idToken, { ids: [subId], borrower: session.sub })
         revalidatePath(`/items/${id}/${subId}`)
     }
 
@@ -51,7 +51,7 @@ export default async function SubItemDetailPage({ params }: { params: Promise<{ 
 
         await createReservation(session.idToken, {
             ids: [subId],
-            borrower: session.email,
+            borrower: session.sub,
             startTime,
             endTime,
             notes: notes || undefined,
@@ -62,7 +62,7 @@ export default async function SubItemDetailPage({ params }: { params: Promise<{ 
     return (
         <div>
             <div className={styles.header}>
-                <h1 className={styles.title}>{main.displayName}</h1>
+                <h1 className={styles.title}>{main.name}</h1>
                 <p className={styles.description}>{main.description}</p>
             </div>
             <Card className={styles.metaCard}>

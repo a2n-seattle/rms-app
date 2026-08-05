@@ -16,7 +16,7 @@ export default async function ReservationsPage({
 
     const { page } = await searchParams
     const { items, nextPageToken } = await listReservations(session.idToken, {
-        borrower: session.email,
+        borrower: session.sub,
         pageToken: page,
     })
 

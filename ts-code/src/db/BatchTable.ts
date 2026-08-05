@@ -1,6 +1,7 @@
+import { randomUUID } from "crypto"
 import { BATCH_TABLE, BatchSchema, ITEMS_TABLE, ItemsSchema, MAIN_TABLE, MainSchema } from "./Schemas"
 import { DBClient } from "../injection/db/DBClient"
-import { DeleteCommandInput, GetCommandInput, GetCommandOutput, PutCommandInput, UpdateCommandInput } from "@aws-sdk/lib-dynamodb"
+import { DeleteCommandInput, GetCommandInput, GetCommandOutput, PutCommandInput, ScanCommandInput, ScanCommandOutput, UpdateCommandInput } from "@aws-sdk/lib-dynamodb"
 
 export class BatchTable {
     private readonly client: DBClient
@@ -10,7 +11,9 @@ export class BatchTable {
     }
 
     /**
-     * Adds specified items to batch. Will override existing batch if exists.
+     * Adds specified items to batch. Creates a new batch id every call -- if a batch with the
+     * same name already exists, the caller (CreateBatch) is responsible for deleting it first
+     * to get "same name overwrites" semantics, since id is no longer derived from name.
      *
      * @param name Name of Batch
      * @param ids RMS IDs of the items in the Batch
@@ -23,7 +26,9 @@ export class BatchTable {
         return Promise.all(ids.map((id: string) => this.attachBatchToItem(name, id)))
             .then(() => {
                 const item: BatchSchema = {
-                    id: name.toLowerCase(),
+                    id: this.generateId(),
+                    nameKey: name.toLowerCase(),
+                    name: name,
                     val: ids,
                     groups: groups
                 }
@@ -32,7 +37,7 @@ export class BatchTable {
                     TableName: BATCH_TABLE,
                     Item: item
                 }
-                
+
                 return this.client.put(params)
             })
             .catch((reason: any) => {
@@ -64,7 +69,7 @@ export class BatchTable {
                     const updateParams: UpdateCommandInput = {
                         TableName: MAIN_TABLE,
                         Key: {
-                            "id": item.name
+                            "id": item.familyId
                         },
                         UpdateExpression: "SET #key = list_append(#key, :val)",
                         ExpressionAttributeNames: {
@@ -98,10 +103,10 @@ export class BatchTable {
                             const params: DeleteCommandInput = {
                                 TableName: BATCH_TABLE,
                                 Key: {
-                                    "id": name.toLowerCase()
+                                    "id": entry.id
                                 }
                             }
-                            
+
                             return this.client.delete(params)
                         })
                 } else {
@@ -114,11 +119,11 @@ export class BatchTable {
         batchName: string,
         id: string
     ): Promise<any> {
-        return this.getItemName(id)
-            .then((name: string) => this.removeBatchFromMain(batchName, name))
+        return this.getItemFamilyId(id)
+            .then((familyId: string) => this.removeBatchFromMain(batchName, familyId))
     }
 
-    private getItemName(id: string): Promise<string> {
+    private getItemFamilyId(id: string): Promise<string> {
         const getItemParams: GetCommandInput = {
             TableName: ITEMS_TABLE,
             Key: {
@@ -131,22 +136,22 @@ export class BatchTable {
                 if (!item) {
                     throw Error(`Unable to find item ${id}`)
                 }
-                return item.name
+                return item.familyId
             })
     }
 
-    private removeBatchFromMain(batchName: string, name: string): Promise<any> {
+    private removeBatchFromMain(batchName: string, familyId: string): Promise<any> {
         const getMainParams: GetCommandInput = {
             TableName: MAIN_TABLE,
             Key: {
-                "id": name
+                "id": familyId
             }
         }
         return this.client.get(getMainParams)
             .then((mainOutput: GetCommandOutput) => {
                 const main: MainSchema = mainOutput.Item as MainSchema
                 if (!main) {
-                    throw Error(`Unable to find name ${name}`)
+                    throw Error(`Unable to find item family ${familyId}`)
                 }
 
                 const idx: number = main.batch.indexOf(batchName)
@@ -157,7 +162,7 @@ export class BatchTable {
                 const deleteParams: UpdateCommandInput = {
                     TableName: MAIN_TABLE,
                     Key: {
-                        "id": name
+                        "id": familyId
                     },
                     UpdateExpression: `REMOVE #key[${idx}]`,
                     ExpressionAttributeNames: {
@@ -169,18 +174,32 @@ export class BatchTable {
     }
 
     /**
-     * Get list of IDs from Batch Name
+     * Get batch by name (case-insensitive exact match).
+     *
+     * Implemented as a Scan+FilterExpression on `nameKey` -- see MainTable.getByName for the
+     * same tradeoff/known-limitation notes (no GSI, unpaginated Scan).
      */
     public get(
         name: string
-    ): Promise<BatchSchema> {
-        const params: GetCommandInput = {
+    ): Promise<BatchSchema | undefined> {
+        const params: ScanCommandInput = {
             TableName: BATCH_TABLE,
-            Key: {
-                "id": name.toLowerCase()
+            FilterExpression: "#key = :val",
+            ExpressionAttributeNames: {
+                "#key": "nameKey"
+            },
+            ExpressionAttributeValues: {
+                ":val": name.toLowerCase()
             }
         }
-        return this.client.get(params)
-            .then((output: GetCommandOutput) => output.Item as BatchSchema)
+        return this.client.scan(params)
+            .then((output: ScanCommandOutput) => (output.Items?.[0] as BatchSchema) ?? undefined)
+    }
+
+    /**
+     * Test seam: overridden in unit tests for deterministic ids.
+     */
+    protected generateId(): string {
+        return randomUUID()
     }
 }

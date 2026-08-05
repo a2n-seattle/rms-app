@@ -1,5 +1,7 @@
 import { ScheduleTable } from "../db/ScheduleTable"
+import { UserTable } from "../db/UserTable"
 import { TransactionsTable } from "../db/TransactionsTable"
+import { ScheduleSchema } from "../db/Schemas"
 import { DBClient } from "../injection/db/DBClient"
 import { MetricsClient } from "../injection/metrics/MetricsClient"
 import { emitAPIMetrics } from "../metrics/MetricsHelper"
@@ -11,11 +13,13 @@ export class DeleteReservation {
     public static NAME: string = "delete reservation"
 
     private readonly scheduleTable: ScheduleTable
+    private readonly userTable: UserTable
     private readonly transactionsTable: TransactionsTable
     private readonly metrics?: MetricsClient
 
     public constructor(client: DBClient, metrics?: MetricsClient) {
         this.scheduleTable = new ScheduleTable(client)
+        this.userTable = new UserTable(client)
         this.transactionsTable = new TransactionsTable(client)
         this.metrics = metrics
     }
@@ -39,8 +43,10 @@ export class DeleteReservation {
         return emitAPIMetrics(
             () => {
                     return this.performAllFVAs(input)
-                        .then(() => {
+                        .then(() => this.scheduleTable.get(input.id))
+                        .then((schedule: ScheduleSchema) => {
                             return this.scheduleTable.delete(input.id)
+                                .then(() => schedule ? this.userTable.removeReserved(schedule.borrower, input.id) : Promise.resolve())
                         })
                         .then(() => `Successfully deleted reservation '${input.id.toString()}'.`)
             },

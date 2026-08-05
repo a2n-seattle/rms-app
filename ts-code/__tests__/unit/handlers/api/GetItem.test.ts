@@ -19,25 +19,26 @@ test('will get item correctly when using handler', async () => {
         statusCode: 200,
         body: JSON.stringify({
             main: {
-                id: TestConstants.NAME,
-                displayName: TestConstants.DISPLAYNAME,
+                id: TestConstants.ID,
                 description: TestConstants.DESCRIPTION,
                 items: [TestConstants.ITEM_ID],
                 tags: [TestConstants.TAG],
                 owner: TestConstants.OWNER,
                 location: TestConstants.LOCATION,
-                batch: []
+                batch: [],
+                nameKey: TestConstants.NAME,
+                name: TestConstants.DISPLAYNAME
             },
             items: [{
                 id: TestConstants.ITEM_ID,
-                name: TestConstants.NAME,
                 notes: TestConstants.NOTES,
                 borrower: "",
                 history: [],
                 schedule: [],
-                friendlyName: TestConstants.ITEM_ID,
                 borrowTime: 0,
-                returnTime: 0
+                returnTime: 0,
+                familyId: TestConstants.ID,
+                name: TestConstants.ITEM_ID
             }]
         })
     })

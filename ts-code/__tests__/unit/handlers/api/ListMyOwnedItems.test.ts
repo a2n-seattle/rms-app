@@ -6,18 +6,20 @@ import { LocalMetricsClient } from "../../../../__dev__/metrics/LocalMetricsClie
 import { MainSchema } from "../../../../src/db/Schemas"
 
 const OWNED_MAIN: MainSchema = {
-    id: TestConstants.NAME,
-    displayName: TestConstants.DISPLAYNAME,
+    id: TestConstants.ID,
     description: TestConstants.DESCRIPTION,
     items: ["123", "12345"],
     tags: ["tag1"],
     owner: TestConstants.OWNER,
     location: TestConstants.LOCATION,
-    batch: []
+    batch: [],
+    nameKey: TestConstants.NAME,
+    name: TestConstants.DISPLAYNAME,
+    ownerId: TestConstants.OWNER
 }
 
 test('will list owned items correctly when using handler', async () => {
-    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.ONE_NAME_TWO_ITEMS)
+    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.ONE_NAME_TWO_ITEMS_OWNED)
     const metricsClient: LocalMetricsClient = new LocalMetricsClient()
 
     getClients.getDBClient = jest.fn(() => dbClient)
@@ -25,7 +27,7 @@ test('will list owned items correctly when using handler', async () => {
 
     await expect(
         handler({
-            body: JSON.stringify({ owner: TestConstants.OWNER })
+            body: JSON.stringify({ ownerId: TestConstants.OWNER })
         } as any, null, null)
     ).resolves.toEqual({
         statusCode: 200,
@@ -48,7 +50,7 @@ test('will fail when owner is missing using handler', async () => {
         handler({ body: JSON.stringify({}) } as any, null, null)
     ).resolves.toEqual({
         statusCode: 400,
-        body: JSON.stringify({ error: "Missing required field 'owner'" })
+        body: JSON.stringify({ error: "Missing required field 'ownerId'" })
     })
     metricsClient.assureState(1)
 })

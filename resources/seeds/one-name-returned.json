@@ -1,8 +1,7 @@
 {
     "main": {
-        "test name": {
-            "id": "test name",
-            "displayName": "Test Name",
+        "00000000-0000-0000-0000-000000000001": {
+            "id": "00000000-0000-0000-0000-000000000001",
             "description": "test description",
             "items": [
                 "123"
@@ -12,13 +11,14 @@
             ],
             "owner": "test owner",
             "location": "test location",
-            "batch": []
+            "batch": [],
+            "nameKey": "test name",
+            "name": "Test Name"
         }
     },
     "items": {
         "123": {
             "id": "123",
-            "name": "test name",
             "notes": "test note",
             "borrower": "",
             "history": [
@@ -26,9 +26,10 @@
                 "1000000000001-123"
             ],
             "schedule": [],
-            "friendlyName": "123",
             "borrowTime": 1000000000000,
-            "returnTime": 1000000000001
+            "returnTime": 1000000000001,
+            "familyId": "00000000-0000-0000-0000-000000000001",
+            "name": "123"
         }
     },
     "batch": {},
@@ -36,7 +37,7 @@
         "tag1": {
             "id": "tag1",
             "val": [
-                "test name"
+                "00000000-0000-0000-0000-000000000001"
             ]
         }
     },
@@ -46,7 +47,7 @@
             "borrower": "test borrower",
             "itemId": "123",
             "id": "1000000000000-123",
-            "name": "test name",
+            "name": "Test Name",
             "notes": "test note",
             "timestamp": 1000000000000
         },
@@ -55,11 +56,19 @@
             "borrower": "test borrower",
             "itemId": "123",
             "id": "1000000000001-123",
-            "name": "test name",
+            "name": "Test Name",
             "notes": "test note 2",
             "timestamp": 1000000000001
         }
     },
     "schedule": {},
-    "transactions": {}
+    "transactions": {},
+    "user": {
+        "test borrower": {
+            "id": "test borrower",
+            "owned": [],
+            "reserved": [],
+            "borrowed": []
+        }
+    }
 }

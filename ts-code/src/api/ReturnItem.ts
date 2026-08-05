@@ -1,4 +1,5 @@
 import { ItemTable } from "../db/ItemTable"
+import { UserTable } from "../db/UserTable"
 import { TransactionsTable } from "../db/TransactionsTable"
 import { DBClient } from "../injection/db/DBClient"
 import { MetricsClient } from "../injection/metrics/MetricsClient"
@@ -11,11 +12,13 @@ export class ReturnItem {
     public static NAME: string = "return item"
 
     private readonly itemTable: ItemTable
+    private readonly userTable: UserTable
     private readonly transactionsTable: TransactionsTable
     private readonly metrics?: MetricsClient
 
     public constructor(client: DBClient, metrics?: MetricsClient) {
         this.itemTable = new ItemTable(client)
+        this.userTable = new UserTable(client)
         this.transactionsTable = new TransactionsTable(client)
         this.metrics = metrics
     }
@@ -56,6 +59,7 @@ export class ReturnItem {
                         .then(() => {
                             return Promise.all(input.ids.map((id: string) =>
                                 this.itemTable.changeBorrower(id, input.borrower, "return", input.notes, undefined, input.conditions?.[id])
+                                    .then(() => this.userTable.removeBorrowed(input.borrower, id))
                             ))
                         })
                         .then(() => `Successfully returned items '${input.ids.toString()}'.`)

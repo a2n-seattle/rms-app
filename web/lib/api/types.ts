@@ -9,9 +9,11 @@ export interface GetItemInput {
 
 export interface MainSchema {
     id: string
-    displayName: string
+    nameKey: string
+    name: string
     description: string
     owner: string
+    ownerId?: string
     location: string
     batch: string[]
     tags: string[]
@@ -21,8 +23,8 @@ export interface MainSchema {
 
 export interface ItemsSchema {
     id: string
+    familyId: string
     name: string
-    friendlyName: string
     borrower: string
     borrowTime: number
     returnTime: number
@@ -35,6 +37,8 @@ export interface ItemsSchema {
 export interface GetItemResult {
     main: MainSchema
     items: ItemsSchema[]
+    ownerDisplayName?: string
+    borrowerDisplayNames?: (string | undefined)[]
 }
 
 export interface ListItemsInput {
@@ -102,7 +106,7 @@ export interface DeleteReservationInput {
 }
 
 export interface ListMyOwnedItemsInput {
-    owner?: string
+    ownerId?: string
     limit?: number
     pageToken?: string
 }
@@ -169,6 +173,8 @@ export interface ListHistoryResult {
 
 export interface BatchSchema {
     id: string
+    nameKey: string
+    name: string
     val: string[]
     groups: string[]
 }
