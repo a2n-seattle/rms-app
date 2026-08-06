@@ -48,15 +48,25 @@ test("borrow via basket, return via the batched group confirmation with a condit
         await returnLink.click()
 
         await expect(page).toHaveURL(/\/return-group\//)
-        await expect(page.getByRole("button", { name: "Confirm Return (1)" })).toBeVisible({ timeout: 15000 })
+        const confirmButton = page.getByRole("button", { name: "Confirm Return (1)" })
+        // GetBorrowGroup's Scan is eventually consistent (no ConsistentRead) -- loaded
+        // right after borrowing, this page can briefly render "Nothing left to return in
+        // this group" with zero items. Poll by reloading rather than checking once, same
+        // caveat as this suite's other Scan-backed reads.
+        await expect
+            .poll(
+                async () => {
+                    await page.reload()
+                    return confirmButton.isVisible()
+                },
+                { timeout: 15000 }
+            )
+            .toBe(true)
 
         const condition = `e2e-condition-${Date.now()}`
         await page.getByLabel(new RegExp(`Condition notes for`)).fill(condition)
 
-        await Promise.all([
-            page.waitForResponse((response) => response.request().method() === "POST"),
-            page.getByRole("button", { name: "Confirm Return (1)" }).click(),
-        ])
+        await Promise.all([page.waitForResponse((response) => response.request().method() === "POST"), confirmButton.click()])
 
         await expect
             .poll(
