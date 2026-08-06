@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test"
+import { waitVisible } from "./cleanup"
 
 /**
  * Multi-select return: login -> borrow the test item -> visit /return ->
@@ -31,25 +32,30 @@ test("borrow, then return via the multi-select /return page", async ({ page }) =
     // "Return" button appearing instead.
     await expect(page.getByRole("button", { name: "Return" })).toBeVisible({ timeout: 15000 })
 
-    // ListMyBorrowedItems scans+filters, eventually consistent -- poll
-    // rather than assert once (same caveat as other specs in this suite).
-    await expect
-        .poll(
-            async () => {
-                await page.goto("/return")
-                return page.getByRole("button", { name: /Confirm Return/ }).isVisible()
-            },
-            { timeout: 15000 }
-        )
-        .toBe(true)
+    // try/finally from here on: a failed assertion must not leave the shared fixture item
+    // stuck borrowed for every other spec that runs after this one in the same CI job.
+    try {
+        // ListMyBorrowedItems scans+filters, eventually consistent -- poll
+        // rather than assert once (same caveat as other specs in this suite).
+        const confirmButton = page.getByRole("button", { name: "Confirm Return (1)" })
+        await expect
+            .poll(
+                async () => {
+                    await page.goto("/return")
+                    return confirmButton.isVisible()
+                },
+                { timeout: 15000 }
+            )
+            .toBe(true)
 
-    await expect(page.getByRole("button", { name: "Confirm Return (1)" })).toBeVisible()
+        await Promise.all([page.waitForResponse((response) => response.request().method() === "POST"), confirmButton.click()])
+    } finally {
+        await page.goto(`/items/${encodeURIComponent(TEST_ITEM_ID!)}`)
+        const returnButton = page.getByRole("button", { name: "Return" })
+        if (await waitVisible(returnButton)) {
+            await returnButton.click()
+        }
+    }
 
-    await Promise.all([
-        page.waitForResponse((response) => response.request().method() === "POST"),
-        page.getByRole("button", { name: "Confirm Return (1)" }).click(),
-    ])
-
-    await page.goto(`/items/${encodeURIComponent(TEST_ITEM_ID!)}`)
-    await expect(page.getByText("(available)")).toBeVisible()
+    await expect(page.getByText("(available)")).toBeVisible({ timeout: 15000 })
 })
