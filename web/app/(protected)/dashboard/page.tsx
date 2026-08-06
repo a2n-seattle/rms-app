@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/Button"
 import { Badge } from "@/components/ui/Badge"
 import { TabList, Tab } from "@/components/ui/Tabs"
 import { ActionForm } from "@/components/ui/ActionForm"
+import { BorrowedItemsTable } from "./BorrowedItemsTable"
 import styles from "./dashboard.module.css"
 
 type DashboardTab = "borrowed" | "owned" | "scheduled" | "history"
@@ -148,33 +149,7 @@ export default async function DashboardPage({
                     (borrowed!.items.length === 0 ? (
                         <p className={styles.empty}>Not currently borrowing anything.</p>
                     ) : (
-                        <>
-                            <a href="/return" className={styles.itemLink}>
-                                Return items
-                            </a>
-                            <Table>
-                                <thead>
-                                    <tr>
-                                        <th>Item</th>
-                                        <th>Borrowed</th>
-                                        <th>Notes</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {borrowed!.items.map((item) => (
-                                        <tr key={item.id}>
-                                            <td>
-                                                <a href={`/items/${encodeURIComponent(item.id)}`} className={styles.itemLink}>
-                                                    {item.name || item.id}
-                                                </a>
-                                            </td>
-                                            <td>{item.borrowTime ? new Date(item.borrowTime).toLocaleString() : "—"}</td>
-                                            <td className={styles.notes}>{item.notes || "—"}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </Table>
-                        </>
+                        <BorrowedItemsTable items={borrowed!.items} />
                     ))}
 
                 {/* owned is only undefined when tab !== "owned" (see the fetch above) */}

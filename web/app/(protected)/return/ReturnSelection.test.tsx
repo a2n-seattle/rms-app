@@ -48,3 +48,18 @@ test("Select none disables Confirm Return", () => {
 
     expect(screen.getByRole("button", { name: "Confirm Return (0)" }).hasAttribute("disabled")).toBe(true)
 })
+
+test("allows entering a per-item condition note", () => {
+    render(<ReturnSelection items={[ITEM_1, ITEM_2]} returnAction={jest.fn()} />)
+
+    const conditionInput = screen.getByLabelText("Condition notes for Chair 1") as HTMLInputElement
+    fireEvent.change(conditionInput, { target: { value: "cracked screen" } })
+
+    expect(conditionInput.value).toEqual("cracked screen")
+})
+
+test("only pre-selects the ids passed via initialSelectedIds", () => {
+    render(<ReturnSelection items={[ITEM_1, ITEM_2]} returnAction={jest.fn()} initialSelectedIds={["chair-1"]} />)
+
+    expect(screen.getByText("1 of 2 selected")).not.toBeNull()
+})
