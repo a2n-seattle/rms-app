@@ -19,6 +19,11 @@ const TEST_ITEM_ID = process.env.RMS_TEST_ITEM_ID
 test.skip(!TEST_EMAIL || !TEST_PASSWORD || !TEST_ITEM_ID, "Missing RMS_TEST_USER_EMAIL/RMS_TEST_USER_PASSWORD/RMS_TEST_ITEM_ID")
 
 test("borrow via basket, return via the batched group confirmation with a condition note", async ({ page }) => {
+    // The trailing history-visibility poll alone budgets up to 45s (see below) to ride out
+    // this repo's deliberately low-throughput (1 RCU) tables -- push past the global 60s
+    // default so that budget isn't cut short by everything else this test does first.
+    test.setTimeout(90000)
+
     await page.goto("/test-login")
     await page.getByLabel("Email:").fill(TEST_EMAIL!)
     await page.getByLabel("Password:").fill(TEST_PASSWORD!)
@@ -78,15 +83,21 @@ test("borrow via basket, return via the batched group confirmation with a condit
         // History is written synchronously as part of the return, but ListHistory reads it
         // via a Scan (eventually consistent) same as this suite's other list reads -- give
         // it a longer budget than the rest of this file's polls, since it's the tail end of
-        // a longer chain of writes (return -> changeBorrower -> createHistoryEntry) and has
-        // shown up as the slowest read to converge in CI.
+        // a longer chain of writes (return -> changeBorrower -> createHistoryEntry). This
+        // spec also runs last in the suite, so it inherits the full run's cumulative read
+        // load against this repo's deliberately low-throughput (1 RCU) tables -- confirmed
+        // via a captured server log that a ProvisionedThroughputExceededException, not a
+        // real app issue, is what's actually timing this poll out. DynamoDB's provisioned
+        // capacity is a token bucket that refills over time, so a longer budget with a
+        // slower interval (giving the bucket room to recover between attempts) succeeds
+        // where tighter retrying doesn't.
         await expect
             .poll(
                 async () => {
                     await page.goto("/dashboard?tab=history")
                     return page.getByText(condition).isVisible()
                 },
-                { timeout: 25000, intervals: [2000] }
+                { timeout: 45000, intervals: [5000] }
             )
             .toBe(true)
     } finally {
