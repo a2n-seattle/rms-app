@@ -4,21 +4,26 @@ import { useState } from "react"
 import { Table } from "@/components/ui/Table"
 import { Checkbox } from "@/components/ui/Checkbox"
 import { Button } from "@/components/ui/Button"
+import { Badge } from "@/components/ui/Badge"
 import { ActionForm } from "@/components/ui/ActionForm"
+import { useCart } from "@/lib/cart/CartContext"
 import type { ActionState } from "@/lib/actionState"
 import type { ItemsSchema } from "@/lib/api/types"
 import styles from "./resource-detail.module.css"
 
 interface ResourceBasketProps {
     familyId: string
+    familyName: string
     items: ItemsSchema[]
     isRoom?: boolean
     borrowAction: (prevState: ActionState, formData: FormData) => Promise<ActionState>
     reserveAction: (prevState: ActionState, formData: FormData) => Promise<ActionState>
 }
 
-export function ResourceBasket({ familyId, items, isRoom, borrowAction, reserveAction }: ResourceBasketProps) {
+export function ResourceBasket({ familyId, familyName, items, isRoom, borrowAction, reserveAction }: ResourceBasketProps) {
     const [selected, setSelected] = useState<Set<string>>(new Set(items.map((item) => item.id)))
+    const cart = useCart()
+    const [skippedCount, setSkippedCount] = useState(0)
 
     function toggle(id: string) {
         setSelected((prev) => {
@@ -41,6 +46,23 @@ export function ResourceBasket({ familyId, items, isRoom, borrowAction, reserveA
     }
 
     const selectedIds = Array.from(selected)
+
+    // Unlike browse's row-level "add family to cart" (which has to resolve availability
+    // on demand via a server call, since it only knows a family's item *count* up front),
+    // this page already has full ItemsSchema data for every sub-item, so availability can
+    // be checked locally with no extra request.
+    function addSelectedToCart() {
+        const available = items.filter((item) => selected.has(item.id) && item.borrower === "")
+        setSkippedCount(selectedIds.length - available.length)
+        cart.addEntries(
+            available.map((item) => ({
+                itemId: item.id,
+                familyId,
+                itemName: item.name || item.id,
+                familyName,
+            }))
+        )
+    }
 
     return (
         <div>
@@ -83,6 +105,17 @@ export function ResourceBasket({ familyId, items, isRoom, borrowAction, reserveA
                     ))}
                 </tbody>
             </Table>
+
+            <div className={styles.toolbar}>
+                <Button type="button" variant="secondary" onClick={addSelectedToCart} disabled={selectedIds.length === 0}>
+                    Add selected to cart
+                </Button>
+                {skippedCount > 0 && (
+                    <Badge variant="warning">
+                        {skippedCount} skipped — already borrowed
+                    </Badge>
+                )}
+            </div>
 
             {!isRoom && (
                 <ActionForm action={borrowAction} successMessage="Item(s) borrowed successfully." className={styles.actionBar}>
