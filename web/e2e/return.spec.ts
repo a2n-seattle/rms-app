@@ -44,7 +44,7 @@ test("borrow, then return via the multi-select /return page", async ({ page }) =
                     await page.goto("/return")
                     return confirmButton.isVisible()
                 },
-                { timeout: 15000, intervals: [1000] }
+                { timeout: 15000, intervals: [2000] }
             )
             .toBe(true)
 

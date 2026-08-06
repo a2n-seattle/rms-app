@@ -61,7 +61,7 @@ test("reserve, then extend it from the dashboard's Scheduled tab", async ({ page
                     await page.goto("/dashboard?tab=scheduled")
                     return row.isVisible()
                 },
-                { timeout: 15000, intervals: [1000] }
+                { timeout: 15000, intervals: [2000] }
             )
             .toBe(true)
 
@@ -80,7 +80,7 @@ test("reserve, then extend it from the dashboard's Scheduled tab", async ({ page
                     await page.goto("/dashboard?tab=scheduled")
                     return row.getByText(newEnd.toLocaleString()).isVisible()
                 },
-                { timeout: 15000, intervals: [1000] }
+                { timeout: 15000, intervals: [2000] }
             )
             .toBe(true)
     } finally {

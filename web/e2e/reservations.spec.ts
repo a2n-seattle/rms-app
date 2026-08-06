@@ -64,7 +64,7 @@ test("reserve an item and see it on the reservations page", async ({ page }) => 
                     await page.goto("/reservations")
                     return page.getByText(notes).isVisible()
                 },
-                { timeout: 15000, intervals: [1000] }
+                { timeout: 15000, intervals: [2000] }
             )
             .toBe(true)
     } finally {

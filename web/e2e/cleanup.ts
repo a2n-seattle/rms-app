@@ -67,7 +67,7 @@ export async function cleanupReturn(page: Page): Promise<void> {
                     await page.reload()
                     return confirmButton.isVisible()
                 },
-                { timeout: 15000, intervals: [1000] }
+                { timeout: 15000, intervals: [2000] }
             )
             .toBe(true)
     } catch {
