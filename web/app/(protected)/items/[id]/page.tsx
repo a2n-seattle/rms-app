@@ -4,6 +4,7 @@ import { getItem } from "@/lib/api/getItem"
 import { createReservation } from "@/lib/api/createReservation"
 import { borrowFromSchedule } from "@/lib/api/borrowFromSchedule"
 import { revalidatePath } from "next/cache"
+import { ActionState, runAction } from "@/lib/actionState"
 import { Card } from "@/components/ui/Card"
 import { Badge } from "@/components/ui/Badge"
 import { ResourceBasket } from "./ResourceBasket"
@@ -26,49 +27,53 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
         redirect(`/items/${encodeURIComponent(main.id)}/${encodeURIComponent(id)}`)
     }
 
-    async function reserveAction(formData: FormData) {
+    async function reserveAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
         "use server"
-        const session = await getSession()
-        if (!session) {
-            return
-        }
-        const ids = formData.getAll("ids") as string[]
-        const startTime = new Date(formData.get("start") as string).getTime()
-        const endTime = new Date(formData.get("end") as string).getTime()
-        const notes = formData.get("notes") as string
+        return runAction(async () => {
+            const session = await getSession()
+            if (!session) {
+                return
+            }
+            const ids = formData.getAll("ids") as string[]
+            const startTime = new Date(formData.get("start") as string).getTime()
+            const endTime = new Date(formData.get("end") as string).getTime()
+            const notes = formData.get("notes") as string
 
-        await createReservation(session.idToken, {
-            ids,
-            borrower: session.sub,
-            startTime,
-            endTime,
-            notes: notes || undefined,
+            await createReservation(session.idToken, {
+                ids,
+                borrower: session.sub,
+                startTime,
+                endTime,
+                notes: notes || undefined,
+            })
+            revalidatePath(`/items/${id}`)
         })
-        revalidatePath(`/items/${id}`)
     }
 
-    async function borrowAction(formData: FormData) {
+    async function borrowAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
         "use server"
-        const session = await getSession()
-        if (!session) {
-            return
-        }
-        const ids = formData.getAll("ids") as string[]
-        const endTime = new Date(formData.get("returnBy") as string).getTime()
+        return runAction(async () => {
+            const session = await getSession()
+            if (!session) {
+                return
+            }
+            const ids = formData.getAll("ids") as string[]
+            const endTime = new Date(formData.get("returnBy") as string).getTime()
 
-        // Per this repo's design: "borrow" is implemented as
-        // create-reservation-then-BorrowFromSchedule, even for an
-        // immediate borrow, so it goes through ScheduleTable.create's
-        // existing double-booking validation rather than a raw borrow
-        // call that could silently conflict with an existing reservation.
-        const scheduleId = await createReservation(session.idToken, {
-            ids,
-            borrower: session.sub,
-            startTime: Date.now(),
-            endTime,
+            // Per this repo's design: "borrow" is implemented as
+            // create-reservation-then-BorrowFromSchedule, even for an
+            // immediate borrow, so it goes through ScheduleTable.create's
+            // existing double-booking validation rather than a raw borrow
+            // call that could silently conflict with an existing reservation.
+            const scheduleId = await createReservation(session.idToken, {
+                ids,
+                borrower: session.sub,
+                startTime: Date.now(),
+                endTime,
+            })
+            await borrowFromSchedule(session.idToken, { scheduleId })
+            revalidatePath(`/items/${id}`)
         })
-        await borrowFromSchedule(session.idToken, { scheduleId })
-        revalidatePath(`/items/${id}`)
     }
 
     return (

@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test"
+import { waitVisible } from "./cleanup"
 
 /**
  * Reservations: login -> reserve the test item -> verify it shows on
@@ -29,13 +30,8 @@ test("reserve an item and see it on the reservations page", async ({ page }) => 
     await expect(page.getByRole("heading", { name: "Reserve this item" })).toBeVisible()
 
     const notes = `e2e-reservation-${Date.now()}`
-    // CreateReservation rejects overlapping windows on the same item
-    // (ScheduleTable.create's validateDate check) -- this test doesn't
-    // clean up after itself (no delete-reservation call, out of this PR's
-    // scope), so a fixed offset from Date.now() would collide with the
-    // previous run's leftover reservation on every subsequent run.
-    // Randomize far enough out (30-395 days) that collisions across runs
-    // are effectively impossible.
+    // Far enough out (30-395 days) that this run's window can't collide with any other spec's
+    // own randomized reservation on this shared item.
     const offsetDays = 30 + Math.floor(Math.random() * 365)
     const start = new Date(Date.now() + offsetDays * 24 * 60 * 60 * 1000)
     const end = new Date(start.getTime() + 60 * 60 * 1000)
@@ -47,23 +43,41 @@ test("reserve an item and see it on the reservations page", async ({ page }) => 
     // The Reserve form's Server Action doesn't redirect or change visible
     // page content on success (unlike Borrow/Return, which flip the
     // Borrower text) -- explicitly wait for the POST + revalidation
-    // round-trip to finish before moving on, rather than racing ahead.
-    await Promise.all([
+    // round-trip to finish before moving on, rather than racing ahead. Note:
+    // a Server Action's POST response body is Next.js's internal RSC
+    // "flight" wire format, not plain JSON -- only `.ok()` is safe to read
+    // here, not `.json()`/the action's actual return value.
+    const [createResponse] = await Promise.all([
         page.waitForResponse((response) => response.request().method() === "POST"),
         page.getByRole("button", { name: "Reserve" }).click(),
     ])
+    expect(createResponse.ok(), `create-reservation failed with status ${createResponse.status()}`).toBe(true)
 
-    // ScheduleTable.listByBorrower uses a plain DynamoDB Scan, which is
-    // eventually consistent by default (no ConsistentRead) -- a just-created
-    // reservation can briefly not appear on the very next scan. Poll by
-    // reloading rather than asserting once.
-    await expect
-        .poll(
-            async () => {
-                await page.goto("/reservations")
-                return page.getByText(notes).isVisible()
-            },
-            { timeout: 15000 }
-        )
-        .toBe(true)
+    try {
+        // ScheduleTable.listByBorrower uses a plain DynamoDB Scan, which is
+        // eventually consistent by default (no ConsistentRead) -- a just-created
+        // reservation can briefly not appear on the very next scan. Poll by
+        // reloading rather than asserting once.
+        await expect
+            .poll(
+                async () => {
+                    await page.goto("/reservations")
+                    return page.getByText(notes).isVisible()
+                },
+                { timeout: 15000, intervals: [2000] }
+            )
+            .toBe(true)
+    } finally {
+        // Cancel this run's own reservation via its notes-scoped alert on the dashboard --
+        // this test used to leave every reservation it created permanently on the shared
+        // fixture item, which is what caused other specs sharing it to eventually see many
+        // accumulated "Upcoming" reservations and fail with ambiguous-locator strict-mode
+        // violations.
+        await page.goto("/dashboard")
+        const alert = page.locator('[data-testid="upcoming-alert"]', { hasText: notes })
+        const cancelButton = alert.getByRole("button", { name: "Cancel" })
+        if (await waitVisible(cancelButton)) {
+            await cancelButton.click()
+        }
+    }
 })

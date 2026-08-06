@@ -4,6 +4,8 @@ import { useState } from "react"
 import { Table } from "@/components/ui/Table"
 import { Checkbox } from "@/components/ui/Checkbox"
 import { Button } from "@/components/ui/Button"
+import { ActionForm } from "@/components/ui/ActionForm"
+import type { ActionState } from "@/lib/actionState"
 import type { ItemsSchema } from "@/lib/api/types"
 import styles from "./resource-detail.module.css"
 
@@ -11,8 +13,8 @@ interface ResourceBasketProps {
     familyId: string
     items: ItemsSchema[]
     isRoom?: boolean
-    borrowAction: (formData: FormData) => void
-    reserveAction: (formData: FormData) => void
+    borrowAction: (prevState: ActionState, formData: FormData) => Promise<ActionState>
+    reserveAction: (prevState: ActionState, formData: FormData) => Promise<ActionState>
 }
 
 export function ResourceBasket({ familyId, items, isRoom, borrowAction, reserveAction }: ResourceBasketProps) {
@@ -83,7 +85,7 @@ export function ResourceBasket({ familyId, items, isRoom, borrowAction, reserveA
             </Table>
 
             {!isRoom && (
-                <form action={borrowAction} className={styles.actionBar}>
+                <ActionForm action={borrowAction} successMessage="Item(s) borrowed successfully." className={styles.actionBar}>
                     {selectedIds.map((id) => (
                         <input key={id} type="hidden" name="ids" value={id} />
                     ))}
@@ -94,10 +96,10 @@ export function ResourceBasket({ familyId, items, isRoom, borrowAction, reserveA
                     <Button type="submit" disabled={selectedIds.length === 0}>
                         Borrow Selected ({selectedIds.length})
                     </Button>
-                </form>
+                </ActionForm>
             )}
 
-            <form action={reserveAction} className={styles.actionBar}>
+            <ActionForm action={reserveAction} successMessage="Reservation created successfully." className={styles.actionBar}>
                 {selectedIds.map((id) => (
                     <input key={id} type="hidden" name="ids" value={id} />
                 ))}
@@ -116,7 +118,7 @@ export function ResourceBasket({ familyId, items, isRoom, borrowAction, reserveA
                 <Button type="submit" variant="secondary" disabled={selectedIds.length === 0}>
                     Reserve Selected ({selectedIds.length})
                 </Button>
-            </form>
+            </ActionForm>
         </div>
     )
 }

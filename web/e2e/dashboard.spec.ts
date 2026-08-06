@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test"
+import { cleanupReturn, isBorrowed, waitVisible } from "./cleanup"
 
 /**
  * Dashboard: login -> reserve the test item -> see it as an "Upcoming"
@@ -33,11 +34,12 @@ test("reserve, see upcoming alert, borrow from it, see it under Currently Borrow
     // chance of drawing an overlapping random start on retry, since only a
     // handful of non-overlapping 1-hour slots exist in a ~60-minute range.
     // That's what actually caused this test to fail in CI: CreateReservation
-    // legitimately 400s on the overlap, and nothing catches that inside the
-    // reserveAction Server Action, so it surfaces as an opaque 500 (RSC
-    // error digest) instead of the validation error itself. A 30-395 day
-    // spread makes any such collision, across retries or across separate CI
-    // runs sharing this same item, astronomically unlikely -- still
+    // legitimately 400s on the overlap. As of GH-356, reserveAction catches
+    // that and returns an inline error instead of crashing (see
+    // borrow-conflict.spec.ts for a dedicated test of that path) -- this
+    // test still avoids the collision entirely via the wide 30-395 day
+    // spread, since a caught-and-displayed conflict is still a failed
+    // reservation as far as this test's own assertions are concerned. Still
     // "upcoming" either way, since only startTime > now matters for that.
     const notes = `e2e-dashboard-${Date.now()}`
     const offsetDays = 30 + Math.floor(Math.random() * 365)
@@ -48,63 +50,81 @@ test("reserve, see upcoming alert, borrow from it, see it under Currently Borrow
     await page.locator('input[name="start"]').fill(toLocalInputValue(start))
     await page.locator('input[name="end"]').fill(toLocalInputValue(end))
     await page.locator('input[name="notes"]').fill(notes)
+    // Fail loudly on a rejected reservation (e.g. a genuine overlap with
+    // another leftover reservation) instead of silently polling for an
+    // "Upcoming" alert that was never actually created. Note: a Server
+    // Action's POST response body is Next.js's internal RSC "flight" wire
+    // format, not plain JSON returned by the action -- do not attempt to
+    // `.json()`/read the action's return value from it, only use `.ok()`.
     const [createResponse] = await Promise.all([
         page.waitForResponse((response) => response.request().method() === "POST"),
         page.getByRole("button", { name: "Reserve" }).click(),
     ])
-    // Fail loudly on a rejected reservation (e.g. a genuine overlap with
-    // another leftover reservation) instead of silently polling for an
-    // "Upcoming" alert that was never actually created. Only read the
-    // response body on the failure path -- a passing `expect(...)` call's
-    // message argument is still evaluated eagerly by JS regardless of the
-    // assertion's outcome, and by the time a *successful* create's
-    // response is read here the page may already have navigated away
-    // (the Server Action's own redirect/re-render races ahead), which
-    // throws a Playwright "response body not available" protocol error
-    // and fails an otherwise-passing run.
-    if (!createResponse.ok()) {
-        throw new Error(`create-reservation failed: ${await createResponse.text()}`)
+    expect(createResponse.ok(), `create-reservation failed with status ${createResponse.status()}`).toBe(true)
+
+    // try/finally from here on: a failed assertion must not leave this run's own reservation
+    // (or, if borrowed, the item itself) stuck for every later spec sharing this fixture.
+    // The unique `notes` text scopes every locator below to *this* run's own alert/row,
+    // instead of an ambiguous role/text query that breaks the moment more than one
+    // "Upcoming" reservation exists on the shared test item (accumulated leftovers from
+    // other specs/retries are common here).
+    try {
+        // ListUpcomingReservations scans+filters, eventually consistent --
+        // poll rather than assert once (same caveat as reservations.spec.ts).
+        const alert = page.locator('[data-testid="upcoming-alert"]', { hasText: notes })
+        await expect
+            .poll(
+                async () => {
+                    await page.goto("/dashboard")
+                    return alert.isVisible()
+                },
+                { timeout: 15000, intervals: [2000] }
+            )
+            .toBe(true)
+
+        await Promise.all([
+            page.waitForResponse((response) => response.request().method() === "POST"),
+            alert.getByRole("button", { name: "Borrow" }).click(),
+        ])
+
+        // ListMyBorrowedItems scans+filters, eventually consistent -- poll rather than
+        // assert once (same caveat as the "Upcoming" alert poll above). Match by the row's
+        // link href, not display text -- the borrowed-tab row shows the item's friendly
+        // `name` (e.g. "E2E Test Chair"), not its raw id, since GH-353.
+        await expect
+            .poll(
+                async () => {
+                    await page.goto("/dashboard?tab=borrowed")
+                    return page.locator(`a[href="/items/${encodeURIComponent(TEST_ITEM_ID!)}"]`).isVisible()
+                },
+                { timeout: 15000, intervals: [2000] }
+            )
+            .toBe(true)
+    } finally {
+        // Whether the borrow above succeeded, failed, or an assertion threw: if the item ended
+        // up borrowed, return it so it doesn't stay unusable for every other spec/run. If the
+        // reservation is still just pending (borrow never happened), cancel it via its
+        // notes-scoped alert instead of leaving it to accumulate.
+        await page.goto(`/items/${encodeURIComponent(TEST_ITEM_ID!)}`)
+        if (await isBorrowed(page)) {
+            await cleanupReturn(page)
+        } else {
+            await page.goto("/dashboard")
+            const alert = page.locator('[data-testid="upcoming-alert"]', { hasText: notes })
+            const cancelButton = alert.getByRole("button", { name: "Cancel" })
+            if (await waitVisible(cancelButton)) {
+                await cancelButton.click()
+            }
+        }
     }
 
-    // ListUpcomingReservations scans+filters, eventually consistent --
-    // poll rather than assert once (same caveat as reservations.spec.ts).
     await expect
         .poll(
             async () => {
-                await page.goto("/dashboard")
-                return page.getByText("Upcoming").isVisible()
+                await page.goto(`/items/${encodeURIComponent(TEST_ITEM_ID!)}`)
+                return page.getByText("(available)").isVisible()
             },
-            { timeout: 15000 }
-        )
+            { timeout: 15000, intervals: [2000] }
+            )
         .toBe(true)
-
-    await Promise.all([
-        page.waitForResponse((response) => response.request().method() === "POST"),
-        page.getByRole("button", { name: "Borrow" }).click(),
-    ])
-
-    // BorrowFromSchedule deletes the schedule as part of consuming it, so
-    // there's nothing left to clean up on that front -- if an assertion
-    // above this point throws instead, the reservation is left dangling on
-    // the shared test item. There's no practical afterEach hook here (the
-    // reservation's schedule id isn't otherwise exposed to the test), so
-    // that part is accepted as a known, narrow gap rather than
-    // over-engineered away -- a failed run's leftover reservation only
-    // risks a future *dashboard.spec.ts* run colliding on the exact same
-    // random window, which the randomized start above already makes
-    // unlikely.
-    await page.goto("/dashboard?tab=borrowed")
-    await expect(page.getByText(TEST_ITEM_ID!)).toBeVisible()
-
-    // Unlike the reservation above, a successful borrow here has no
-    // automatic cleanup at all -- leaving the shared test item borrowed for
-    // every other spec/run that touches it (confirmed in CI: this left
-    // golden-path.spec.ts and any later re-run of this file finding no
-    // "Borrow" button because the item was already borrowed by this
-    // test). Return it via the sub-item page's direct-return form,
-    // mirroring golden-path.spec.ts/resource-basket.spec.ts's own
-    // cleanup, so this test doesn't leave the item unusable afterward.
-    await page.goto(`/items/${encodeURIComponent(TEST_ITEM_ID!)}`)
-    await page.getByRole("button", { name: "Return" }).click()
-    await expect(page.getByText("(available)")).toBeVisible()
 })

@@ -8,11 +8,13 @@ import { borrowFromSchedule } from "@/lib/api/borrowFromSchedule"
 import { deleteReservation } from "@/lib/api/deleteReservation"
 import { extendReservation } from "@/lib/api/extendReservation"
 import { revalidatePath } from "next/cache"
+import { ActionState, runAction } from "@/lib/actionState"
 import { Card } from "@/components/ui/Card"
 import { Table } from "@/components/ui/Table"
 import { Button } from "@/components/ui/Button"
 import { Badge } from "@/components/ui/Badge"
 import { TabList, Tab } from "@/components/ui/Tabs"
+import { ActionForm } from "@/components/ui/ActionForm"
 import styles from "./dashboard.module.css"
 
 type DashboardTab = "borrowed" | "owned" | "scheduled" | "history"
@@ -32,46 +34,57 @@ export default async function DashboardPage({
         ? (tabParam as DashboardTab)
         : "borrowed"
 
-    const [borrowed, owned, upcoming, overdue] = await Promise.all([
-        listMyBorrowedItems(session.idToken, { borrower: session.sub }),
-        listMyOwnedItems(session.idToken, { ownerId: session.sub }),
+    // `upcoming`/`overdue` back the alert banners shown above the tabs regardless of which
+    // tab is active, so those two are always fetched. `borrowed`/`owned`/`history` only
+    // back their own tab's content, so skip the Scan entirely when that tab isn't active --
+    // this repo's DynamoDB tables are deliberately provisioned at 1 RCU/1 WCU (see root
+    // CLAUDE.md), and this page's fan-out is the single biggest per-render read cost.
+    const [upcoming, overdue, borrowed, owned] = await Promise.all([
         listUpcomingReservations(session.idToken, { borrower: session.sub }),
         listOverdueItems(session.idToken, { borrower: session.sub }),
+        tab === "borrowed" ? listMyBorrowedItems(session.idToken, { borrower: session.sub }) : undefined,
+        tab === "owned" ? listMyOwnedItems(session.idToken, { ownerId: session.sub }) : undefined,
     ])
     const history = tab === "history" ? await listHistory(session.idToken, { borrower: session.sub }) : undefined
 
-    async function borrowFromScheduleAction(formData: FormData) {
+    async function borrowFromScheduleAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
         "use server"
-        const session = await getSession()
-        if (!session) {
-            return
-        }
-        const scheduleId = formData.get("scheduleId") as string
-        await borrowFromSchedule(session.idToken, { scheduleId })
-        revalidatePath("/dashboard")
+        return runAction(async () => {
+            const session = await getSession()
+            if (!session) {
+                return
+            }
+            const scheduleId = formData.get("scheduleId") as string
+            await borrowFromSchedule(session.idToken, { scheduleId })
+            revalidatePath("/dashboard")
+        })
     }
 
-    async function cancelReservationAction(formData: FormData) {
+    async function cancelReservationAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
         "use server"
-        const session = await getSession()
-        if (!session) {
-            return
-        }
-        const scheduleId = formData.get("scheduleId") as string
-        await deleteReservation(session.idToken, { id: scheduleId })
-        revalidatePath("/dashboard")
+        return runAction(async () => {
+            const session = await getSession()
+            if (!session) {
+                return
+            }
+            const scheduleId = formData.get("scheduleId") as string
+            await deleteReservation(session.idToken, { id: scheduleId })
+            revalidatePath("/dashboard")
+        })
     }
 
-    async function extendReservationAction(formData: FormData) {
+    async function extendReservationAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
         "use server"
-        const session = await getSession()
-        if (!session) {
-            return
-        }
-        const scheduleId = formData.get("scheduleId") as string
-        const newEndTime = new Date(formData.get("newEndTime") as string).getTime()
-        await extendReservation(session.idToken, { id: scheduleId, newEndTime })
-        revalidatePath("/dashboard")
+        return runAction(async () => {
+            const session = await getSession()
+            if (!session) {
+                return
+            }
+            const scheduleId = formData.get("scheduleId") as string
+            const newEndTime = new Date(formData.get("newEndTime") as string).getTime()
+            await extendReservation(session.idToken, { id: scheduleId, newEndTime })
+            revalidatePath("/dashboard")
+        })
     }
 
     return (
@@ -91,22 +104,23 @@ export default async function DashboardPage({
                         </div>
                     ))}
                     {upcoming.items.map((schedule) => (
-                        <div key={schedule.id} className={styles.alert}>
+                        <div key={schedule.id} className={styles.alert} data-testid="upcoming-alert">
                             <span className={styles.alertText}>
                                 <Badge variant="warning">Upcoming</Badge> Reservation for{" "}
                                 {schedule.itemIds.join(", ")} starts {new Date(schedule.startTime).toLocaleString()}
+                                {schedule.notes ? ` — ${schedule.notes}` : ""}
                             </span>
                             <div className={styles.alertActions}>
-                                <form action={borrowFromScheduleAction}>
+                                <ActionForm action={borrowFromScheduleAction} successMessage="Borrowed successfully.">
                                     <input type="hidden" name="scheduleId" value={schedule.id} />
                                     <Button type="submit">Borrow</Button>
-                                </form>
-                                <form action={cancelReservationAction}>
+                                </ActionForm>
+                                <ActionForm action={cancelReservationAction} successMessage="Reservation cancelled.">
                                     <input type="hidden" name="scheduleId" value={schedule.id} />
                                     <Button type="submit" variant="secondary">
                                         Cancel
                                     </Button>
-                                </form>
+                                </ActionForm>
                             </div>
                         </div>
                     ))}
@@ -129,8 +143,9 @@ export default async function DashboardPage({
             </TabList>
 
             <Card>
+                {/* borrowed is only undefined when tab !== "borrowed" (see the fetch above) */}
                 {tab === "borrowed" &&
-                    (borrowed.items.length === 0 ? (
+                    (borrowed!.items.length === 0 ? (
                         <p className={styles.empty}>Not currently borrowing anything.</p>
                     ) : (
                         <>
@@ -146,7 +161,7 @@ export default async function DashboardPage({
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {borrowed.items.map((item) => (
+                                    {borrowed!.items.map((item) => (
                                         <tr key={item.id}>
                                             <td>
                                                 <a href={`/items/${encodeURIComponent(item.id)}`} className={styles.itemLink}>
@@ -162,8 +177,9 @@ export default async function DashboardPage({
                         </>
                     ))}
 
+                {/* owned is only undefined when tab !== "owned" (see the fetch above) */}
                 {tab === "owned" &&
-                    (owned.items.length === 0 ? (
+                    (owned!.items.length === 0 ? (
                         <p className={styles.empty}>You don&apos;t own any resources.</p>
                     ) : (
                         <Table>
@@ -175,7 +191,7 @@ export default async function DashboardPage({
                                 </tr>
                             </thead>
                             <tbody>
-                                {owned.items.map((main) => (
+                                {owned!.items.map((main) => (
                                     <tr key={main.id}>
                                         <td>{main.name}</td>
                                         <td>{main.location}</td>
@@ -202,24 +218,19 @@ export default async function DashboardPage({
                             </thead>
                             <tbody>
                                 {upcoming.items.map((schedule) => (
-                                    <tr key={schedule.id}>
+                                    <tr key={schedule.id} data-testid="scheduled-row">
                                         <td>{schedule.itemIds.join(", ")}</td>
                                         <td>{new Date(schedule.startTime).toLocaleString()}</td>
                                         <td>{new Date(schedule.endTime).toLocaleString()}</td>
                                         <td className={styles.notes}>{schedule.notes || "—"}</td>
                                         <td>
-                                            <form action={extendReservationAction} className={styles.extendForm}>
+                                            <ActionForm action={extendReservationAction} successMessage="Reservation extended." className={styles.extendForm}>
                                                 <input type="hidden" name="scheduleId" value={schedule.id} />
-                                                <input
-                                                    type="datetime-local"
-                                                    name="newEndTime"
-                                                    required
-                                                    aria-label={`New end time for reservation ${schedule.id}`}
-                                                />
+                                                <input type="datetime-local" name="newEndTime" required aria-label="New end time" />
                                                 <Button type="submit" variant="secondary">
                                                     Extend
                                                 </Button>
-                                            </form>
+                                            </ActionForm>
                                         </td>
                                     </tr>
                                 ))}

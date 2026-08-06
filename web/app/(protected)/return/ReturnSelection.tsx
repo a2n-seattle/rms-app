@@ -4,12 +4,14 @@ import { useState } from "react"
 import { Table } from "@/components/ui/Table"
 import { Checkbox } from "@/components/ui/Checkbox"
 import { Button } from "@/components/ui/Button"
+import { ActionForm } from "@/components/ui/ActionForm"
+import type { ActionState } from "@/lib/actionState"
 import type { ItemsSchema } from "@/lib/api/types"
 import styles from "./return.module.css"
 
 interface ReturnSelectionProps {
     items: ItemsSchema[]
-    returnAction: (formData: FormData) => void
+    returnAction: (prevState: ActionState, formData: FormData) => Promise<ActionState>
 }
 
 export function ReturnSelection({ items, returnAction }: ReturnSelectionProps) {
@@ -79,7 +81,7 @@ export function ReturnSelection({ items, returnAction }: ReturnSelectionProps) {
                 </tbody>
             </Table>
 
-            <form action={returnAction} className={styles.actionBar}>
+            <ActionForm action={returnAction} successMessage="Item(s) returned successfully." className={styles.actionBar}>
                 {selectedIds.map((id) => (
                     <input key={id} type="hidden" name="ids" value={id} />
                 ))}
@@ -90,7 +92,7 @@ export function ReturnSelection({ items, returnAction }: ReturnSelectionProps) {
                 <Button type="submit" disabled={selectedIds.length === 0}>
                     Confirm Return ({selectedIds.length})
                 </Button>
-            </form>
+            </ActionForm>
         </div>
     )
 }

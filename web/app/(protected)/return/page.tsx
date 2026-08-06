@@ -2,6 +2,7 @@ import { getSession } from "@/lib/session"
 import { listMyBorrowedItems } from "@/lib/api/listMyBorrowedItems"
 import { returnItem } from "@/lib/api/returnItem"
 import { revalidatePath } from "next/cache"
+import { ActionState, runAction } from "@/lib/actionState"
 import { ReturnSelection } from "./ReturnSelection"
 import styles from "./return.module.css"
 
@@ -13,18 +14,20 @@ export default async function ReturnPage() {
 
     const { items } = await listMyBorrowedItems(session.idToken, { borrower: session.sub })
 
-    async function returnAction(formData: FormData) {
+    async function returnAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
         "use server"
-        const session = await getSession()
-        if (!session) {
-            return
-        }
-        const ids = formData.getAll("ids") as string[]
-        const notes = formData.get("notes") as string
+        return runAction(async () => {
+            const session = await getSession()
+            if (!session) {
+                return
+            }
+            const ids = formData.getAll("ids") as string[]
+            const notes = formData.get("notes") as string
 
-        await returnItem(session.idToken, { ids, borrower: session.sub, notes: notes || undefined })
-        revalidatePath("/return")
-        revalidatePath("/dashboard")
+            await returnItem(session.idToken, { ids, borrower: session.sub, notes: notes || undefined })
+            revalidatePath("/return")
+            revalidatePath("/dashboard")
+        })
     }
 
     return (

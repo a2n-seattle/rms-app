@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test"
+import { waitVisible } from "./cleanup"
 
 /**
  * Golden path: login -> browse -> borrow -> return, run against the real
@@ -30,9 +31,24 @@ test("login, browse, borrow, and return an item", async ({ page }) => {
     await expect(page).toHaveURL(/\/browse/)
 
     await page.goto(`/items/${encodeURIComponent(TEST_ITEM_ID!)}`)
-    await page.getByRole("button", { name: "Borrow" }).click()
-    await expect(page.getByText(TEST_EMAIL!)).toBeVisible()
 
-    await page.getByRole("button", { name: "Return" }).click()
-    await expect(page.getByText("(available)")).toBeVisible()
+    // try/finally from here on: a failed assertion must not leave the shared fixture item
+    // stuck borrowed for every other spec that runs after this one in the same CI job.
+    try {
+        await Promise.all([
+            page.waitForResponse((response) => response.request().method() === "POST"),
+            page.getByRole("button", { name: "Borrow" }).click(),
+        ])
+        // As of GH-353, `borrower` is a Cognito sub, not the user's email -- the item
+        // detail page no longer displays TEST_EMAIL anywhere, so confirm the borrowed
+        // state via the "Return" button appearing instead.
+        await expect(page.getByRole("button", { name: "Return" })).toBeVisible({ timeout: 15000 })
+    } finally {
+        const returnButton = page.getByRole("button", { name: "Return" })
+        if (await waitVisible(returnButton)) {
+            await returnButton.click()
+        }
+    }
+
+    await expect(page.getByText("(available)")).toBeVisible({ timeout: 15000 })
 })

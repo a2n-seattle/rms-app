@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test"
+import { waitVisible } from "./cleanup"
 
 /**
  * Extend reservation: login -> reserve the test item -> extend it from the
@@ -36,40 +37,90 @@ test("reserve, then extend it from the dashboard's Scheduled tab", async ({ page
     await page.locator('input[name="start"]').fill(toLocalInputValue(start))
     await page.locator('input[name="end"]').fill(toLocalInputValue(end))
     await page.locator('input[name="notes"]').fill(notes)
+    // A Server Action's POST response body is Next.js's internal RSC "flight"
+    // wire format, not plain JSON -- only `.ok()` is safe to read here, not
+    // `.json()`/the action's actual return value.
     const [createResponse] = await Promise.all([
         page.waitForResponse((response) => response.request().method() === "POST"),
         page.getByRole("button", { name: "Reserve" }).click(),
     ])
-    expect(createResponse.ok(), `create-reservation failed: ${await createResponse.text()}`).toBe(true)
+    expect(createResponse.ok(), `create-reservation failed with status ${createResponse.status()}`).toBe(true)
 
-    // ListUpcomingReservations scans+filters, eventually consistent --
-    // poll rather than assert once (same caveat as other specs).
-    await expect
-        .poll(
-            async () => {
-                await page.goto("/dashboard?tab=scheduled")
-                return page.getByText(notes).isVisible()
-            },
-            { timeout: 15000 }
-        )
-        .toBe(true)
+    try {
+        // ListUpcomingReservations scans+filters, eventually consistent --
+        // poll rather than assert once (same caveat as other specs). The
+        // unique `notes` text scopes the row locator to *this* run's own
+        // reservation, instead of a broad query that matches every scheduled
+        // reservation's input when more than one exists on this shared
+        // fixture item (accumulated leftovers from other specs/retries are
+        // common here).
+        const row = page.locator('[data-testid="scheduled-row"]', { hasText: notes })
+        await expect
+            .poll(
+                async () => {
+                    await page.goto("/dashboard?tab=scheduled")
+                    return row.isVisible()
+                },
+                { timeout: 15000, intervals: [2000] }
+            )
+            .toBe(true)
 
-    const newEndInput = page.getByLabel(/New end time for reservation/)
-    await newEndInput.fill(toLocalInputValue(newEnd))
+        // Capture the displayed end time before extending, so success can be checked by
+        // "did this cell's text change" rather than reconstructing the expected display
+        // string via newEnd.toLocaleString() -- that string is formatted by the test's own
+        // Node process, while the actual value goes through a datetime-local input (parsed
+        // as local time by whichever of the browser/Next server ends up interpreting the
+        // un-timezone-qualified string) and back out through the dashboard's own
+        // toLocaleString() call, three separate places that can disagree on timezone/locale
+        // even when the underlying timestamp is perfectly correct.
+        const endTimeCell = row.locator("td").nth(2)
+        const originalEndTimeText = await endTimeCell.textContent()
 
-    const [extendResponse] = await Promise.all([
-        page.waitForResponse((response) => response.request().method() === "POST"),
-        page.getByRole("button", { name: "Extend" }).click(),
-    ])
-    expect(extendResponse.ok(), `extend-reservation failed: ${await extendResponse.text()}`).toBe(true)
+        const newEndInput = row.getByLabel("New end time")
+        await newEndInput.fill(toLocalInputValue(newEnd))
 
-    await expect
-        .poll(
-            async () => {
-                await page.goto("/dashboard?tab=scheduled")
-                return page.getByText(newEnd.toLocaleString()).isVisible()
-            },
-            { timeout: 15000 }
-        )
-        .toBe(true)
+        const [extendResponse] = await Promise.all([
+            page.waitForResponse((response) => response.request().method() === "POST"),
+            row.getByRole("button", { name: "Extend" }).click(),
+        ])
+        expect(extendResponse.ok(), `extend-reservation failed with status ${extendResponse.status()}`).toBe(true)
+        // extendReservationAction catches a rejected extend (e.g. ScheduleTable's overlap
+        // validation, if this run's randomized window happens to collide with leftover
+        // reservation cruft accumulated on this shared fixture item) and returns an inline
+        // error -- still a 200 response, so extendResponse.ok() alone can't see it. Fail
+        // loudly with the actual reason instead of leaving the poll below to time out
+        // silently.
+        // Exclude Next's hidden #__next-route-announcer__ (a11y navigation announcements),
+        // which also has role="alert" and would otherwise match here too (see
+        // borrow-conflict.spec.ts for the same caveat).
+        const errorAlert = page.locator('[role="alert"]:not(#__next-route-announcer__)')
+        if (await waitVisible(errorAlert, 2000)) {
+            throw new Error(`extend-reservation was rejected: ${await errorAlert.textContent()}`)
+        }
+
+        await expect
+            .poll(
+                async () => {
+                    await page.goto("/dashboard?tab=scheduled")
+                    // If the row hasn't (re)appeared yet, report the original text so the
+                    // poll keeps waiting instead of a sentinel that would trivially satisfy
+                    // "not equal to original" without the cell actually having changed.
+                    if (!(await row.isVisible())) {
+                        return originalEndTimeText
+                    }
+                    return endTimeCell.textContent()
+                },
+                { timeout: 15000, intervals: [2000] }
+            )
+            .not.toBe(originalEndTimeText)
+    } finally {
+        // Cancel this run's own reservation so it doesn't accumulate on the shared fixture
+        // item for every later spec/run.
+        await page.goto("/dashboard")
+        const alert = page.locator('[data-testid="upcoming-alert"]', { hasText: notes })
+        const cancelButton = alert.getByRole("button", { name: "Cancel" })
+        if (await waitVisible(cancelButton)) {
+            await cancelButton.click()
+        }
+    }
 })
