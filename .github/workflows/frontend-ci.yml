@@ -11,6 +11,14 @@ on:
   # below) on demand, without needing a throwaway PR to trigger it.
   workflow_dispatch:
 
+# e2e exercises the real deployed alpha backend against a single shared fixture item
+# (RMS_TEST_ITEM_ID) -- two runs' e2e steps executing at the same time race on that item's
+# borrow/reservation state. Queue runs instead of letting them overlap; a newer run for the
+# same PR/ref supersedes an in-flight older one rather than piling up.
+concurrency:
+  group: frontend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest

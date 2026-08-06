@@ -66,46 +66,53 @@ test("reserve, see upcoming alert, borrow from it, see it under Currently Borrow
     if (!createResponse.ok()) {
         throw new Error(`create-reservation failed: ${await createResponse.text()}`)
     }
+    // CreateReservation's response body is the resolved schedule id (a plain JSON string) --
+    // capturing it lets every assertion/action below target *this* run's own reservation via
+    // its aria-label (see dashboard/page.tsx), instead of an ambiguous role/text query that
+    // breaks the moment more than one "Upcoming" reservation exists on the shared test item
+    // (accumulated leftovers from other specs/retries are common on this shared fixture).
+    const scheduleId: string = await createResponse.json()
 
-    // ListUpcomingReservations scans+filters, eventually consistent --
-    // poll rather than assert once (same caveat as reservations.spec.ts).
-    await expect
-        .poll(
-            async () => {
-                await page.goto("/dashboard")
-                return page.getByText("Upcoming").isVisible()
-            },
-            { timeout: 15000 }
-        )
-        .toBe(true)
+    // try/finally from here on: a failed assertion must not leave this run's own reservation
+    // (or, if borrowed, the item itself) stuck for every later spec sharing this fixture.
+    try {
+        // ListUpcomingReservations scans+filters, eventually consistent --
+        // poll rather than assert once (same caveat as reservations.spec.ts).
+        await expect
+            .poll(
+                async () => {
+                    await page.goto("/dashboard")
+                    return page.getByRole("button", { name: `Borrow reservation ${scheduleId}` }).isVisible()
+                },
+                { timeout: 15000 }
+            )
+            .toBe(true)
 
-    await Promise.all([
-        page.waitForResponse((response) => response.request().method() === "POST"),
-        page.getByRole("button", { name: "Borrow" }).click(),
-    ])
+        await Promise.all([
+            page.waitForResponse((response) => response.request().method() === "POST"),
+            page.getByRole("button", { name: `Borrow reservation ${scheduleId}` }).click(),
+        ])
 
-    // BorrowFromSchedule deletes the schedule as part of consuming it, so
-    // there's nothing left to clean up on that front -- if an assertion
-    // above this point throws instead, the reservation is left dangling on
-    // the shared test item. There's no practical afterEach hook here (the
-    // reservation's schedule id isn't otherwise exposed to the test), so
-    // that part is accepted as a known, narrow gap rather than
-    // over-engineered away -- a failed run's leftover reservation only
-    // risks a future *dashboard.spec.ts* run colliding on the exact same
-    // random window, which the randomized start above already makes
-    // unlikely.
-    await page.goto("/dashboard?tab=borrowed")
-    await expect(page.getByText(TEST_ITEM_ID!)).toBeVisible()
+        await page.goto("/dashboard?tab=borrowed")
+        await expect(page.getByText(TEST_ITEM_ID!)).toBeVisible()
+    } finally {
+        // Whether the borrow above succeeded, failed, or an assertion threw: if the item ended
+        // up borrowed, return it so it doesn't stay unusable for every other spec/run. If the
+        // reservation is still just pending (borrow never happened), cancel it via its
+        // scheduleId-scoped button instead of leaving it to accumulate.
+        await page.goto(`/items/${encodeURIComponent(TEST_ITEM_ID!)}`)
+        const returnButton = page.getByRole("button", { name: "Return" })
+        if (await returnButton.isVisible().catch(() => false)) {
+            await returnButton.click()
+        } else {
+            await page.goto("/dashboard")
+            const cancelButton = page.getByRole("button", { name: `Cancel reservation ${scheduleId}` })
+            if (await cancelButton.isVisible().catch(() => false)) {
+                await cancelButton.click()
+            }
+        }
+    }
 
-    // Unlike the reservation above, a successful borrow here has no
-    // automatic cleanup at all -- leaving the shared test item borrowed for
-    // every other spec/run that touches it (confirmed in CI: this left
-    // golden-path.spec.ts and any later re-run of this file finding no
-    // "Borrow" button because the item was already borrowed by this
-    // test). Return it via the sub-item page's direct-return form,
-    // mirroring golden-path.spec.ts/resource-basket.spec.ts's own
-    // cleanup, so this test doesn't leave the item unusable afterward.
     await page.goto(`/items/${encodeURIComponent(TEST_ITEM_ID!)}`)
-    await page.getByRole("button", { name: "Return" }).click()
     await expect(page.getByText("(available)")).toBeVisible()
 })

@@ -107,11 +107,11 @@ export default async function DashboardPage({
                             <div className={styles.alertActions}>
                                 <ActionForm action={borrowFromScheduleAction} successMessage="Borrowed successfully.">
                                     <input type="hidden" name="scheduleId" value={schedule.id} />
-                                    <Button type="submit">Borrow</Button>
+                                    <Button type="submit" aria-label={`Borrow reservation ${schedule.id}`}>Borrow</Button>
                                 </ActionForm>
                                 <ActionForm action={cancelReservationAction} successMessage="Reservation cancelled.">
                                     <input type="hidden" name="scheduleId" value={schedule.id} />
-                                    <Button type="submit" variant="secondary">
+                                    <Button type="submit" variant="secondary" aria-label={`Cancel reservation ${schedule.id}`}>
                                         Cancel
                                     </Button>
                                 </ActionForm>

@@ -37,12 +37,14 @@ test("borrowing an already-borrowed item shows an inline error instead of crashi
     await page2.goto(itemUrl)
     await expect(page2.getByRole("button", { name: "Borrow" })).toBeVisible()
 
-    // Tab 1: borrow succeeds.
+    // Tab 1: borrow succeeds. Generous timeout on the post-borrow assertion -- the POST
+    // resolving doesn't guarantee the revalidated Server Component has finished re-rendering
+    // client-side yet under real CI network conditions.
     await Promise.all([
         page.waitForResponse((response) => response.request().method() === "POST"),
         page.getByRole("button", { name: "Borrow" }).click(),
     ])
-    await expect(page.getByRole("button", { name: "Return" })).toBeVisible()
+    await expect(page.getByRole("button", { name: "Return" })).toBeVisible({ timeout: 15000 })
 
     // try/finally from here on: a failed assertion must not leave the shared fixture item
     // stuck borrowed for every other spec that runs after this one in the same CI job.
@@ -63,9 +65,13 @@ test("borrowing an already-borrowed item shows an inline error instead of crashi
         await expect(page2.getByRole("heading", { level: 1 })).toBeVisible()
     } finally {
         await page2.close()
-        // Clean up via tab 1, which correctly shows the item as borrowed, regardless of
-        // whether the assertions above passed.
-        await page.getByRole("button", { name: "Return" }).click()
+        // Clean up via tab 1, which should still show the item as borrowed, regardless of
+        // whether the assertions above passed. Reload first in case tab 1's own view is stale.
+        await page.reload()
+        const returnButton = page.getByRole("button", { name: "Return" })
+        if (await returnButton.isVisible({ timeout: 15000 }).catch(() => false)) {
+            await returnButton.click()
+        }
     }
 
     await expect(page.getByText("(available)")).toBeVisible()

@@ -41,35 +41,50 @@ test("reserve, then extend it from the dashboard's Scheduled tab", async ({ page
         page.getByRole("button", { name: "Reserve" }).click(),
     ])
     expect(createResponse.ok(), `create-reservation failed: ${await createResponse.text()}`).toBe(true)
+    // Capture the resolved schedule id so the "New end time" input can be targeted precisely
+    // via its per-reservation aria-label (see dashboard/page.tsx) instead of a broad regex that
+    // matches every scheduled reservation's input when more than one exists on this shared
+    // fixture item (accumulated leftovers from other specs/retries are common here).
+    const scheduleId: string = await createResponse.json()
 
-    // ListUpcomingReservations scans+filters, eventually consistent --
-    // poll rather than assert once (same caveat as other specs).
-    await expect
-        .poll(
-            async () => {
-                await page.goto("/dashboard?tab=scheduled")
-                return page.getByText(notes).isVisible()
-            },
-            { timeout: 15000 }
-        )
-        .toBe(true)
+    try {
+        // ListUpcomingReservations scans+filters, eventually consistent --
+        // poll rather than assert once (same caveat as other specs).
+        await expect
+            .poll(
+                async () => {
+                    await page.goto("/dashboard?tab=scheduled")
+                    return page.getByText(notes).isVisible()
+                },
+                { timeout: 15000 }
+            )
+            .toBe(true)
 
-    const newEndInput = page.getByLabel(/New end time for reservation/)
-    await newEndInput.fill(toLocalInputValue(newEnd))
+        const newEndInput = page.getByLabel(`New end time for reservation ${scheduleId}`)
+        await newEndInput.fill(toLocalInputValue(newEnd))
 
-    const [extendResponse] = await Promise.all([
-        page.waitForResponse((response) => response.request().method() === "POST"),
-        page.getByRole("button", { name: "Extend" }).click(),
-    ])
-    expect(extendResponse.ok(), `extend-reservation failed: ${await extendResponse.text()}`).toBe(true)
+        const [extendResponse] = await Promise.all([
+            page.waitForResponse((response) => response.request().method() === "POST"),
+            page.getByRole("button", { name: "Extend" }).click(),
+        ])
+        expect(extendResponse.ok(), `extend-reservation failed: ${await extendResponse.text()}`).toBe(true)
 
-    await expect
-        .poll(
-            async () => {
-                await page.goto("/dashboard?tab=scheduled")
-                return page.getByText(newEnd.toLocaleString()).isVisible()
-            },
-            { timeout: 15000 }
-        )
-        .toBe(true)
+        await expect
+            .poll(
+                async () => {
+                    await page.goto("/dashboard?tab=scheduled")
+                    return page.getByText(newEnd.toLocaleString()).isVisible()
+                },
+                { timeout: 15000 }
+            )
+            .toBe(true)
+    } finally {
+        // Cancel this run's own reservation so it doesn't accumulate on the shared fixture
+        // item for every later spec/run.
+        await page.goto("/dashboard")
+        const cancelButton = page.getByRole("button", { name: `Cancel reservation ${scheduleId}` })
+        if (await cancelButton.isVisible().catch(() => false)) {
+            await cancelButton.click()
+        }
+    }
 })
