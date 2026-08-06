@@ -11,6 +11,12 @@ export default defineConfig({
     workers: 1,
     retries: 1,
     reporter: "list",
+    // Default 30s is too tight for these specs: several chain multiple
+    // expect.poll()s (each already given its own 15s budget for real,
+    // eventually-consistent Scan-based reads against the deployed alpha
+    // backend) within a single test, whose worst-case sum alone can exceed
+    // 30s even when everything is working correctly.
+    timeout: 60000,
     use: {
         baseURL: process.env.RMS_WEB_BASE_URL ?? "http://localhost:3000",
         trace: "on-first-retry",
