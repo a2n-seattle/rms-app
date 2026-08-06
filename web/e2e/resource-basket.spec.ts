@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test"
+import { cleanupReturn } from "./cleanup"
 
 /**
  * Resource basket: login -> visit the test item's resource (family) page
@@ -53,12 +54,11 @@ test("borrow via the resource basket's default all-selected state", async ({ pag
         await expect(page.getByRole("status")).toContainText("borrowed successfully", { timeout: 15000 })
     } finally {
         // Clean up: return via the sub-item page so other specs sharing this
-        // fixture item see it available again.
+        // fixture item see it available again. "Borrow Selected" goes through
+        // BorrowFromSchedule, which sets borrowGroupId -- the Return control here is a
+        // *link* to the batched group confirmation, not a plain button (see cleanupReturn).
         await page.goto(`/items/${encodeURIComponent(TEST_ITEM_ID!)}`)
-        const returnButton = page.getByRole("button", { name: "Return" })
-        if (await returnButton.isVisible({ timeout: 15000 }).catch(() => false)) {
-            await returnButton.click()
-        }
+        await cleanupReturn(page)
     }
 
     await expect(page.getByText("(available)")).toBeVisible({ timeout: 15000 })

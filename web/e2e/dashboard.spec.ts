@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test"
+import { cleanupReturn, isBorrowed } from "./cleanup"
 
 /**
  * Dashboard: login -> reserve the test item -> see it as an "Upcoming"
@@ -105,9 +106,8 @@ test("reserve, see upcoming alert, borrow from it, see it under Currently Borrow
         // reservation is still just pending (borrow never happened), cancel it via its
         // notes-scoped alert instead of leaving it to accumulate.
         await page.goto(`/items/${encodeURIComponent(TEST_ITEM_ID!)}`)
-        const returnButton = page.getByRole("button", { name: "Return" })
-        if (await returnButton.isVisible({ timeout: 15000 }).catch(() => false)) {
-            await returnButton.click()
+        if (await isBorrowed(page)) {
+            await cleanupReturn(page)
         } else {
             await page.goto("/dashboard")
             const alert = page.locator('[data-testid="upcoming-alert"]', { hasText: notes })

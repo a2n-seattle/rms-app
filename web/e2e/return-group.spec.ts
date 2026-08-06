@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test"
+import { cleanupReturn } from "./cleanup"
 
 /**
  * Batched return: login -> borrow the test item via the resource basket
@@ -68,13 +69,11 @@ test("borrow via basket, return via the batched group confirmation with a condit
             .toBe(true)
     } finally {
         // If an assertion above failed before the group return completed, the item may
-        // still be borrowed -- return it directly via the sub-item page so later specs
-        // sharing this fixture see it available.
+        // still be borrowed -- return it (via either the direct button or, since this
+        // flow borrows through a schedule group, the group-confirmation link -- see
+        // cleanupReturn) so later specs sharing this fixture see it available.
         await page.goto(`/items/${encodeURIComponent(TEST_ITEM_ID!)}`)
-        const returnButton = page.getByRole("button", { name: "Return" })
-        if (await returnButton.isVisible({ timeout: 15000 }).catch(() => false)) {
-            await returnButton.click()
-        }
+        await cleanupReturn(page)
     }
 
     await expect(page.getByText("(available)")).toBeVisible({ timeout: 15000 })
