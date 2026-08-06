@@ -31,7 +31,7 @@ test("create, edit, and delete an item and its sub-items", async ({ page }) => {
 
     await page.getByRole("link", { name: "Add item" }).click()
     await expect(page).toHaveURL(/\/items\/new/)
-    await page.getByLabel("Name").fill(familyName)
+    await page.getByLabel("Name", { exact: true }).fill(familyName)
     await page.getByLabel("Location").fill("Original Location")
 
     const [createResponse] = await Promise.all([
