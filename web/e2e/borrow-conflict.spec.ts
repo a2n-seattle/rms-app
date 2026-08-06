@@ -44,20 +44,29 @@ test("borrowing an already-borrowed item shows an inline error instead of crashi
     ])
     await expect(page.getByRole("button", { name: "Return" })).toBeVisible()
 
-    // Tab 2: submits its stale "Borrow" form against the now-already-borrowed item.
-    // BorrowItem rejects with "Unable to borrow item: Item is currently being borrowed by
-    // '...'" -- assert that surfaces as an inline alert, not a crash/error page.
-    await Promise.all([
-        page2.waitForResponse((response) => response.request().method() === "POST"),
-        page2.getByRole("button", { name: "Borrow" }).click(),
-    ])
-    await expect(page2.getByRole("alert")).toBeVisible()
-    await expect(page2.getByRole("alert")).toContainText("currently being borrowed")
-    // Still the normal item page underneath the alert -- no navigation to an error page.
-    await expect(page2.getByRole("heading", { level: 1 })).toBeVisible()
-    await page2.close()
+    // try/finally from here on: a failed assertion must not leave the shared fixture item
+    // stuck borrowed for every other spec that runs after this one in the same CI job.
+    try {
+        // Tab 2: submits its stale "Borrow" form against the now-already-borrowed item.
+        // BorrowItem rejects with "Unable to borrow item: Item is currently being borrowed by
+        // '...'" -- assert that surfaces as an inline alert, not a crash/error page.
+        await Promise.all([
+            page2.waitForResponse((response) => response.request().method() === "POST"),
+            page2.getByRole("button", { name: "Borrow" }).click(),
+        ])
+        // Scope the locator to text content, not just role="alert" -- Next's hidden
+        // route-announcer div (#__next-route-announcer__, used for a11y navigation
+        // announcements) also has role="alert" and would otherwise match too.
+        const conflictAlert = page2.locator('[role="alert"]', { hasText: "currently being borrowed" })
+        await expect(conflictAlert).toBeVisible()
+        // Still the normal item page underneath the alert -- no navigation to an error page.
+        await expect(page2.getByRole("heading", { level: 1 })).toBeVisible()
+    } finally {
+        await page2.close()
+        // Clean up via tab 1, which correctly shows the item as borrowed, regardless of
+        // whether the assertions above passed.
+        await page.getByRole("button", { name: "Return" }).click()
+    }
 
-    // Clean up via tab 1, which correctly shows the item as borrowed.
-    await page.getByRole("button", { name: "Return" }).click()
     await expect(page.getByText("(available)")).toBeVisible()
 })
