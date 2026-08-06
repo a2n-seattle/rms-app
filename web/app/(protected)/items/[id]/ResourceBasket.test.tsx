@@ -1,5 +1,6 @@
 import { render, screen, fireEvent } from "@testing-library/react"
 import { ResourceBasket } from "./ResourceBasket"
+import type { ActionState } from "@/lib/actionState"
 import type { ItemsSchema } from "@/lib/api/types"
 
 const ITEM_1: ItemsSchema = {
@@ -26,19 +27,31 @@ const ITEM_2: ItemsSchema = {
     notes: "",
 }
 
-test("defaults to all sub-items selected", () => {
-    render(
-        <ResourceBasket familyId="chairs" items={[ITEM_1, ITEM_2]} borrowAction={jest.fn()} reserveAction={jest.fn()} />
+const noopAction = jest.fn(async (_prevState: ActionState, _formData: FormData): Promise<ActionState> => ({ success: true }))
+
+function renderBasket(props: Partial<React.ComponentProps<typeof ResourceBasket>> = {}) {
+    return render(
+        <ResourceBasket
+            familyId="chairs"
+            items={[ITEM_1, ITEM_2]}
+            borrowAction={noopAction}
+            reserveAction={noopAction}
+            updateSubItemAction={noopAction}
+            deleteSubItemAction={noopAction}
+            {...props}
+        />
     )
+}
+
+test("defaults to all sub-items selected", () => {
+    renderBasket()
 
     expect(screen.getByText("2 of 2 selected")).not.toBeNull()
     expect(screen.getByRole("button", { name: "Borrow Selected (2)" }).hasAttribute("disabled")).toBe(false)
 })
 
 test("allows deselecting an individual sub-item", () => {
-    render(
-        <ResourceBasket familyId="chairs" items={[ITEM_1, ITEM_2]} borrowAction={jest.fn()} reserveAction={jest.fn()} />
-    )
+    renderBasket()
 
     fireEvent.click(screen.getAllByRole("checkbox")[0])
 
@@ -46,9 +59,7 @@ test("allows deselecting an individual sub-item", () => {
 })
 
 test("Select none clears the selection and disables the submit buttons", () => {
-    render(
-        <ResourceBasket familyId="chairs" items={[ITEM_1, ITEM_2]} borrowAction={jest.fn()} reserveAction={jest.fn()} />
-    )
+    renderBasket()
 
     fireEvent.click(screen.getByText("Select none"))
 
@@ -58,9 +69,7 @@ test("Select none clears the selection and disables the submit buttons", () => {
 })
 
 test("Select all restores the full selection after Select none", () => {
-    render(
-        <ResourceBasket familyId="chairs" items={[ITEM_1, ITEM_2]} borrowAction={jest.fn()} reserveAction={jest.fn()} />
-    )
+    renderBasket()
 
     fireEvent.click(screen.getByText("Select none"))
     fireEvent.click(screen.getByText("Select all"))
@@ -69,17 +78,27 @@ test("Select all restores the full selection after Select none", () => {
 })
 
 test("hides Borrow Selected and the Borrower column for a room", () => {
-    render(
-        <ResourceBasket
-            familyId="conference-room"
-            items={[ITEM_1, ITEM_2]}
-            isRoom
-            borrowAction={jest.fn()}
-            reserveAction={jest.fn()}
-        />
-    )
+    renderBasket({ familyId: "conference-room", isRoom: true })
 
     expect(screen.queryByRole("button", { name: /Borrow Selected/ })).toBeNull()
     expect(screen.queryByText("Borrower")).toBeNull()
     expect(screen.getByRole("button", { name: "Reserve Selected (2)" })).not.toBeNull()
+})
+
+test("clicking a row's Edit button opens the edit modal for that sub-item", () => {
+    renderBasket()
+
+    fireEvent.click(screen.getByLabelText("Edit Chair 1"))
+
+    expect(screen.getByRole("dialog", { name: "Edit sub-item" })).not.toBeNull()
+    expect(screen.getByDisplayValue("Chair 1")).not.toBeNull()
+})
+
+test("closing the edit modal removes it", () => {
+    renderBasket()
+
+    fireEvent.click(screen.getByLabelText("Edit Chair 1"))
+    fireEvent.click(screen.getByRole("button", { name: "Close" }))
+
+    expect(screen.queryByRole("dialog")).toBeNull()
 })

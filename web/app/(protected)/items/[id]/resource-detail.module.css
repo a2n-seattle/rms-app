@@ -5,6 +5,12 @@
     margin-bottom: var(--space-lg);
 }
 
+.headerActions {
+    display: flex;
+    gap: var(--space-sm);
+    flex-shrink: 0;
+}
+
 .title {
     font-size: 1.5rem;
     font-weight: 700;

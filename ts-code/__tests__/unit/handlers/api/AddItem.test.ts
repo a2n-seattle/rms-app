@@ -30,6 +30,6 @@ test('will add item correctly when using handler', async () => {
         })
         } as any, null, null)
     ).resolves.toEqual({ statusCode: 200, body: JSON.stringify(`${TestConstants.ITEM_ID}`) })
-    expect(dbClient.getDB()).toEqual(DBSeed.ONE_NAME)
+    expect(dbClient.getDB()).toEqual(DBSeed.ONE_NAME_NUMBERED_DEFAULT)
     metricsClient.assureState(0)
 })

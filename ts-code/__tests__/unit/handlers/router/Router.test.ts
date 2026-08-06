@@ -145,7 +145,7 @@ test('will add item correctly when name does not exist', async () => {
             return router.processRequest(TestConstants.NOTES, TestConstants.NUMBER)
         }).then((output: string) => {
             expect(output).toEqual(`Created Item with RMS ID: ${TestConstants.ITEM_ID}`)
-            expect(dbClient.getDB()).toEqual(DBSeed.ONE_NAME)
+            expect(dbClient.getDB()).toEqual(DBSeed.ONE_NAME_NUMBERED_DEFAULT)
         })
 })
 
@@ -171,7 +171,7 @@ test('will add item correctly when name exists', async () => {
             return router.processRequest(TestConstants.NOTES_2, TestConstants.NUMBER)
         }).then((output: string) => {
             expect(output).toEqual(`Created Item with RMS ID: ${TestConstants.ITEM_ID_2}`)
-            expect(dbClient.getDB()).toEqual(DBSeed.ONE_NAME_TWO_ITEMS)
+            expect(dbClient.getDB()).toEqual(DBSeed.ONE_NAME_TWO_ITEMS_NUMBERED_DEFAULT)
         })
 })
 
