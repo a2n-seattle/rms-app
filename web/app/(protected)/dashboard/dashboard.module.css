@@ -72,3 +72,18 @@
     font: inherit;
     font-size: 0.85rem;
 }
+
+.borrowedActions {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: var(--space-md);
+}
+
+.checkboxCell {
+    width: 2rem;
+}
+
+.buttonLinkDisabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
