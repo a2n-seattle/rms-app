@@ -9,9 +9,17 @@ import { Locator, Page, expect } from "@playwright/test"
  * A locator scoped to role "button" alone never matches that link, which is what silently
  * left the shared fixture item stuck borrowed for later specs after several cleanup
  * attempts in this suite.
+ *
+ * The nav bar (present on every page) has its own persistent link with the exact
+ * accessible name "Return" (href="/return", the multi-select return page) -- a bare
+ * `getByRole("link", { name: "Return" })` matches it *and* the item's own group-return
+ * link whenever both are on the page, a strict-mode violation that silently resolved as
+ * "not found" through waitFor()'s .catch(), which is what actually kept leaving the shared
+ * fixture item stuck. Match the group-return link by its href prefix instead, which is
+ * unambiguous.
  */
 function returnControl(page: Page) {
-    return page.getByRole("button", { name: "Return" }).or(page.getByRole("link", { name: "Return" }))
+    return page.getByRole("button", { name: "Return" }).or(page.locator('a[href^="/return-group/"]'))
 }
 
 // Locator.isVisible() checks the DOM once and returns immediately -- unlike
@@ -40,7 +48,7 @@ export async function cleanupReturn(page: Page): Promise<void> {
         return
     }
 
-    const returnLink = page.getByRole("link", { name: "Return" })
+    const returnLink = page.locator('a[href^="/return-group/"]')
     if (!(await waitVisible(returnLink, 15000))) {
         return
     }

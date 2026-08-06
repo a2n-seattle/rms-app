@@ -40,10 +40,13 @@ test("borrow via basket, return via the batched group confirmation with a condit
             page.getByRole("button", { name: "Borrow Selected (1)" }).click(),
         ])
 
-        // Sub-item page's Return action should now be a link to the batched
-        // group confirmation, not a direct-return form submit.
+        // Sub-item page's Return action should now be a link to the batched group
+        // confirmation, not a direct-return form submit. Match by href, not role name --
+        // the nav bar (present on every page) has its own persistent link whose accessible
+        // name is also exactly "Return" (href="/return"), so a bare
+        // getByRole("link", { name: "Return" }) ambiguously matches both.
         await page.goto(`/items/${encodeURIComponent(TEST_ITEM_ID!)}`)
-        const returnLink = page.getByRole("link", { name: "Return" })
+        const returnLink = page.locator('a[href^="/return-group/"]')
         await expect(returnLink).toBeVisible({ timeout: 15000 })
         await returnLink.click()
 
