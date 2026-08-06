@@ -22,8 +22,14 @@ test("borrow, then return via the multi-select /return page", async ({ page }) =
     await expect(page).toHaveURL(/\/browse/)
 
     await page.goto(`/items/${encodeURIComponent(TEST_ITEM_ID!)}`)
-    await page.getByRole("button", { name: "Borrow" }).click()
-    await expect(page.getByText(TEST_EMAIL!)).toBeVisible()
+    await Promise.all([
+        page.waitForResponse((response) => response.request().method() === "POST"),
+        page.getByRole("button", { name: "Borrow" }).click(),
+    ])
+    // As of GH-353, `borrower` is a Cognito sub, not the user's email -- the item detail
+    // page no longer displays TEST_EMAIL anywhere, so confirm the borrowed state via the
+    // "Return" button appearing instead.
+    await expect(page.getByRole("button", { name: "Return" })).toBeVisible({ timeout: 15000 })
 
     // ListMyBorrowedItems scans+filters, eventually consistent -- poll
     // rather than assert once (same caveat as other specs in this suite).

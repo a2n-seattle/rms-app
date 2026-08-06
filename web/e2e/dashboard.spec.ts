@@ -87,12 +87,14 @@ test("reserve, see upcoming alert, borrow from it, see it under Currently Borrow
         ])
 
         // ListMyBorrowedItems scans+filters, eventually consistent -- poll rather than
-        // assert once (same caveat as the "Upcoming" alert poll above).
+        // assert once (same caveat as the "Upcoming" alert poll above). Match by the row's
+        // link href, not display text -- the borrowed-tab row shows the item's friendly
+        // `name` (e.g. "E2E Test Chair"), not its raw id, since GH-353.
         await expect
             .poll(
                 async () => {
                     await page.goto("/dashboard?tab=borrowed")
-                    return page.getByText(TEST_ITEM_ID!).isVisible()
+                    return page.locator(`a[href="/items/${encodeURIComponent(TEST_ITEM_ID!)}"]`).isVisible()
                 },
                 { timeout: 15000 }
             )

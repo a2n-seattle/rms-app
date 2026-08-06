@@ -30,29 +30,36 @@ test("borrow via the resource basket's default all-selected state", async ({ pag
     // (basket) page at /items/<familyId> -- capture that resolved URL so
     // we can return via the sub-item's nested route afterwards.
     await page.goto(`/items/${encodeURIComponent(TEST_ITEM_ID!)}`)
-    await expect(page.getByRole("button", { name: /Borrow Selected/ })).toBeVisible()
+    await expect(page.getByRole("button", { name: /Borrow Selected/ })).toBeVisible({ timeout: 15000 })
     // Default-all-selected: the one sub-item on this family should
     // already be checked, so "Borrow Selected (1)" reads non-zero.
     await expect(page.getByRole("button", { name: "Borrow Selected (1)" })).toBeEnabled()
 
-    const returnBy = new Date(Date.now() + 60 * 60 * 1000)
-    const toLocalInputValue = (d: Date) => d.toISOString().slice(0, 16)
-    await page.locator('input[name="returnBy"]').fill(toLocalInputValue(returnBy))
+    // try/finally from here on: a failed assertion must not leave the shared fixture item
+    // stuck borrowed for every other spec that runs after this one in the same CI job.
+    try {
+        const returnBy = new Date(Date.now() + 60 * 60 * 1000)
+        const toLocalInputValue = (d: Date) => d.toISOString().slice(0, 16)
+        await page.locator('input[name="returnBy"]').fill(toLocalInputValue(returnBy))
 
-    await Promise.all([
-        page.waitForResponse((response) => response.request().method() === "POST"),
-        page.getByRole("button", { name: "Borrow Selected (1)" }).click(),
-    ])
+        await Promise.all([
+            page.waitForResponse((response) => response.request().method() === "POST"),
+            page.getByRole("button", { name: "Borrow Selected (1)" }).click(),
+        ])
 
-    await expect(page.getByText(TEST_EMAIL!)).toBeVisible()
-    // GH-356: the borrow/reserve forms stay mounted in place across the page's revalidation
-    // (unlike items/[id]/[subId]'s borrow/return toggle), so the inline success indicator is
-    // reliably visible here.
-    await expect(page.getByRole("status")).toContainText("borrowed successfully")
+        // GH-356: the borrow/reserve forms stay mounted in place across the page's
+        // revalidation (unlike items/[id]/[subId]'s borrow/return toggle), so the inline
+        // success indicator is reliably visible here.
+        await expect(page.getByRole("status")).toContainText("borrowed successfully", { timeout: 15000 })
+    } finally {
+        // Clean up: return via the sub-item page so other specs sharing this
+        // fixture item see it available again.
+        await page.goto(`/items/${encodeURIComponent(TEST_ITEM_ID!)}`)
+        const returnButton = page.getByRole("button", { name: "Return" })
+        if (await returnButton.isVisible({ timeout: 15000 }).catch(() => false)) {
+            await returnButton.click()
+        }
+    }
 
-    // Clean up: return via the sub-item page so other specs sharing this
-    // fixture item see it available again.
-    await page.goto(`/items/${encodeURIComponent(TEST_ITEM_ID!)}`)
-    await page.getByRole("button", { name: "Return" }).click()
-    await expect(page.getByText("(available)")).toBeVisible()
+    await expect(page.getByText("(available)")).toBeVisible({ timeout: 15000 })
 })
