@@ -21,11 +21,12 @@ function Harness({ open, onClose, seed = [] }: { open: boolean; onClose: () => v
 
 function Seeder({ seed }: { seed: CartEntry[] }) {
     const cart = useCart()
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- seed once on mount only
     useEffect(() => {
         if (seed.length > 0) {
             cart.addEntries(seed)
         }
+        // seed once on mount only
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
     return null
 }

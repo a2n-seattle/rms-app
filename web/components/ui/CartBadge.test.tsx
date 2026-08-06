@@ -11,11 +11,12 @@ const CHAIR: CartEntry = { itemId: "chair-1", familyId: "chairs", itemName: "Cha
 
 function Seeder({ seed }: { seed: CartEntry[] }) {
     const cart = useCart()
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- seed once on mount only
     useEffect(() => {
         if (seed.length > 0) {
             cart.addEntries(seed)
         }
+        // seed once on mount only
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
     return null
 }
