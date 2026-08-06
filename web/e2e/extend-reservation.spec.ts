@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test"
-import { waitVisible } from "./cleanup"
+import { cancelReservation, waitVisible } from "./cleanup"
 
 /**
  * Extend reservation: login -> reserve the test item -> extend it from the
@@ -118,9 +118,6 @@ test("reserve, then extend it from the dashboard's Scheduled tab", async ({ page
         // item for every later spec/run.
         await page.goto("/dashboard")
         const alert = page.locator('[data-testid="upcoming-alert"]', { hasText: notes })
-        const cancelButton = alert.getByRole("button", { name: "Cancel" })
-        if (await waitVisible(cancelButton)) {
-            await cancelButton.click()
-        }
+        await cancelReservation(alert)
     }
 })
