@@ -65,6 +65,17 @@ test("reserve, then extend it from the dashboard's Scheduled tab", async ({ page
             )
             .toBe(true)
 
+        // Capture the displayed end time before extending, so success can be checked by
+        // "did this cell's text change" rather than reconstructing the expected display
+        // string via newEnd.toLocaleString() -- that string is formatted by the test's own
+        // Node process, while the actual value goes through a datetime-local input (parsed
+        // as local time by whichever of the browser/Next server ends up interpreting the
+        // un-timezone-qualified string) and back out through the dashboard's own
+        // toLocaleString() call, three separate places that can disagree on timezone/locale
+        // even when the underlying timestamp is perfectly correct.
+        const endTimeCell = row.locator("td").nth(2)
+        const originalEndTimeText = await endTimeCell.textContent()
+
         const newEndInput = row.getByLabel("New end time")
         await newEndInput.fill(toLocalInputValue(newEnd))
 
@@ -91,11 +102,17 @@ test("reserve, then extend it from the dashboard's Scheduled tab", async ({ page
             .poll(
                 async () => {
                     await page.goto("/dashboard?tab=scheduled")
-                    return row.getByText(newEnd.toLocaleString()).isVisible()
+                    // If the row hasn't (re)appeared yet, report the original text so the
+                    // poll keeps waiting instead of a sentinel that would trivially satisfy
+                    // "not equal to original" without the cell actually having changed.
+                    if (!(await row.isVisible())) {
+                        return originalEndTimeText
+                    }
+                    return endTimeCell.textContent()
                 },
                 { timeout: 15000, intervals: [2000] }
             )
-            .toBe(true)
+            .not.toBe(originalEndTimeText)
     } finally {
         // Cancel this run's own reservation so it doesn't accumulate on the shared fixture
         // item for every later spec/run.

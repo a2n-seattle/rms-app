@@ -34,11 +34,16 @@ export default async function DashboardPage({
         ? (tabParam as DashboardTab)
         : "borrowed"
 
-    const [borrowed, owned, upcoming, overdue] = await Promise.all([
-        listMyBorrowedItems(session.idToken, { borrower: session.sub }),
-        listMyOwnedItems(session.idToken, { ownerId: session.sub }),
+    // `upcoming`/`overdue` back the alert banners shown above the tabs regardless of which
+    // tab is active, so those two are always fetched. `borrowed`/`owned`/`history` only
+    // back their own tab's content, so skip the Scan entirely when that tab isn't active --
+    // this repo's DynamoDB tables are deliberately provisioned at 1 RCU/1 WCU (see root
+    // CLAUDE.md), and this page's fan-out is the single biggest per-render read cost.
+    const [upcoming, overdue, borrowed, owned] = await Promise.all([
         listUpcomingReservations(session.idToken, { borrower: session.sub }),
         listOverdueItems(session.idToken, { borrower: session.sub }),
+        tab === "borrowed" ? listMyBorrowedItems(session.idToken, { borrower: session.sub }) : undefined,
+        tab === "owned" ? listMyOwnedItems(session.idToken, { ownerId: session.sub }) : undefined,
     ])
     const history = tab === "history" ? await listHistory(session.idToken, { borrower: session.sub }) : undefined
 
@@ -138,8 +143,9 @@ export default async function DashboardPage({
             </TabList>
 
             <Card>
+                {/* borrowed is only undefined when tab !== "borrowed" (see the fetch above) */}
                 {tab === "borrowed" &&
-                    (borrowed.items.length === 0 ? (
+                    (borrowed!.items.length === 0 ? (
                         <p className={styles.empty}>Not currently borrowing anything.</p>
                     ) : (
                         <>
@@ -155,7 +161,7 @@ export default async function DashboardPage({
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {borrowed.items.map((item) => (
+                                    {borrowed!.items.map((item) => (
                                         <tr key={item.id}>
                                             <td>
                                                 <a href={`/items/${encodeURIComponent(item.id)}`} className={styles.itemLink}>
@@ -171,8 +177,9 @@ export default async function DashboardPage({
                         </>
                     ))}
 
+                {/* owned is only undefined when tab !== "owned" (see the fetch above) */}
                 {tab === "owned" &&
-                    (owned.items.length === 0 ? (
+                    (owned!.items.length === 0 ? (
                         <p className={styles.empty}>You don&apos;t own any resources.</p>
                     ) : (
                         <Table>
@@ -184,7 +191,7 @@ export default async function DashboardPage({
                                 </tr>
                             </thead>
                             <tbody>
-                                {owned.items.map((main) => (
+                                {owned!.items.map((main) => (
                                     <tr key={main.id}>
                                         <td>{main.name}</td>
                                         <td>{main.location}</td>
