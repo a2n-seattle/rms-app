@@ -62,5 +62,9 @@ test("borrow via the resource basket's default all-selected state", async ({ pag
         await cleanupReturn(page)
     }
 
+    // cleanupReturn's group-confirm click redirects to /dashboard on success -- navigate
+    // back to the item page before checking availability, rather than asserting on
+    // whatever page cleanup happened to land on.
+    await page.goto(`/items/${encodeURIComponent(TEST_ITEM_ID!)}`)
     await expect(page.getByText("(available)")).toBeVisible({ timeout: 15000 })
 })

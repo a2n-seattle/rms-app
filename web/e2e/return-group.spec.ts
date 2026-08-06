@@ -75,13 +75,18 @@ test("borrow via basket, return via the batched group confirmation with a condit
 
         await Promise.all([page.waitForResponse((response) => response.request().method() === "POST"), confirmButton.click()])
 
+        // History is written synchronously as part of the return, but ListHistory reads it
+        // via a Scan (eventually consistent) same as this suite's other list reads -- give
+        // it a longer budget than the rest of this file's polls, since it's the tail end of
+        // a longer chain of writes (return -> changeBorrower -> createHistoryEntry) and has
+        // shown up as the slowest read to converge in CI.
         await expect
             .poll(
                 async () => {
                     await page.goto("/dashboard?tab=history")
                     return page.getByText(condition).isVisible()
                 },
-                { timeout: 15000, intervals: [2000] }
+                { timeout: 25000, intervals: [2000] }
             )
             .toBe(true)
     } finally {
