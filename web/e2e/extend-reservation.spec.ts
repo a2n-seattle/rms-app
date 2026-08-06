@@ -79,7 +79,10 @@ test("reserve, then extend it from the dashboard's Scheduled tab", async ({ page
         // error -- still a 200 response, so extendResponse.ok() alone can't see it. Fail
         // loudly with the actual reason instead of leaving the poll below to time out
         // silently.
-        const errorAlert = page.getByRole("alert")
+        // Exclude Next's hidden #__next-route-announcer__ (a11y navigation announcements),
+        // which also has role="alert" and would otherwise match here too (see
+        // borrow-conflict.spec.ts for the same caveat).
+        const errorAlert = page.locator('[role="alert"]:not(#__next-route-announcer__)')
         if (await waitVisible(errorAlert, 2000)) {
             throw new Error(`extend-reservation was rejected: ${await errorAlert.textContent()}`)
         }
