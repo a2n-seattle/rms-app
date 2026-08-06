@@ -140,7 +140,7 @@ export class AddItem {
                 if (!user) {
                     return Promise.resolve()
                 }
-                return this.mainTable.update(familyId, "ownerId", user.sub)
+                return this.mainTable.update(familyId, "ownerId", user.sub, false)
                     .then(() => this.userTable.addOwned(user.sub, familyId))
                     .then((): void => undefined)
             })

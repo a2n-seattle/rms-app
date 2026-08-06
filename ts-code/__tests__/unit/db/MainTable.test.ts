@@ -56,6 +56,15 @@ test('will create main entry with type "room" when specified', async () => {
     })
 })
 
+test('update with requireExists=false sets an attribute that was never initialized', async () => {
+    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.ONE_NAME)
+    const table: MainTable = new MainTable(dbClient)
+
+    await table.update(TestConstants.ID, "ownerId", TestConstants.OWNER_2, false)
+
+    await expect(table.get(TestConstants.ID)).resolves.toMatchObject({ ownerId: TestConstants.OWNER_2 })
+})
+
 test('will find main entry by name via getByName', async () => {
     const dbClient: LocalDBClient = new LocalDBClient(DBSeed.ONE_NAME)
     const table: MainTable = new MainTable(dbClient)

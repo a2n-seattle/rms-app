@@ -2,6 +2,7 @@ import { AddItem } from "../../../src/api/AddItem"
 import { MainTable } from "../../../src/db/MainTable"
 import { DBSeed, TestConstants} from "../../../__dev__/db/DBTestConstants"
 import { LocalDBClient } from "../../../__dev__/db/LocalDBClient"
+import { LocalUserDirectoryClient } from "../../../__dev__/cognito/LocalUserDirectoryClient"
 
 const originalGetUniqueId = AddItem.prototype.getUniqueId
 
@@ -192,6 +193,31 @@ test('will use an explicitly provided friendlyName instead of the numbered defau
     await expect(mainTable.get(TestConstants.ID)).resolves.toMatchObject({ items: [TestConstants.ITEM_ID] })
     const item = (dbClient.getDB() as any).items[TestConstants.ITEM_ID]
     expect(item.name).toEqual(TestConstants.FRIENDLY_NAME)
+})
+
+test('will resolve owner against the user pool on a brand-new family without throwing', async () => {
+    // Regression test: MainTable.create() never initializes `ownerId` -- resolveOwner's
+    // first-ever write to it on a freshly created family must not require the attribute to
+    // already exist (see MainTable.update's requireExists param), or this throws
+    // ConditionalCheckFailedException ("The conditional request failed").
+    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.EMPTY)
+    const userDirectory = new LocalUserDirectoryClient([{ sub: TestConstants.ITEM_ID_2, email: TestConstants.OWNER }])
+    const api: AddItem = new AddItem(dbClient, undefined, userDirectory)
+    const mainTable: MainTable = new MainTable(dbClient)
+
+    MainTable.prototype["generateId"] = jest.fn(() => TestConstants.ID);
+    AddItem.prototype.getUniqueId = jest.fn(() => Promise.resolve(TestConstants.ITEM_ID));
+
+    await api.execute({
+        name: TestConstants.DISPLAYNAME,
+        description: TestConstants.DESCRIPTION,
+        tags: [TestConstants.TAG],
+        owner: TestConstants.OWNER,
+        location: TestConstants.LOCATION,
+        notes: TestConstants.NOTES
+    })
+
+    await expect(mainTable.get(TestConstants.ID)).resolves.toMatchObject({ ownerId: TestConstants.ITEM_ID_2 })
 })
 
 test('will generate a UUID-format item id with no spaces for a multi-word name', async () => {
