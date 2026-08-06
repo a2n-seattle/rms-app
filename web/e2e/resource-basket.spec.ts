@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test"
-import { cleanupReturn } from "./cleanup"
+import { cleanupReturn, resolveFamilyId } from "./cleanup"
 
 /**
  * Resource basket: login -> visit the test item's resource (family) page
@@ -27,10 +27,11 @@ test("borrow via the resource basket's default all-selected state", async ({ pag
 
     await expect(page).toHaveURL(/\/browse/)
 
-    // Navigating to the sub-item id directly redirects to the family
-    // (basket) page at /items/<familyId> -- capture that resolved URL so
-    // we can return via the sub-item's nested route afterwards.
-    await page.goto(`/items/${encodeURIComponent(TEST_ITEM_ID!)}`)
+    // Navigating to the sub-item id itself redirects to the single sub-item page (see
+    // resolveFamilyId), not the family-level "ResourceBasket" multi-select UI this test
+    // exercises -- resolve the family id first, then visit that page directly.
+    const familyId = await resolveFamilyId(page, TEST_ITEM_ID!)
+    await page.goto(`/items/${encodeURIComponent(familyId)}`)
     await expect(page.getByRole("button", { name: /Borrow Selected/ })).toBeVisible({ timeout: 15000 })
     // Default-all-selected: the one sub-item on this family should
     // already be checked, so "Borrow Selected (1)" reads non-zero.

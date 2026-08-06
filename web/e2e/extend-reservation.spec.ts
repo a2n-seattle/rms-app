@@ -73,6 +73,16 @@ test("reserve, then extend it from the dashboard's Scheduled tab", async ({ page
             row.getByRole("button", { name: "Extend" }).click(),
         ])
         expect(extendResponse.ok(), `extend-reservation failed with status ${extendResponse.status()}`).toBe(true)
+        // extendReservationAction catches a rejected extend (e.g. ScheduleTable's overlap
+        // validation, if this run's randomized window happens to collide with leftover
+        // reservation cruft accumulated on this shared fixture item) and returns an inline
+        // error -- still a 200 response, so extendResponse.ok() alone can't see it. Fail
+        // loudly with the actual reason instead of leaving the poll below to time out
+        // silently.
+        const errorAlert = page.getByRole("alert")
+        if (await waitVisible(errorAlert, 2000)) {
+            throw new Error(`extend-reservation was rejected: ${await errorAlert.textContent()}`)
+        }
 
         await expect
             .poll(

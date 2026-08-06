@@ -41,6 +41,22 @@ export async function isBorrowed(page: Page, timeout = 15000): Promise<boolean> 
     return waitVisible(returnControl(page), timeout)
 }
 
+/**
+ * Resolves the fixture item's family id from its sub-item id. items/[id]/page.tsx redirects
+ * /items/{id} to /items/{main.id}/{id} whenever `id` itself isn't the family id, which it
+ * never is for RMS_TEST_ITEM_ID (a sub-item id) -- so /items/{subItemId} always lands on the
+ * single sub-item page, never the family-level "ResourceBasket" multi-select UI. Visiting
+ * /items/{familyId} directly is the only way to reach that page.
+ */
+export async function resolveFamilyId(page: Page, subItemId: string): Promise<string> {
+    await page.goto(`/items/${encodeURIComponent(subItemId)}`)
+    const match = new URL(page.url()).pathname.match(/^\/items\/([^/]+)\/([^/]+)$/)
+    if (!match) {
+        throw new Error(`Expected /items/{subItemId} to redirect to /items/{familyId}/{subItemId}, got ${page.url()}`)
+    }
+    return decodeURIComponent(match[1])
+}
+
 export async function cleanupReturn(page: Page): Promise<void> {
     const returnButton = page.getByRole("button", { name: "Return" })
     if (await waitVisible(returnButton, 2000)) {
