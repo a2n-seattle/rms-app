@@ -78,7 +78,7 @@ test("reserve, see upcoming alert, borrow from it, see it under Currently Borrow
                     await page.goto("/dashboard")
                     return alert.isVisible()
                 },
-                { timeout: 15000 }
+                { timeout: 15000, intervals: [1000] }
             )
             .toBe(true)
 
@@ -97,7 +97,7 @@ test("reserve, see upcoming alert, borrow from it, see it under Currently Borrow
                     await page.goto("/dashboard?tab=borrowed")
                     return page.locator(`a[href="/items/${encodeURIComponent(TEST_ITEM_ID!)}"]`).isVisible()
                 },
-                { timeout: 15000 }
+                { timeout: 15000, intervals: [1000] }
             )
             .toBe(true)
     } finally {
@@ -124,7 +124,7 @@ test("reserve, see upcoming alert, borrow from it, see it under Currently Borrow
                 await page.goto(`/items/${encodeURIComponent(TEST_ITEM_ID!)}`)
                 return page.getByText("(available)").isVisible()
             },
-            { timeout: 15000 }
-        )
+            { timeout: 15000, intervals: [1000] }
+            )
         .toBe(true)
 })

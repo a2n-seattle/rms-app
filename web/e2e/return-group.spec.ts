@@ -62,7 +62,7 @@ test("borrow via basket, return via the batched group confirmation with a condit
                     await page.reload()
                     return confirmButton.isVisible()
                 },
-                { timeout: 15000 }
+                { timeout: 15000, intervals: [1000] }
             )
             .toBe(true)
 
@@ -77,7 +77,7 @@ test("borrow via basket, return via the batched group confirmation with a condit
                     await page.goto("/dashboard?tab=history")
                     return page.getByText(condition).isVisible()
                 },
-                { timeout: 15000 }
+                { timeout: 15000, intervals: [1000] }
             )
             .toBe(true)
     } finally {
