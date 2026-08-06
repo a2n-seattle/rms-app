@@ -214,3 +214,31 @@ export interface ExtendReservationInput {
     id?: string
     newEndTime?: number
 }
+
+export interface AddItemInput {
+    name?: string
+    description?: string
+    tags?: string[]
+    owner?: string
+    location?: string
+    friendlyName?: string
+    notes?: string
+    type?: "item" | "room"
+}
+
+export interface DeleteItemInput {
+    id?: string
+}
+
+export interface UpdateItemInput {
+    id?: string
+    name?: string
+    description?: string
+    location?: string
+}
+
+export interface UpdateSubItemInput {
+    id?: string
+    name?: string
+    notes?: string
+}

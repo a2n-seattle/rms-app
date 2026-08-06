@@ -5,6 +5,7 @@ import { Table } from "@/components/ui/Table"
 import { Checkbox } from "@/components/ui/Checkbox"
 import { Button } from "@/components/ui/Button"
 import { ActionForm } from "@/components/ui/ActionForm"
+import { EditSubItemModal } from "@/components/items/EditSubItemModal"
 import type { ActionState } from "@/lib/actionState"
 import type { ItemsSchema } from "@/lib/api/types"
 import styles from "./resource-detail.module.css"
@@ -15,10 +16,21 @@ interface ResourceBasketProps {
     isRoom?: boolean
     borrowAction: (prevState: ActionState, formData: FormData) => Promise<ActionState>
     reserveAction: (prevState: ActionState, formData: FormData) => Promise<ActionState>
+    updateSubItemAction: (prevState: ActionState, formData: FormData) => Promise<ActionState>
+    deleteSubItemAction: (prevState: ActionState, formData: FormData) => Promise<ActionState>
 }
 
-export function ResourceBasket({ familyId, items, isRoom, borrowAction, reserveAction }: ResourceBasketProps) {
+export function ResourceBasket({
+    familyId,
+    items,
+    isRoom,
+    borrowAction,
+    reserveAction,
+    updateSubItemAction,
+    deleteSubItemAction,
+}: ResourceBasketProps) {
     const [selected, setSelected] = useState<Set<string>>(new Set(items.map((item) => item.id)))
+    const [editingItem, setEditingItem] = useState<ItemsSchema | null>(null)
 
     function toggle(id: string) {
         setSelected((prev) => {
@@ -64,6 +76,7 @@ export function ResourceBasket({ familyId, items, isRoom, borrowAction, reserveA
                         <th>Item</th>
                         {!isRoom && <th>Borrower</th>}
                         <th>Notes</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -79,10 +92,30 @@ export function ResourceBasket({ familyId, items, isRoom, borrowAction, reserveA
                             </td>
                             {!isRoom && <td>{item.borrower || "(available)"}</td>}
                             <td>{item.notes || "—"}</td>
+                            <td>
+                                <button
+                                    type="button"
+                                    className={styles.toggleLink}
+                                    aria-label={`Edit ${item.name || item.id}`}
+                                    onClick={() => setEditingItem(item)}
+                                >
+                                    Edit
+                                </button>
+                            </td>
                         </tr>
                     ))}
                 </tbody>
             </Table>
+
+            {editingItem && (
+                <EditSubItemModal
+                    open={true}
+                    onClose={() => setEditingItem(null)}
+                    item={editingItem}
+                    updateSubItemAction={updateSubItemAction}
+                    deleteSubItemAction={deleteSubItemAction}
+                />
+            )}
 
             {!isRoom && (
                 <ActionForm action={borrowAction} successMessage="Item(s) borrowed successfully." className={styles.actionBar}>

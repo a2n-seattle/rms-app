@@ -23,7 +23,7 @@ test('will add item correctly when name does not exist', async () => {
             notes: TestConstants.NOTES
         })
     ).resolves.toEqual(`${TestConstants.ITEM_ID}`)
-    expect(dbClient.getDB()).toEqual(DBSeed.ONE_NAME)
+    expect(dbClient.getDB()).toEqual(DBSeed.ONE_NAME_NUMBERED_DEFAULT)
 })
 
 test('will add additional item correctly when item already exist', async () => {
@@ -43,7 +43,7 @@ test('will add additional item correctly when item already exist', async () => {
             notes: TestConstants.NOTES_2
         })
     ).resolves.toEqual(`${TestConstants.ITEM_ID_2}`)
-    expect(dbClient.getDB()).toEqual(DBSeed.ONE_NAME_TWO_ITEMS)
+    expect(dbClient.getDB()).toEqual(DBSeed.ONE_NAME_TWO_ITEMS_NUMBERED_DEFAULT)
 })
 
 test('will fail to add item when id is not unique', async () => {
@@ -84,7 +84,7 @@ test('will add different name correctly when name already exists', async () => {
             notes: TestConstants.NOTES_2
         })
     ).resolves.toEqual(`${TestConstants.ITEM_ID_2}`)
-    expect(dbClient.getDB()).toEqual(DBSeed.TWO_NAMES)
+    expect(dbClient.getDB()).toEqual(DBSeed.TWO_NAMES_NUMBERED_DEFAULT)
 })
 
 test('will fail to add name when id is not unique', async () => {
@@ -169,6 +169,29 @@ test('will fail to add item when item name not passed in', async () => {
         })
     ).rejects.toThrow("Missing required field 'name'")
     expect(dbClient.getDB()).toEqual(DBSeed.EMPTY)
+})
+
+test('will use an explicitly provided friendlyName instead of the numbered default', async () => {
+    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.EMPTY)
+    const api: AddItem = new AddItem(dbClient)
+    const mainTable: MainTable = new MainTable(dbClient)
+
+    MainTable.prototype["generateId"] = jest.fn(() => TestConstants.ID);
+    AddItem.prototype.getUniqueId = jest.fn(() => Promise.resolve(TestConstants.ITEM_ID));
+
+    await api.execute({
+        name: TestConstants.DISPLAYNAME,
+        description: TestConstants.DESCRIPTION,
+        tags: [TestConstants.TAG],
+        owner: TestConstants.OWNER,
+        location: TestConstants.LOCATION,
+        friendlyName: TestConstants.FRIENDLY_NAME,
+        notes: TestConstants.NOTES
+    })
+
+    await expect(mainTable.get(TestConstants.ID)).resolves.toMatchObject({ items: [TestConstants.ITEM_ID] })
+    const item = (dbClient.getDB() as any).items[TestConstants.ITEM_ID]
+    expect(item.name).toEqual(TestConstants.FRIENDLY_NAME)
 })
 
 test('will generate a UUID-format item id with no spaces for a multi-word name', async () => {

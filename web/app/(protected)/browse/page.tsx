@@ -1,5 +1,6 @@
 import { getSession } from "@/lib/session"
 import { listItems } from "@/lib/api/listItems"
+import { ButtonLink } from "@/components/ui/ButtonLink"
 import { ResourcesTable } from "./ResourcesTable"
 import styles from "./browse.module.css"
 
@@ -20,6 +21,7 @@ export default async function BrowsePage({
         <div>
             <div className={styles.header}>
                 <h1 className={styles.title}>Resources</h1>
+                <ButtonLink href="/items/new">Add item</ButtonLink>
             </div>
             <ResourcesTable items={items} />
             {nextPageToken && (

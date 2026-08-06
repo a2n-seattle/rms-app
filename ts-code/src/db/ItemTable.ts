@@ -140,7 +140,7 @@ export class ItemTable {
      */
      public updateItem(
         id: string,
-        key: "notes",
+        key: "notes" | "name",
         val: string,
         expectedValue?: string
     ): Promise<GetCommandOutput> {

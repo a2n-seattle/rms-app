@@ -3,12 +3,16 @@ import { getItem } from "@/lib/api/getItem"
 import { borrowItem } from "@/lib/api/borrowItem"
 import { returnItem } from "@/lib/api/returnItem"
 import { createReservation } from "@/lib/api/createReservation"
+import { updateSubItem } from "@/lib/api/updateSubItem"
+import { deleteItem } from "@/lib/api/deleteItem"
 import { revalidatePath } from "next/cache"
+import { redirect } from "next/navigation"
 import { ActionState, runAction } from "@/lib/actionState"
 import { Card } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
 import { ButtonLink } from "@/components/ui/ButtonLink"
 import { ActionForm } from "@/components/ui/ActionForm"
+import { SubItemHeaderActions } from "./SubItemHeaderActions"
 import styles from "./item-detail.module.css"
 
 export default async function SubItemDetailPage({ params }: { params: Promise<{ id: string; subId: string }> }) {
@@ -67,10 +71,54 @@ export default async function SubItemDetailPage({ params }: { params: Promise<{ 
         })
     }
 
+    async function updateSubItemAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+        "use server"
+        return runAction(async () => {
+            const session = await getSession()
+            if (!session) {
+                return
+            }
+            const name = formData.get("name") as string
+            const notes = formData.get("notes") as string
+            await updateSubItem(session.idToken, { id: subId, name, notes })
+            revalidatePath(`/items/${id}/${subId}`)
+        })
+    }
+
+    async function deleteSubItemAction(_prevState: ActionState, _formData: FormData): Promise<ActionState> {
+        "use server"
+        return runAction(async () => {
+            const session = await getSession()
+            if (!session) {
+                return
+            }
+            await deleteItem(session.idToken, { id: subId })
+            // If this was the family's last item, DeleteItem's cascade already
+            // removed the family row too -- /items/[id]/[subId] itself is no
+            // longer valid, so redirect instead of revalidating in place.
+            if (items.length === 1) {
+                revalidatePath("/browse")
+                redirect("/browse")
+            }
+            revalidatePath(`/items/${id}`)
+            redirect(`/items/${id}`)
+        })
+    }
+
     return (
         <div>
             <div className={styles.header}>
-                <h1 className={styles.title}>{main.name}</h1>
+                <div className={styles.headerRow}>
+                    <h1 className={styles.title}>{main.name}</h1>
+                    {instance && (
+                        <SubItemHeaderActions
+                            item={instance}
+                            updateSubItemAction={updateSubItemAction}
+                            deleteSubItemAction={deleteSubItemAction}
+                        />
+                    )}
+                </div>
+                {instance && instance.name !== instance.id && <p className={styles.friendlyName}>{instance.name}</p>}
                 <p className={styles.description}>{main.description}</p>
             </div>
             <Card className={styles.metaCard}>
