@@ -87,8 +87,13 @@ jobs:
         # on alpha, so the backend under test is still real, only the
         # frontend serving is local.
         working-directory: web
+        # Redirect the backgrounded server's stdout/stderr to a file -- GitHub Actions
+        # does not keep capturing a backgrounded process's output into the job log once
+        # this step itself completes, so without this, any server-side crash (a Server
+        # Component/Server Action throwing during SSR, surfaced to the browser as Next's
+        # generic "This page couldn't load" error boundary) is invisible after the fact.
         run: |
-          AMPLIFY_APP_ORIGIN=http://localhost:3000 npx next start &
+          AMPLIFY_APP_ORIGIN=http://localhost:3000 npx next start > /tmp/next-server.log 2>&1 &
           echo $! > /tmp/next-start.pid
           for i in $(seq 1 30); do
             curl -sf http://localhost:3000/login > /dev/null && exit 0
@@ -116,4 +121,12 @@ jobs:
         with:
           name: playwright-report
           path: web/test-results/
+          retention-days: 7
+
+      - name: upload next.js server log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-server-log
+          path: /tmp/next-server.log
           retention-days: 7
