@@ -1,4 +1,4 @@
-import { Page, expect } from "@playwright/test"
+import { Locator, Page, expect } from "@playwright/test"
 
 /**
  * Returns the fixture item from whichever page it's currently on, handling both ways an
@@ -14,22 +14,34 @@ function returnControl(page: Page) {
     return page.getByRole("button", { name: "Return" }).or(page.getByRole("link", { name: "Return" }))
 }
 
+// Locator.isVisible() checks the DOM once and returns immediately -- unlike
+// expect(locator).toBeVisible(), it does NOT wait/retry for the element to appear, even
+// when passed a `timeout` option (that only bounds how long it waits for the element to
+// be *attached*, not visible). Using it standalone right after a fresh navigation raced
+// ahead of the page's own hydration, so a control that was genuinely about to render read
+// as absent and cleanup silently skipped it -- exactly what left the shared fixture item
+// stuck borrowed. waitFor() actually polls.
+export async function waitVisible(locator: Locator, timeout = 15000): Promise<boolean> {
+    return locator
+        .waitFor({ state: "visible", timeout })
+        .then(() => true)
+        .catch(() => false)
+}
+
 /** Whether the fixture item is currently borrowed, on whichever item detail page `page` is on. */
 export async function isBorrowed(page: Page, timeout = 15000): Promise<boolean> {
-    return returnControl(page)
-        .isVisible({ timeout })
-        .catch(() => false)
+    return waitVisible(returnControl(page), timeout)
 }
 
 export async function cleanupReturn(page: Page): Promise<void> {
     const returnButton = page.getByRole("button", { name: "Return" })
-    if (await returnButton.isVisible().catch(() => false)) {
+    if (await waitVisible(returnButton, 2000)) {
         await returnButton.click()
         return
     }
 
     const returnLink = page.getByRole("link", { name: "Return" })
-    if (!(await returnLink.isVisible({ timeout: 15000 }).catch(() => false))) {
+    if (!(await waitVisible(returnLink, 15000))) {
         return
     }
     await returnLink.click()

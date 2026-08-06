@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test"
+import { waitVisible } from "./cleanup"
 
 /**
  * GH-356 regression: borrowing an already-borrowed item must show an inline error message,
@@ -74,7 +75,7 @@ test("borrowing an already-borrowed item shows an inline error instead of crashi
         // whether the assertions above passed. Reload first in case tab 1's own view is stale.
         await page.reload()
         const returnButton = page.getByRole("button", { name: "Return" })
-        if (await returnButton.isVisible({ timeout: 15000 }).catch(() => false)) {
+        if (await waitVisible(returnButton)) {
             await returnButton.click()
         }
     }

@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test"
-import { cleanupReturn, isBorrowed } from "./cleanup"
+import { cleanupReturn, isBorrowed, waitVisible } from "./cleanup"
 
 /**
  * Dashboard: login -> reserve the test item -> see it as an "Upcoming"
@@ -112,7 +112,7 @@ test("reserve, see upcoming alert, borrow from it, see it under Currently Borrow
             await page.goto("/dashboard")
             const alert = page.locator('[data-testid="upcoming-alert"]', { hasText: notes })
             const cancelButton = alert.getByRole("button", { name: "Cancel" })
-            if (await cancelButton.isVisible().catch(() => false)) {
+            if (await waitVisible(cancelButton)) {
                 await cancelButton.click()
             }
         }
