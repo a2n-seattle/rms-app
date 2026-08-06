@@ -86,8 +86,17 @@ test("reserve, see upcoming alert, borrow from it, see it under Currently Borrow
             alert.getByRole("button", { name: "Borrow" }).click(),
         ])
 
-        await page.goto("/dashboard?tab=borrowed")
-        await expect(page.getByText(TEST_ITEM_ID!)).toBeVisible()
+        // ListMyBorrowedItems scans+filters, eventually consistent -- poll rather than
+        // assert once (same caveat as the "Upcoming" alert poll above).
+        await expect
+            .poll(
+                async () => {
+                    await page.goto("/dashboard?tab=borrowed")
+                    return page.getByText(TEST_ITEM_ID!).isVisible()
+                },
+                { timeout: 15000 }
+            )
+            .toBe(true)
     } finally {
         // Whether the borrow above succeeded, failed, or an assertion threw: if the item ended
         // up borrowed, return it so it doesn't stay unusable for every other spec/run. If the
@@ -95,7 +104,7 @@ test("reserve, see upcoming alert, borrow from it, see it under Currently Borrow
         // notes-scoped alert instead of leaving it to accumulate.
         await page.goto(`/items/${encodeURIComponent(TEST_ITEM_ID!)}`)
         const returnButton = page.getByRole("button", { name: "Return" })
-        if (await returnButton.isVisible().catch(() => false)) {
+        if (await returnButton.isVisible({ timeout: 15000 }).catch(() => false)) {
             await returnButton.click()
         } else {
             await page.goto("/dashboard")
@@ -107,6 +116,13 @@ test("reserve, see upcoming alert, borrow from it, see it under Currently Borrow
         }
     }
 
-    await page.goto(`/items/${encodeURIComponent(TEST_ITEM_ID!)}`)
-    await expect(page.getByText("(available)")).toBeVisible()
+    await expect
+        .poll(
+            async () => {
+                await page.goto(`/items/${encodeURIComponent(TEST_ITEM_ID!)}`)
+                return page.getByText("(available)").isVisible()
+            },
+            { timeout: 15000 }
+        )
+        .toBe(true)
 })
