@@ -36,44 +36,48 @@ test("reserve, then extend it from the dashboard's Scheduled tab", async ({ page
     await page.locator('input[name="start"]').fill(toLocalInputValue(start))
     await page.locator('input[name="end"]').fill(toLocalInputValue(end))
     await page.locator('input[name="notes"]').fill(notes)
+    // A Server Action's POST response body is Next.js's internal RSC "flight"
+    // wire format, not plain JSON -- only `.ok()` is safe to read here, not
+    // `.json()`/the action's actual return value.
     const [createResponse] = await Promise.all([
         page.waitForResponse((response) => response.request().method() === "POST"),
         page.getByRole("button", { name: "Reserve" }).click(),
     ])
-    expect(createResponse.ok(), `create-reservation failed: ${await createResponse.text()}`).toBe(true)
-    // Capture the resolved schedule id so the "New end time" input can be targeted precisely
-    // via its per-reservation aria-label (see dashboard/page.tsx) instead of a broad regex that
-    // matches every scheduled reservation's input when more than one exists on this shared
-    // fixture item (accumulated leftovers from other specs/retries are common here).
-    const scheduleId: string = await createResponse.json()
+    expect(createResponse.ok(), `create-reservation failed with status ${createResponse.status()}`).toBe(true)
 
     try {
         // ListUpcomingReservations scans+filters, eventually consistent --
-        // poll rather than assert once (same caveat as other specs).
+        // poll rather than assert once (same caveat as other specs). The
+        // unique `notes` text scopes the row locator to *this* run's own
+        // reservation, instead of a broad query that matches every scheduled
+        // reservation's input when more than one exists on this shared
+        // fixture item (accumulated leftovers from other specs/retries are
+        // common here).
+        const row = page.locator('[data-testid="scheduled-row"]', { hasText: notes })
         await expect
             .poll(
                 async () => {
                     await page.goto("/dashboard?tab=scheduled")
-                    return page.getByText(notes).isVisible()
+                    return row.isVisible()
                 },
                 { timeout: 15000 }
             )
             .toBe(true)
 
-        const newEndInput = page.getByLabel(`New end time for reservation ${scheduleId}`)
+        const newEndInput = row.getByLabel("New end time")
         await newEndInput.fill(toLocalInputValue(newEnd))
 
         const [extendResponse] = await Promise.all([
             page.waitForResponse((response) => response.request().method() === "POST"),
-            page.getByRole("button", { name: "Extend" }).click(),
+            row.getByRole("button", { name: "Extend" }).click(),
         ])
-        expect(extendResponse.ok(), `extend-reservation failed: ${await extendResponse.text()}`).toBe(true)
+        expect(extendResponse.ok(), `extend-reservation failed with status ${extendResponse.status()}`).toBe(true)
 
         await expect
             .poll(
                 async () => {
                     await page.goto("/dashboard?tab=scheduled")
-                    return page.getByText(newEnd.toLocaleString()).isVisible()
+                    return row.getByText(newEnd.toLocaleString()).isVisible()
                 },
                 { timeout: 15000 }
             )
@@ -82,7 +86,8 @@ test("reserve, then extend it from the dashboard's Scheduled tab", async ({ page
         // Cancel this run's own reservation so it doesn't accumulate on the shared fixture
         // item for every later spec/run.
         await page.goto("/dashboard")
-        const cancelButton = page.getByRole("button", { name: `Cancel reservation ${scheduleId}` })
+        const alert = page.locator('[data-testid="upcoming-alert"]', { hasText: notes })
+        const cancelButton = alert.getByRole("button", { name: "Cancel" })
         if (await cancelButton.isVisible().catch(() => false)) {
             await cancelButton.click()
         }

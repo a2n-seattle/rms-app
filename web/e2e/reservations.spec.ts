@@ -42,18 +42,15 @@ test("reserve an item and see it on the reservations page", async ({ page }) => 
     // The Reserve form's Server Action doesn't redirect or change visible
     // page content on success (unlike Borrow/Return, which flip the
     // Borrower text) -- explicitly wait for the POST + revalidation
-    // round-trip to finish before moving on, rather than racing ahead.
+    // round-trip to finish before moving on, rather than racing ahead. Note:
+    // a Server Action's POST response body is Next.js's internal RSC
+    // "flight" wire format, not plain JSON -- only `.ok()` is safe to read
+    // here, not `.json()`/the action's actual return value.
     const [createResponse] = await Promise.all([
         page.waitForResponse((response) => response.request().method() === "POST"),
         page.getByRole("button", { name: "Reserve" }).click(),
     ])
-    expect(createResponse.ok(), `create-reservation failed: ${await createResponse.text()}`).toBe(true)
-    // Capture the resolved schedule id so this run's own reservation can be cancelled
-    // afterward via its aria-label on the dashboard (see dashboard/page.tsx) -- this test
-    // used to leave every reservation it created permanently on the shared fixture item,
-    // which is what caused other specs sharing it to eventually see many accumulated
-    // "Upcoming" reservations and fail with ambiguous-locator strict-mode violations.
-    const scheduleId: string = await createResponse.json()
+    expect(createResponse.ok(), `create-reservation failed with status ${createResponse.status()}`).toBe(true)
 
     try {
         // ScheduleTable.listByBorrower uses a plain DynamoDB Scan, which is
@@ -70,8 +67,14 @@ test("reserve an item and see it on the reservations page", async ({ page }) => 
             )
             .toBe(true)
     } finally {
+        // Cancel this run's own reservation via its notes-scoped alert on the dashboard --
+        // this test used to leave every reservation it created permanently on the shared
+        // fixture item, which is what caused other specs sharing it to eventually see many
+        // accumulated "Upcoming" reservations and fail with ambiguous-locator strict-mode
+        // violations.
         await page.goto("/dashboard")
-        const cancelButton = page.getByRole("button", { name: `Cancel reservation ${scheduleId}` })
+        const alert = page.locator('[data-testid="upcoming-alert"]', { hasText: notes })
+        const cancelButton = alert.getByRole("button", { name: "Cancel" })
         if (await cancelButton.isVisible().catch(() => false)) {
             await cancelButton.click()
         }

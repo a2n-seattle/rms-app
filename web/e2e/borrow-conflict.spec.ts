@@ -37,18 +37,23 @@ test("borrowing an already-borrowed item shows an inline error instead of crashi
     await page2.goto(itemUrl)
     await expect(page2.getByRole("button", { name: "Borrow" })).toBeVisible()
 
-    // Tab 1: borrow succeeds. Generous timeout on the post-borrow assertion -- the POST
-    // resolving doesn't guarantee the revalidated Server Component has finished re-rendering
-    // client-side yet under real CI network conditions.
-    await Promise.all([
-        page.waitForResponse((response) => response.request().method() === "POST"),
-        page.getByRole("button", { name: "Borrow" }).click(),
-    ])
-    await expect(page.getByRole("button", { name: "Return" })).toBeVisible({ timeout: 15000 })
-
-    // try/finally from here on: a failed assertion must not leave the shared fixture item
-    // stuck borrowed for every other spec that runs after this one in the same CI job.
+    // try/finally from here on: a failed assertion at ANY point below -- including the
+    // borrow itself -- must not leave the shared fixture item stuck borrowed for every
+    // other spec that runs after this one in the same CI job. (This used to start only
+    // after the post-borrow "Return" assertion, which meant a failure in that very
+    // assertion skipped cleanup entirely and left the item borrowed for the rest of the
+    // suite -- exactly what caused every later spec to fail with "Borrow" button not
+    // found.)
     try {
+        // Tab 1: borrow succeeds. Generous timeout on the post-borrow assertion -- the POST
+        // resolving doesn't guarantee the revalidated Server Component has finished
+        // re-rendering client-side yet under real CI network conditions.
+        await Promise.all([
+            page.waitForResponse((response) => response.request().method() === "POST"),
+            page.getByRole("button", { name: "Borrow" }).click(),
+        ])
+        await expect(page.getByRole("button", { name: "Return" })).toBeVisible({ timeout: 15000 })
+
         // Tab 2: submits its stale "Borrow" form against the now-already-borrowed item.
         // BorrowItem rejects with "Unable to borrow item: Item is currently being borrowed by
         // '...'" -- assert that surfaces as an inline alert, not a crash/error page.

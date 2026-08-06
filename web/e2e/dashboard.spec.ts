@@ -49,40 +49,33 @@ test("reserve, see upcoming alert, borrow from it, see it under Currently Borrow
     await page.locator('input[name="start"]').fill(toLocalInputValue(start))
     await page.locator('input[name="end"]').fill(toLocalInputValue(end))
     await page.locator('input[name="notes"]').fill(notes)
+    // Fail loudly on a rejected reservation (e.g. a genuine overlap with
+    // another leftover reservation) instead of silently polling for an
+    // "Upcoming" alert that was never actually created. Note: a Server
+    // Action's POST response body is Next.js's internal RSC "flight" wire
+    // format, not plain JSON returned by the action -- do not attempt to
+    // `.json()`/read the action's return value from it, only use `.ok()`.
     const [createResponse] = await Promise.all([
         page.waitForResponse((response) => response.request().method() === "POST"),
         page.getByRole("button", { name: "Reserve" }).click(),
     ])
-    // Fail loudly on a rejected reservation (e.g. a genuine overlap with
-    // another leftover reservation) instead of silently polling for an
-    // "Upcoming" alert that was never actually created. Only read the
-    // response body on the failure path -- a passing `expect(...)` call's
-    // message argument is still evaluated eagerly by JS regardless of the
-    // assertion's outcome, and by the time a *successful* create's
-    // response is read here the page may already have navigated away
-    // (the Server Action's own redirect/re-render races ahead), which
-    // throws a Playwright "response body not available" protocol error
-    // and fails an otherwise-passing run.
-    if (!createResponse.ok()) {
-        throw new Error(`create-reservation failed: ${await createResponse.text()}`)
-    }
-    // CreateReservation's response body is the resolved schedule id (a plain JSON string) --
-    // capturing it lets every assertion/action below target *this* run's own reservation via
-    // its aria-label (see dashboard/page.tsx), instead of an ambiguous role/text query that
-    // breaks the moment more than one "Upcoming" reservation exists on the shared test item
-    // (accumulated leftovers from other specs/retries are common on this shared fixture).
-    const scheduleId: string = await createResponse.json()
+    expect(createResponse.ok(), `create-reservation failed with status ${createResponse.status()}`).toBe(true)
 
     // try/finally from here on: a failed assertion must not leave this run's own reservation
     // (or, if borrowed, the item itself) stuck for every later spec sharing this fixture.
+    // The unique `notes` text scopes every locator below to *this* run's own alert/row,
+    // instead of an ambiguous role/text query that breaks the moment more than one
+    // "Upcoming" reservation exists on the shared test item (accumulated leftovers from
+    // other specs/retries are common here).
     try {
         // ListUpcomingReservations scans+filters, eventually consistent --
         // poll rather than assert once (same caveat as reservations.spec.ts).
+        const alert = page.locator('[data-testid="upcoming-alert"]', { hasText: notes })
         await expect
             .poll(
                 async () => {
                     await page.goto("/dashboard")
-                    return page.getByRole("button", { name: `Borrow reservation ${scheduleId}` }).isVisible()
+                    return alert.isVisible()
                 },
                 { timeout: 15000 }
             )
@@ -90,7 +83,7 @@ test("reserve, see upcoming alert, borrow from it, see it under Currently Borrow
 
         await Promise.all([
             page.waitForResponse((response) => response.request().method() === "POST"),
-            page.getByRole("button", { name: `Borrow reservation ${scheduleId}` }).click(),
+            alert.getByRole("button", { name: "Borrow" }).click(),
         ])
 
         await page.goto("/dashboard?tab=borrowed")
@@ -99,14 +92,15 @@ test("reserve, see upcoming alert, borrow from it, see it under Currently Borrow
         // Whether the borrow above succeeded, failed, or an assertion threw: if the item ended
         // up borrowed, return it so it doesn't stay unusable for every other spec/run. If the
         // reservation is still just pending (borrow never happened), cancel it via its
-        // scheduleId-scoped button instead of leaving it to accumulate.
+        // notes-scoped alert instead of leaving it to accumulate.
         await page.goto(`/items/${encodeURIComponent(TEST_ITEM_ID!)}`)
         const returnButton = page.getByRole("button", { name: "Return" })
         if (await returnButton.isVisible().catch(() => false)) {
             await returnButton.click()
         } else {
             await page.goto("/dashboard")
-            const cancelButton = page.getByRole("button", { name: `Cancel reservation ${scheduleId}` })
+            const alert = page.locator('[data-testid="upcoming-alert"]', { hasText: notes })
+            const cancelButton = alert.getByRole("button", { name: "Cancel" })
             if (await cancelButton.isVisible().catch(() => false)) {
                 await cancelButton.click()
             }

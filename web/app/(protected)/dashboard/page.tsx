@@ -99,19 +99,20 @@ export default async function DashboardPage({
                         </div>
                     ))}
                     {upcoming.items.map((schedule) => (
-                        <div key={schedule.id} className={styles.alert}>
+                        <div key={schedule.id} className={styles.alert} data-testid="upcoming-alert">
                             <span className={styles.alertText}>
                                 <Badge variant="warning">Upcoming</Badge> Reservation for{" "}
                                 {schedule.itemIds.join(", ")} starts {new Date(schedule.startTime).toLocaleString()}
+                                {schedule.notes ? ` — ${schedule.notes}` : ""}
                             </span>
                             <div className={styles.alertActions}>
                                 <ActionForm action={borrowFromScheduleAction} successMessage="Borrowed successfully.">
                                     <input type="hidden" name="scheduleId" value={schedule.id} />
-                                    <Button type="submit" aria-label={`Borrow reservation ${schedule.id}`}>Borrow</Button>
+                                    <Button type="submit">Borrow</Button>
                                 </ActionForm>
                                 <ActionForm action={cancelReservationAction} successMessage="Reservation cancelled.">
                                     <input type="hidden" name="scheduleId" value={schedule.id} />
-                                    <Button type="submit" variant="secondary" aria-label={`Cancel reservation ${schedule.id}`}>
+                                    <Button type="submit" variant="secondary">
                                         Cancel
                                     </Button>
                                 </ActionForm>
@@ -210,7 +211,7 @@ export default async function DashboardPage({
                             </thead>
                             <tbody>
                                 {upcoming.items.map((schedule) => (
-                                    <tr key={schedule.id}>
+                                    <tr key={schedule.id} data-testid="scheduled-row">
                                         <td>{schedule.itemIds.join(", ")}</td>
                                         <td>{new Date(schedule.startTime).toLocaleString()}</td>
                                         <td>{new Date(schedule.endTime).toLocaleString()}</td>
@@ -218,12 +219,7 @@ export default async function DashboardPage({
                                         <td>
                                             <ActionForm action={extendReservationAction} successMessage="Reservation extended." className={styles.extendForm}>
                                                 <input type="hidden" name="scheduleId" value={schedule.id} />
-                                                <input
-                                                    type="datetime-local"
-                                                    name="newEndTime"
-                                                    required
-                                                    aria-label={`New end time for reservation ${schedule.id}`}
-                                                />
+                                                <input type="datetime-local" name="newEndTime" required aria-label="New end time" />
                                                 <Button type="submit" variant="secondary">
                                                     Extend
                                                 </Button>
