@@ -32,21 +32,46 @@ test('will return no reservations when borrower has none', async () => {
     })
 })
 
-test('will find a match scanned after more than `limit` non-matching reservations (regression, GH-357)', async () => {
+test('will return reservations in order across a paginated cursor, driven by UserTable.reserved', async () => {
     const seed: any = {
         main: {}, items: {}, batch: {}, tags: {}, history: {},
         schedule: {
-            "a-nomatch": { id: "a-nomatch", borrower: "someone-else", itemIds: [], startTime: 0, endTime: 1 },
-            "b-nomatch": { id: "b-nomatch", borrower: "someone-else", itemIds: [], startTime: 0, endTime: 1 },
-            "z-match": { id: "z-match", borrower: TestConstants.BORROWER, itemIds: [], startTime: 0, endTime: 1 }
+            "a": { id: "a", borrower: TestConstants.BORROWER, itemIds: [], startTime: 0, endTime: 1 },
+            "b": { id: "b", borrower: TestConstants.BORROWER, itemIds: [], startTime: 0, endTime: 1 }
         },
-        transactions: {}, user: {}
+        transactions: {},
+        user: { [TestConstants.BORROWER]: { id: TestConstants.BORROWER, owned: [], reserved: ["a", "b"], borrowed: [], history: [] } }
     }
     const dbClient: LocalDBClient = new LocalDBClient(seed)
     const table: ScheduleTable = new ScheduleTable(dbClient)
 
-    await expect(table.listByBorrower(TestConstants.BORROWER, 1)).resolves.toEqual({
-        items: [seed.schedule["z-match"]],
+    const page1 = await table.listByBorrower(TestConstants.BORROWER, 1)
+    expect(page1.items).toEqual([seed.schedule["a"]])
+    expect(page1.nextPageToken).toBeDefined()
+
+    await expect(table.listByBorrower(TestConstants.BORROWER, 1, page1.nextPageToken)).resolves.toEqual({
+        items: [seed.schedule["b"]],
+        nextPageToken: undefined
+    })
+})
+
+test('listByBorrower applies an optional predicate while still looping until `limit` real matches', async () => {
+    const seed: any = {
+        main: {}, items: {}, batch: {}, tags: {}, history: {},
+        schedule: {
+            "a-excluded": { id: "a-excluded", borrower: TestConstants.BORROWER, itemIds: [], startTime: 0, endTime: 1 },
+            "z-included": { id: "z-included", borrower: TestConstants.BORROWER, itemIds: [], startTime: 0, endTime: 1 }
+        },
+        transactions: {},
+        user: { [TestConstants.BORROWER]: { id: TestConstants.BORROWER, owned: [], reserved: ["a-excluded", "z-included"], borrowed: [], history: [] } }
+    }
+    const dbClient: LocalDBClient = new LocalDBClient(seed)
+    const table: ScheduleTable = new ScheduleTable(dbClient)
+
+    await expect(
+        table.listByBorrower(TestConstants.BORROWER, 1, undefined, (schedule) => schedule.id === "z-included")
+    ).resolves.toEqual({
+        items: [seed.schedule["z-included"]],
         nextPageToken: undefined
     })
 })

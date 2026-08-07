@@ -1,19 +1,17 @@
-import { MAIN_TABLE, MainSchema } from "../db/Schemas"
-import { decodePageToken } from "../db/PageToken"
-import { scanUntilLimit } from "../db/scanUntilLimit"
+import { MainSchema } from "../db/Schemas"
+import { getUntilLimit } from "../db/getUntilLimit"
+import { MainTable } from "../db/MainTable"
+import { UserTable } from "../db/UserTable"
 import { DBClient } from "../injection/db/DBClient"
 import { MetricsClient } from "../injection/metrics/MetricsClient"
 import { emitAPIMetrics } from "../metrics/MetricsHelper"
-import { ScanCommandInput } from "@aws-sdk/lib-dynamodb"
 
 const DEFAULT_PAGE_SIZE = 25
 
 /**
- * Lists item types owned by a given Cognito user (matched against
- * `MainSchema.ownerId`, resolved at item-creation time -- see AddItem.ts's
- * owner-by-email Cognito lookup), paginated via scanUntilLimit (see
- * db/scanUntilLimit.ts for the Scan+FilterExpression pagination gotcha it
- * works around).
+ * Lists item types owned by a given Cognito user, sourced from UserTable.owned (a
+ * denormalized index maintained by AddItem/DeleteItem) rather than a full MainTable Scan --
+ * see GH-384.
  *
  * Items whose owner never resolved to a real Cognito user (a room, "the
  * church", etc. -- `ownerId` left unset) never show up here.
@@ -21,11 +19,13 @@ const DEFAULT_PAGE_SIZE = 25
 export class ListMyOwnedItems {
     public static NAME: string = "list my owned items"
 
-    private readonly client: DBClient
+    private readonly mainTable: MainTable
+    private readonly userTable: UserTable
     private readonly metrics?: MetricsClient
 
     public constructor(client: DBClient, metrics?: MetricsClient) {
-        this.client = client
+        this.mainTable = new MainTable(client)
+        this.userTable = new UserTable(client)
         this.metrics = metrics
     }
 
@@ -33,22 +33,13 @@ export class ListMyOwnedItems {
         return emitAPIMetrics(
             () => {
                 return this.performAllFVAs(input)
-                    .then(() => {
-                        const params: ScanCommandInput = {
-                            TableName: MAIN_TABLE,
-                            Limit: input.limit ?? DEFAULT_PAGE_SIZE,
-                            FilterExpression: "#ownerId = :ownerId",
-                            ExpressionAttributeNames: {
-                                "#ownerId": "ownerId"
-                            },
-                            ExpressionAttributeValues: {
-                                ":ownerId": input.ownerId
-                            },
-                            ...(input.pageToken ? { ExclusiveStartKey: decodePageToken(input.pageToken) } : {})
-                        }
-
-                        return scanUntilLimit<MainSchema>(this.client, params, input.limit ?? DEFAULT_PAGE_SIZE)
-                    })
+                    .then(() => this.userTable.get(input.ownerId))
+                    .then((user) => getUntilLimit<MainSchema>(
+                        user?.owned ?? [],
+                        (id) => this.mainTable.get(id),
+                        input.limit ?? DEFAULT_PAGE_SIZE,
+                        input.pageToken
+                    ))
             },
             ListMyOwnedItems.NAME, this.metrics
         )

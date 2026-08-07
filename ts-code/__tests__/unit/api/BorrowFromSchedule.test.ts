@@ -28,6 +28,11 @@ test('will borrow item correctly when schedule id exists', async () => {
     expect(db.items[TestConstants.ITEM_ID]).toMatchObject({ borrowGroupId: scheduleId })
     expect(db.items[TestConstants.ITEM_ID_2]).toMatchObject({ borrowGroupId: scheduleId })
     expect(db.schedule).toEqual({})
+    // Every borrowed item's history entry is also recorded on UserTable.history (see GH-384).
+    expect(db.user[TestConstants.BORROWER].history).toEqual([
+        `${TestTimestamps.BORROW_BATCH}-${TestConstants.ITEM_ID}`,
+        `${TestTimestamps.BORROW_BATCH}-${TestConstants.ITEM_ID_2}`
+    ])
 })
 
 

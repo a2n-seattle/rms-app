@@ -57,7 +57,10 @@ export class BorrowItem {
                     .then(()=>{
                         return Promise.all(input.ids.map((id: string) =>
                         this.itemTable.changeBorrower(id, input.borrower, "borrow", input.notes)
-                            .then(() => this.userTable.addBorrowed(input.borrower, id))
+                            .then((historyId: string) => Promise.all([
+                                this.userTable.addBorrowed(input.borrower, id),
+                                this.userTable.addHistory(input.borrower, historyId)
+                            ]))
                 ))
             })
             .then(() => `Successfully borrowed items '${input.ids.toString()}'.`)

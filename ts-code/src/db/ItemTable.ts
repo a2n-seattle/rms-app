@@ -189,6 +189,9 @@ export class ItemTable {
      *   effect) when action is "return".
      * @param condition On "return", optional condition notes to record on the history entry
      *   (e.g. "cracked screen"). Ignored when action is "borrow".
+     * @returns The generated history entry's id, so callers can also record it on UserTable's
+     *   `history` list (see UserTable.addHistory) alongside their existing addBorrowed/
+     *   removeBorrowed call.
      */
     public changeBorrower(
         id: string,
@@ -197,7 +200,7 @@ export class ItemTable {
         notes: string,
         borrowGroupId?: string,
         condition?: string
-    ) {
+    ): Promise<string> {
         return this.updateBorrowStatus(id, borrower, action, borrowGroupId)
             .then((familyId: string) => this.mainTable.get(familyId)
                 .then((main: MainSchema) =>
@@ -290,7 +293,8 @@ export class ItemTable {
 
     /**
      * Create new entry in borrow/return history table. `name` is the item family's resolved
-     * display name (not an id) so history entries stay human-readable.
+     * display name (not an id) so history entries stay human-readable. Returns the generated
+     * history entry's id.
      */
      private createHistoryEntry(
         name: string,
@@ -299,7 +303,7 @@ export class ItemTable {
         action: "borrow" | "return",
         notes: string,
         condition?: string
-    ): Promise<PutCommandOutput> {
+    ): Promise<string> {
         const curEpochMs: number = Date.now()
         const key: string = `${curEpochMs}-${id}`
         const item: HistorySchema = {
@@ -333,5 +337,6 @@ export class ItemTable {
 
         return this.client.put(addHistoryParams)
             .then(() => this.client.update(updateMainParams))
+            .then(() => key)
     }
 }

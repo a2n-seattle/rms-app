@@ -1,35 +1,33 @@
-import { ITEMS_TABLE, ItemsSchema, ScheduleSchema } from "../db/Schemas"
-import { decodePageToken } from "../db/PageToken"
-import { scanUntilLimit } from "../db/scanUntilLimit"
+import { ItemsSchema, ScheduleSchema } from "../db/Schemas"
+import { getUntilLimit } from "../db/getUntilLimit"
+import { ItemTable } from "../db/ItemTable"
+import { UserTable } from "../db/UserTable"
 import { ScheduleTable } from "../db/ScheduleTable"
 import { DBClient } from "../injection/db/DBClient"
 import { MetricsClient } from "../injection/metrics/MetricsClient"
 import { emitAPIMetrics } from "../metrics/MetricsHelper"
-import { ScanCommandInput } from "@aws-sdk/lib-dynamodb"
 
 const DEFAULT_PAGE_SIZE = 25
 
 /**
- * Lists currently-borrowed items that are overdue for a given borrower,
- * paginated. ItemsSchema has no due-date field of its own, so "overdue"
- * is defined here as: borrower matches, and at least one of the item's
- * `schedule` entries (its reservation history/associations) is a
- * ScheduleSchema whose endTime has already passed. Scans ItemsSchema
- * unfiltered (no single-equality FilterExpression covers "borrower is
- * this borrower AND some linked schedule is overdue" in one pass); the
- * borrower+overdue check happens in scanUntilLimit's predicate instead
- * (see db/scanUntilLimit.ts), so a match beyond the first raw scanned page
- * is still found rather than silently dropped.
+ * Lists currently-borrowed items that are overdue for a given borrower, sourced from
+ * UserTable.borrowed rather than a full ItemsTable Scan (see GH-384). ItemsSchema has no
+ * due-date field of its own, so "overdue" is defined here as: at least one of the item's
+ * `schedule` entries (its reservation history/associations) is a ScheduleSchema whose
+ * endTime has already passed. Filtering happens in getUntilLimit's predicate, so a match
+ * beyond the first slice of `borrowed` is still found rather than silently dropped.
  */
 export class ListOverdueItems {
     public static NAME: string = "list overdue items"
 
-    private readonly client: DBClient
+    private readonly itemTable: ItemTable
+    private readonly userTable: UserTable
     private readonly scheduleTable: ScheduleTable
     private readonly metrics?: MetricsClient
 
     public constructor(client: DBClient, metrics?: MetricsClient) {
-        this.client = client
+        this.itemTable = new ItemTable(client)
+        this.userTable = new UserTable(client)
         this.scheduleTable = new ScheduleTable(client)
         this.metrics = metrics
     }
@@ -38,20 +36,14 @@ export class ListOverdueItems {
         return emitAPIMetrics(
             () => {
                 return this.performAllFVAs(input)
-                    .then(() => {
-                        const params: ScanCommandInput = {
-                            TableName: ITEMS_TABLE,
-                            Limit: input.limit ?? DEFAULT_PAGE_SIZE,
-                            ...(input.pageToken ? { ExclusiveStartKey: decodePageToken(input.pageToken) } : {})
-                        }
-
-                        return scanUntilLimit<ItemsSchema>(
-                            this.client,
-                            params,
-                            input.limit ?? DEFAULT_PAGE_SIZE,
-                            (item) => item.borrower === input.borrower && this.isOverdue(item)
-                        )
-                    })
+                    .then(() => this.userTable.get(input.borrower))
+                    .then((user) => getUntilLimit<ItemsSchema>(
+                        user?.borrowed ?? [],
+                        (id) => this.itemTable.get(id),
+                        input.limit ?? DEFAULT_PAGE_SIZE,
+                        input.pageToken,
+                        (item) => this.isOverdue(item)
+                    ))
             },
             ListOverdueItems.NAME, this.metrics
         )

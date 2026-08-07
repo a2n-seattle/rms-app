@@ -48,7 +48,10 @@ export class BorrowFromSchedule {
                         // before some items were actually updated.
                         return Promise.all(schedule.itemIds.map((id: string) =>
                             this.itemTable.changeBorrower(id, schedule.borrower, "borrow", input.notes, input.scheduleId)
-                                .then(() => this.userTable.addBorrowed(schedule.borrower, id))
+                                .then((historyId: string) => Promise.all([
+                                    this.userTable.addBorrowed(schedule.borrower, id),
+                                    this.userTable.addHistory(schedule.borrower, historyId)
+                                ]))
                         )).then(() => this.userTable.removeReserved(schedule.borrower, input.scheduleId))
                     }).then(() => this.scheduleTable.delete(input.scheduleId))
                     .then(() => {

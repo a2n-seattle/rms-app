@@ -54,5 +54,15 @@
     "history": {},
     "schedule": {},
     "transactions": {},
-    "user": {}
+    "user": {
+        "test owner": {
+            "id": "test owner",
+            "owned": [
+                "00000000-0000-0000-0000-000000000001"
+            ],
+            "reserved": [],
+            "borrowed": [],
+            "history": []
+        }
+    }
 }

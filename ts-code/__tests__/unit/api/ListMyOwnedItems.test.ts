@@ -43,20 +43,34 @@ test('will fail when owner is missing', async () => {
     await expect(api.execute({})).rejects.toThrow("Missing required field 'ownerId'")
 })
 
-test('will find a match scanned after more than `limit` non-matching items (regression, GH-357)', async () => {
+test('will return items in order across a paginated cursor, driven by UserTable.owned', async () => {
     const seed: any = {
         main: {
-            "a-nomatch": { id: "a-nomatch", nameKey: "a", name: "a", description: "", owner: "x", ownerId: "someone-else", location: "", batch: [], tags: [], items: [] },
-            "b-nomatch": { id: "b-nomatch", nameKey: "b", name: "b", description: "", owner: "x", ownerId: "someone-else", location: "", batch: [], tags: [], items: [] },
-            "z-match": { id: "z-match", nameKey: "z", name: "z", description: "", owner: "x", ownerId: TestConstants.OWNER, location: "", batch: [], tags: [], items: [] }
+            "a": { id: "a", nameKey: "a", name: "a", description: "", owner: "x", ownerId: TestConstants.OWNER, location: "", batch: [], tags: [], items: [] },
+            "b": { id: "b", nameKey: "b", name: "b", description: "", owner: "x", ownerId: TestConstants.OWNER, location: "", batch: [], tags: [], items: [] }
         },
-        items: {}, batch: {}, tags: {}, history: {}, schedule: {}, transactions: {}, user: {}
+        items: {}, batch: {}, tags: {}, history: {}, schedule: {}, transactions: {},
+        user: { [TestConstants.OWNER]: { id: TestConstants.OWNER, owned: ["a", "b"], reserved: [], borrowed: [], history: [] } }
     }
     const dbClient: LocalDBClient = new LocalDBClient(seed)
     const api: ListMyOwnedItems = new ListMyOwnedItems(dbClient)
 
-    await expect(api.execute({ ownerId: TestConstants.OWNER, limit: 1 })).resolves.toEqual({
-        items: [seed.main["z-match"]],
+    const page1 = await api.execute({ ownerId: TestConstants.OWNER, limit: 1 })
+    expect(page1.items).toEqual([seed.main["a"]])
+    expect(page1.nextPageToken).toBeDefined()
+
+    await expect(api.execute({ ownerId: TestConstants.OWNER, limit: 1, pageToken: page1.nextPageToken })).resolves.toEqual({
+        items: [seed.main["b"]],
+        nextPageToken: undefined
+    })
+})
+
+test('will return no items when the owner has no UserTable row yet', async () => {
+    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.EMPTY)
+    const api: ListMyOwnedItems = new ListMyOwnedItems(dbClient)
+
+    await expect(api.execute({ ownerId: TestConstants.OWNER })).resolves.toEqual({
+        items: [],
         nextPageToken: undefined
     })
 })

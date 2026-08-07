@@ -1,16 +1,18 @@
 import { SCHEDULE_TABLE, ScheduleSchema, ITEMS_TABLE, ItemsSchema } from "./Schemas";
 import { DBClient } from "../injection/db/DBClient"
-import { DeleteCommandInput, GetCommandInput, GetCommandOutput, PutCommandInput, ScanCommandInput, UpdateCommandInput } from "@aws-sdk/lib-dynamodb"
-import { decodePageToken } from "./PageToken"
-import { scanUntilLimit } from "./scanUntilLimit"
+import { DeleteCommandInput, GetCommandInput, GetCommandOutput, PutCommandInput, UpdateCommandInput } from "@aws-sdk/lib-dynamodb"
+import { getUntilLimit } from "./getUntilLimit"
+import { UserTable } from "./UserTable"
 
 const DEFAULT_PAGE_SIZE = 25
 
 export class ScheduleTable {
     private readonly client: DBClient
+    private readonly userTable: UserTable
 
     public constructor(client: DBClient) {
         this.client = client
+        this.userTable = new UserTable(client)
     }
 
     /**
@@ -255,35 +257,27 @@ export class ScheduleTable {
     }
 
     /**
-     * Lists reservations for a given borrower, paginated.
-     *
-     * No GSI exists on ScheduleSchema.borrower today, so this is a table
-     * Scan with a FilterExpression - acceptable at RMS's current scale
-     * since the tables aren't CDK-managed (adding a GSI is a separate,
-     * out-of-band change). DynamoDB applies FilterExpression *after*
-     * Limit, so a returned page can have fewer (even zero) matching
-     * entries despite more data remaining - callers must keep paging
-     * using nextPageToken until it's undefined, not stop on a short page.
+     * Lists reservations for a given borrower, paginated, sourced from UserTable.reserved (a
+     * denormalized index maintained by CreateReservation/DeleteReservation/
+     * BorrowFromSchedule) rather than a full ScheduleTable Scan -- see GH-384. `predicate`
+     * lets callers (e.g. ListUpcomingReservations) filter further (e.g. by startTime) while
+     * still getting getUntilLimit's "loop until N real matches" guarantee, rather than
+     * filtering a short page in-memory after the fact.
      */
     public listByBorrower(
         borrower: string,
         limit: number = DEFAULT_PAGE_SIZE,
-        pageToken?: string
+        pageToken?: string,
+        predicate?: (schedule: ScheduleSchema) => Promise<boolean> | boolean
     ): Promise<ListByBorrowerResult> {
-        const params: ScanCommandInput = {
-            TableName: SCHEDULE_TABLE,
-            Limit: limit,
-            FilterExpression: "#borrower = :borrower",
-            ExpressionAttributeNames: {
-                "#borrower": "borrower"
-            },
-            ExpressionAttributeValues: {
-                ":borrower": borrower
-            },
-            ...(pageToken ? { ExclusiveStartKey: decodePageToken(pageToken) } : {})
-        }
-
-        return scanUntilLimit<ScheduleSchema>(this.client, params, limit)
+        return this.userTable.get(borrower)
+            .then((user) => getUntilLimit<ScheduleSchema>(
+                user?.reserved ?? [],
+                (id) => this.get(id),
+                limit,
+                pageToken,
+                predicate
+            ))
     }
 
     /**
