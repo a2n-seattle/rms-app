@@ -29,11 +29,16 @@ test("select a borrowed row on the dashboard, return it with a condition note vi
         page.waitForResponse((response) => response.request().method() === "POST"),
         page.getByRole("button", { name: "Borrow" }).click(),
     ])
-    await expect(page.getByRole("button", { name: "Return" })).toBeVisible({ timeout: 15000 })
 
-    // try/finally from here on: a failed assertion must not leave the shared fixture item
-    // stuck borrowed for every other spec that runs after this one in the same CI job.
+    // try/finally from here on: the borrow POST above already completed, so a failed
+    // assertion from this point on must not leave the shared fixture item stuck borrowed for
+    // every other spec that runs after this one in the same CI job. Previously this
+    // try/finally started one assertion later (after confirming the "Return" button was
+    // visible), so a timeout on that specific assertion skipped cleanup entirely -- exactly
+    // the failure mode that left the fixture item stuck across multiple CI runs.
     try {
+        await expect(page.getByRole("button", { name: "Return" })).toBeVisible({ timeout: 15000 })
+
         // ListMyBorrowedItems scans+filters, eventually consistent -- poll rather than
         // assert once (same caveat as other specs in this suite).
         const row = page.locator("tr", { has: page.getByRole("link", { name: /^E2E Test/ }) })
