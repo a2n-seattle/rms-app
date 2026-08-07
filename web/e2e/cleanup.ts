@@ -10,13 +10,14 @@ import { Locator, Page, expect } from "@playwright/test"
  * left the shared fixture item stuck borrowed for later specs after several cleanup
  * attempts in this suite.
  *
- * The nav bar (present on every page) has its own persistent link with the exact
+ * Historical note (GH-359 removed the header nav's own "Return" link, so this no longer
+ * applies going forward): the nav bar used to have a persistent link with the exact
  * accessible name "Return" (href="/return", the multi-select return page) -- a bare
- * `getByRole("link", { name: "Return" })` matches it *and* the item's own group-return
- * link whenever both are on the page, a strict-mode violation that silently resolved as
+ * `getByRole("link", { name: "Return" })` matched it *and* the item's own group-return
+ * link whenever both were on the page, a strict-mode violation that silently resolved as
  * "not found" through waitFor()'s .catch(), which is what actually kept leaving the shared
  * fixture item stuck. Match the group-return link by its href prefix instead, which is
- * unambiguous.
+ * unambiguous regardless.
  */
 function returnControl(page: Page) {
     return page.getByRole("button", { name: "Return" }).or(page.locator('a[href^="/return-group/"]'))
