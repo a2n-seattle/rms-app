@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/Checkbox"
 import { Button } from "@/components/ui/Button"
 import { ActionForm } from "@/components/ui/ActionForm"
 import { EditSubItemModal } from "@/components/items/EditSubItemModal"
+import { getBorrowByDefault, getReserveDefaults, toLocalInputValue } from "@/lib/formDefaults"
 import type { ActionState } from "@/lib/actionState"
 import type { ItemsSchema } from "@/lib/api/types"
 import styles from "./resource-detail.module.css"
@@ -32,6 +33,8 @@ export function ResourceBasket({
     const [selected, setSelected] = useState<Set<string>>(new Set(items.map((item) => item.id)))
     const [editingItem, setEditingItem] = useState<ItemsSchema | null>(null)
     const headerCheckboxRef = useRef<HTMLInputElement>(null)
+    const [borrowByDefault] = useState(getBorrowByDefault)
+    const [reserveDefaults] = useState(getReserveDefaults)
 
     useEffect(() => {
         if (!headerCheckboxRef.current) {
@@ -122,7 +125,7 @@ export function ResourceBasket({
                     ))}
                     <label className={styles.field}>
                         Return by
-                        <input type="datetime-local" name="returnBy" required />
+                        <input type="datetime-local" name="returnBy" defaultValue={toLocalInputValue(borrowByDefault)} required />
                     </label>
                     <Button type="submit" disabled={selectedIds.length === 0}>
                         Borrow Selected ({selectedIds.length})
@@ -136,11 +139,11 @@ export function ResourceBasket({
                 ))}
                 <label className={styles.field}>
                     Start
-                    <input type="datetime-local" name="start" required />
+                    <input type="datetime-local" name="start" defaultValue={toLocalInputValue(reserveDefaults.start)} required />
                 </label>
                 <label className={styles.field}>
                     End
-                    <input type="datetime-local" name="end" required />
+                    <input type="datetime-local" name="end" defaultValue={toLocalInputValue(reserveDefaults.end)} required />
                 </label>
                 <label className={styles.field}>
                     Notes

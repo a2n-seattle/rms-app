@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/Button"
 import { ButtonLink } from "@/components/ui/ButtonLink"
 import { ActionForm } from "@/components/ui/ActionForm"
 import { SubItemHeaderActions } from "./SubItemHeaderActions"
+import { ReserveForm } from "./ReserveForm"
 import styles from "./item-detail.module.css"
 
 export default async function SubItemDetailPage({ params }: { params: Promise<{ id: string; subId: string }> }) {
@@ -165,21 +166,7 @@ export default async function SubItemDetailPage({ params }: { params: Promise<{ 
             </Card>
             <div className={styles.section}>
                 <h2 className={styles.sectionTitle}>Reserve this item</h2>
-                <ActionForm action={reserveAction} successMessage="Reservation created successfully." className={styles.form}>
-                    <label className={styles.field}>
-                        Start
-                        <input type="datetime-local" name="start" required />
-                    </label>
-                    <label className={styles.field}>
-                        End
-                        <input type="datetime-local" name="end" required />
-                    </label>
-                    <label className={styles.field}>
-                        Notes
-                        <input type="text" name="notes" />
-                    </label>
-                    <Button type="submit">Reserve</Button>
-                </ActionForm>
+                <ReserveForm reserveAction={reserveAction} />
             </div>
             <a href="/reservations" className={styles.footerLink}>
                 View my reservations
