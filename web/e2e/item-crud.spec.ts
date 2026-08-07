@@ -20,6 +20,11 @@ const TEST_PASSWORD = process.env.RMS_TEST_USER_PASSWORD
 test.skip(!TEST_EMAIL || !TEST_PASSWORD, "Missing RMS_TEST_USER_EMAIL/RMS_TEST_USER_PASSWORD")
 
 test("create, edit, and delete an item and its sub-items", async ({ page }) => {
+    // This flow invokes four distinct Lambdas (AddItem, UpdateItem, UpdateSubItem, DeleteItem)
+    // for the first time in this run -- generous per-step cold-start allowances below can add
+    // up past the suite's default 60s test timeout, so extend this specific test.
+    test.setTimeout(120000)
+
     await page.goto("/test-login")
     await page.getByLabel("Email:").fill(TEST_EMAIL!)
     await page.getByLabel("Password:").fill(TEST_PASSWORD!)
