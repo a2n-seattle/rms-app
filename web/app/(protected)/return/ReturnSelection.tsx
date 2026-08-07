@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Table } from "@/components/ui/Table"
 import { Checkbox } from "@/components/ui/Checkbox"
 import { Button } from "@/components/ui/Button"
@@ -20,6 +20,15 @@ export function ReturnSelection({ items, returnAction, initialSelectedIds }: Ret
         new Set(initialSelectedIds ?? items.map((item) => item.id))
     )
     const [conditions, setConditions] = useState<Record<string, string>>({})
+    const headerCheckboxRef = useRef<HTMLInputElement>(null)
+
+    useEffect(() => {
+        if (!headerCheckboxRef.current) {
+            return
+        }
+        headerCheckboxRef.current.checked = selected.size > 0 && selected.size === items.length
+        headerCheckboxRef.current.indeterminate = selected.size > 0 && selected.size < items.length
+    }, [items, selected])
 
     function toggle(id: string) {
         setSelected((prev) => {
@@ -33,35 +42,20 @@ export function ReturnSelection({ items, returnAction, initialSelectedIds }: Ret
         })
     }
 
-    function selectAll() {
-        setSelected(new Set(items.map((item) => item.id)))
-    }
-
-    function selectNone() {
-        setSelected(new Set())
+    function toggleAll() {
+        setSelected((prev) => (prev.size === items.length ? new Set() : new Set(items.map((item) => item.id))))
     }
 
     const selectedIds = Array.from(selected)
 
     return (
         <div>
-            <div className={styles.toolbar}>
-                <span className={styles.selectionSummary}>
-                    {selected.size} of {items.length} selected
-                </span>
-                <div className={styles.toggleActions}>
-                    <button type="button" className={styles.toggleLink} onClick={selectAll}>
-                        Select all
-                    </button>
-                    <button type="button" className={styles.toggleLink} onClick={selectNone}>
-                        Select none
-                    </button>
-                </div>
-            </div>
             <Table>
                 <thead>
                     <tr>
-                        <th className={styles.checkboxCell}></th>
+                        <th className={styles.checkboxCell}>
+                            <Checkbox ref={headerCheckboxRef} onChange={toggleAll} aria-label="Select all items" />
+                        </th>
                         <th>Item</th>
                         <th>Borrowed</th>
                         <th>Notes</th>
@@ -72,7 +66,11 @@ export function ReturnSelection({ items, returnAction, initialSelectedIds }: Ret
                     {items.map((item) => (
                         <tr key={item.id}>
                             <td className={styles.checkboxCell}>
-                                <Checkbox checked={selected.has(item.id)} onChange={() => toggle(item.id)} />
+                                <Checkbox
+                                    checked={selected.has(item.id)}
+                                    onChange={() => toggle(item.id)}
+                                    aria-label={`Select ${item.name || item.id}`}
+                                />
                             </td>
                             <td>
                                 <a href={`/items/${encodeURIComponent(item.id)}/${encodeURIComponent(item.id)}`} className={styles.itemLink}>

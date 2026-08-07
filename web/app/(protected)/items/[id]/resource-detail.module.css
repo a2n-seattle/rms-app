@@ -36,23 +36,6 @@
     min-width: 6rem;
 }
 
-.toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: var(--space-md);
-}
-
-.selectionSummary {
-    color: var(--color-text-muted);
-    font-size: 0.9rem;
-}
-
-.toggleActions {
-    display: flex;
-    gap: var(--space-sm);
-}
-
 .toggleLink {
     color: var(--color-primary);
     font-weight: 500;
