@@ -20,6 +20,11 @@ const TEST_PASSWORD = process.env.RMS_TEST_USER_PASSWORD
 test.skip(!TEST_EMAIL || !TEST_PASSWORD, "Missing RMS_TEST_USER_EMAIL/RMS_TEST_USER_PASSWORD")
 
 test("create, edit, and delete an item and its sub-items", async ({ page }) => {
+    // This flow invokes four distinct Lambdas (AddItem, UpdateItem, UpdateSubItem, DeleteItem)
+    // for the first time in this run -- generous per-step cold-start allowances below can add
+    // up past the suite's default 60s test timeout, so extend this specific test.
+    test.setTimeout(120000)
+
     await page.goto("/test-login")
     await page.getByLabel("Email:").fill(TEST_EMAIL!)
     await page.getByLabel("Password:").fill(TEST_PASSWORD!)
@@ -34,15 +39,15 @@ test("create, edit, and delete an item and its sub-items", async ({ page }) => {
     await page.getByLabel("Name", { exact: true }).fill(familyName)
     await page.getByLabel("Location").fill("Original Location")
 
-    const [createResponse] = await Promise.all([
+    // createItemAction redirects on success (a 303, not a 2xx -- response.ok() would be
+    // false even on success, so just wait for the POST round-trip rather than asserting on
+    // its status) -- lands on the new sub-item's own detail page
+    // (/items/{familyId}/{subItemId}), since AddItem's returned id is the sub-item id, not
+    // the family id.
+    await Promise.all([
         page.waitForResponse((response) => response.request().method() === "POST"),
         page.getByRole("button", { name: "Create item" }).click(),
     ])
-    expect(createResponse.ok(), `create item failed with status ${createResponse.status()}`).toBe(true)
-
-    // createItemAction redirects on success -- lands on the new sub-item's own detail page
-    // (/items/{familyId}/{subItemId}), since AddItem's returned id is the sub-item id, not
-    // the family id.
     await expect(page).toHaveURL(/\/items\/[^/]+\/[^/]+/)
     const match = new URL(page.url()).pathname.match(/^\/items\/([^/]+)\/([^/]+)$/)
     if (!match) {
@@ -64,7 +69,9 @@ test("create, edit, and delete an item and its sub-items", async ({ page }) => {
         ])
         await expect(page.getByText(`${familyName} 2`)).toBeVisible({ timeout: 15000 })
 
-        // Edit the family's location.
+        // Edit the family's location. This is UpdateItem's first-ever invocation in this
+        // environment (unlike AddItem, already warm from the create + add-sub-item steps
+        // above) -- give its cold start + the subsequent revalidation re-fetch extra room.
         await page.getByRole("button", { name: "Edit item" }).click()
         await expect(page.getByRole("dialog", { name: "Edit item" })).toBeVisible()
         await page.locator('input[name="location"]').fill("Updated Location")
@@ -72,10 +79,11 @@ test("create, edit, and delete an item and its sub-items", async ({ page }) => {
             page.waitForResponse((response) => response.request().method() === "POST"),
             page.getByRole("button", { name: "Save" }).click(),
         ])
-        await expect(page.getByRole("dialog")).toHaveCount(0)
+        await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 30000 })
         await expect(page.getByText("Updated Location")).toBeVisible({ timeout: 15000 })
 
-        // Edit the second sub-item's friendly name.
+        // Edit the second sub-item's friendly name -- UpdateSubItem's first-ever invocation
+        // here too, same cold-start rationale as the family edit above.
         const secondRowEdit = page.getByRole("button", { name: `Edit ${familyName} 2` })
         await secondRowEdit.click()
         await expect(page.getByRole("dialog", { name: "Edit sub-item" })).toBeVisible()
@@ -84,7 +92,7 @@ test("create, edit, and delete an item and its sub-items", async ({ page }) => {
             page.waitForResponse((response) => response.request().method() === "POST"),
             page.getByRole("button", { name: "Save" }).click(),
         ])
-        await expect(page.getByRole("dialog")).toHaveCount(0)
+        await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 30000 })
         await expect(page.getByText("Renamed Sub-item")).toBeVisible({ timeout: 15000 })
 
         // Delete the first sub-item (not the last, so the family survives).
@@ -95,8 +103,8 @@ test("create, edit, and delete an item and its sub-items", async ({ page }) => {
             page.waitForResponse((response) => response.request().method() === "POST"),
             page.getByRole("button", { name: "Confirm delete" }).click(),
         ])
-        await expect(page.getByRole("dialog")).toHaveCount(0)
-        await expect(page.getByText(`${familyName} 1`)).toHaveCount(0)
+        await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 15000 })
+        await expect(page.getByText(`${familyName} 1`)).toHaveCount(0, { timeout: 15000 })
 
         // Delete the last remaining sub-item's family entirely -- cascades and redirects to
         // /browse.
@@ -127,5 +135,5 @@ test("create, edit, and delete an item and its sub-items", async ({ page }) => {
         }
     }
 
-    await expect(page.getByText(familyName)).toHaveCount(0)
+    await expect(page.getByText(familyName)).toHaveCount(0, { timeout: 15000 })
 })
