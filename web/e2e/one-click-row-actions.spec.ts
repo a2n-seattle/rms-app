@@ -40,7 +40,7 @@ test("one-click borrow from browse, then one-click return once it shows as yours
     await page.getByLabel("Password:").fill(TEST_PASSWORD!)
     await page.getByRole("button", { name: "Sign in" }).click()
 
-    await expect(page).toHaveURL(/\/browse/)
+    await expect(page).toHaveURL(/\/dashboard/)
 
     const familyId = await resolveFamilyId(page, TEST_ITEM_ID!)
     let row = await findFamilyRow(page, familyId)

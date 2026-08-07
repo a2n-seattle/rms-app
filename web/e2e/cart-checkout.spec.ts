@@ -43,7 +43,7 @@ test("check a browse row, checkout as a borrow via the cart", async ({ page }) =
     await page.getByLabel("Password:").fill(TEST_PASSWORD!)
     await page.getByRole("button", { name: "Sign in" }).click()
 
-    await expect(page).toHaveURL(/\/browse/)
+    await expect(page).toHaveURL(/\/dashboard/)
 
     const familyId = await resolveFamilyId(page, TEST_ITEM_ID!)
     const row = await findFamilyRow(page, familyId)
