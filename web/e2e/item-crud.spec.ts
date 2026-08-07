@@ -30,10 +30,11 @@ test("create, edit, and delete an item and its sub-items", async ({ page }) => {
     await page.getByLabel("Password:").fill(TEST_PASSWORD!)
     await page.getByRole("button", { name: "Sign in" }).click()
 
-    await expect(page).toHaveURL(/\/browse/)
+    await expect(page).toHaveURL(/\/dashboard/)
 
     const familyName = `E2E CRUD Family ${Date.now()}`
 
+    await page.goto("/browse")
     await page.getByRole("link", { name: "Add item" }).click()
     await expect(page).toHaveURL(/\/items\/new/)
     await page.getByLabel("Name", { exact: true }).fill(familyName)

@@ -22,7 +22,7 @@ test("select a borrowed row on the dashboard, return it with a condition note vi
     await page.getByLabel("Password:").fill(TEST_PASSWORD!)
     await page.getByRole("button", { name: "Sign in" }).click()
 
-    await expect(page).toHaveURL(/\/browse/)
+    await expect(page).toHaveURL(/\/dashboard/)
 
     await page.goto(`/items/${encodeURIComponent(TEST_ITEM_ID!)}`)
     await Promise.all([
