@@ -34,15 +34,15 @@ test("create, edit, and delete an item and its sub-items", async ({ page }) => {
     await page.getByLabel("Name", { exact: true }).fill(familyName)
     await page.getByLabel("Location").fill("Original Location")
 
-    const [createResponse] = await Promise.all([
+    // createItemAction redirects on success (a 303, not a 2xx -- response.ok() would be
+    // false even on success, so just wait for the POST round-trip rather than asserting on
+    // its status) -- lands on the new sub-item's own detail page
+    // (/items/{familyId}/{subItemId}), since AddItem's returned id is the sub-item id, not
+    // the family id.
+    await Promise.all([
         page.waitForResponse((response) => response.request().method() === "POST"),
         page.getByRole("button", { name: "Create item" }).click(),
     ])
-    expect(createResponse.ok(), `create item failed with status ${createResponse.status()}`).toBe(true)
-
-    // createItemAction redirects on success -- lands on the new sub-item's own detail page
-    // (/items/{familyId}/{subItemId}), since AddItem's returned id is the sub-item id, not
-    // the family id.
     await expect(page).toHaveURL(/\/items\/[^/]+\/[^/]+/)
     const match = new URL(page.url()).pathname.match(/^\/items\/([^/]+)\/([^/]+)$/)
     if (!match) {
