@@ -29,7 +29,7 @@ test("borrow via basket, return via the batched group confirmation with a condit
     await page.getByLabel("Password:").fill(TEST_PASSWORD!)
     await page.getByRole("button", { name: "Sign in" }).click()
 
-    await expect(page).toHaveURL(/\/browse/)
+    await expect(page).toHaveURL(/\/dashboard/)
 
     // Navigating to the sub-item id itself redirects to the single sub-item page (see
     // resolveFamilyId), not the family-level "ResourceBasket" multi-select UI this test

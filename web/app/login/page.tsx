@@ -18,7 +18,7 @@ export default function LoginPage() {
         // exists for e2e testing only -- see web/app/test-login/page.tsx.)
         const hubListener = Hub.listen("auth", ({ payload }) => {
             if (payload.event === "signInWithRedirect") {
-                router.replace("/browse")
+                router.replace("/dashboard")
             } else if (payload.event === "signInWithRedirect_failure") {
                 // Surfaced because this failure mode was previously
                 // silent -- the OAuth redirect would complete and land
