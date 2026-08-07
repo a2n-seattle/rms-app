@@ -64,7 +64,9 @@ test("create, edit, and delete an item and its sub-items", async ({ page }) => {
         ])
         await expect(page.getByText(`${familyName} 2`)).toBeVisible({ timeout: 15000 })
 
-        // Edit the family's location.
+        // Edit the family's location. This is UpdateItem's first-ever invocation in this
+        // environment (unlike AddItem, already warm from the create + add-sub-item steps
+        // above) -- give its cold start + the subsequent revalidation re-fetch extra room.
         await page.getByRole("button", { name: "Edit item" }).click()
         await expect(page.getByRole("dialog", { name: "Edit item" })).toBeVisible()
         await page.locator('input[name="location"]').fill("Updated Location")
@@ -72,10 +74,11 @@ test("create, edit, and delete an item and its sub-items", async ({ page }) => {
             page.waitForResponse((response) => response.request().method() === "POST"),
             page.getByRole("button", { name: "Save" }).click(),
         ])
-        await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 15000 })
+        await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 30000 })
         await expect(page.getByText("Updated Location")).toBeVisible({ timeout: 15000 })
 
-        // Edit the second sub-item's friendly name.
+        // Edit the second sub-item's friendly name -- UpdateSubItem's first-ever invocation
+        // here too, same cold-start rationale as the family edit above.
         const secondRowEdit = page.getByRole("button", { name: `Edit ${familyName} 2` })
         await secondRowEdit.click()
         await expect(page.getByRole("dialog", { name: "Edit sub-item" })).toBeVisible()
@@ -84,7 +87,7 @@ test("create, edit, and delete an item and its sub-items", async ({ page }) => {
             page.waitForResponse((response) => response.request().method() === "POST"),
             page.getByRole("button", { name: "Save" }).click(),
         ])
-        await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 15000 })
+        await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 30000 })
         await expect(page.getByText("Renamed Sub-item")).toBeVisible({ timeout: 15000 })
 
         // Delete the first sub-item (not the last, so the family survives).
