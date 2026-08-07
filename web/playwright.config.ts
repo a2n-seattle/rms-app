@@ -25,6 +25,10 @@ export default defineConfig({
     // backend) within a single test, whose worst-case sum alone can exceed
     // 30s even when everything is working correctly.
     timeout: 60000,
+    // Warms the server with one real login before the timed suite starts, so whichever spec
+    // happens to run first (workers:1 above) doesn't pay Next.js/Cognito cold-start cost
+    // against its own short assertion timeouts. See GH-382.
+    globalSetup: "./e2e/global-setup.ts",
     use: {
         baseURL: process.env.RMS_WEB_BASE_URL ?? "http://localhost:3000",
         // retain-on-failure (not on-first-retry) since retries are off above -- still want
