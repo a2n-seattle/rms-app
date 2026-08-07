@@ -29,6 +29,9 @@ test('will include reservations whose startTime is in the future', async () => {
         notes: TestConstants.NOTES_2
     }
     dbClient.getDB().schedule[TestConstants.RESERVATION_ID_2] = futureSchedule
+    // listByBorrower now sources ids from UserTable.reserved rather than scanning the whole
+    // table, so a raw injected row also needs registering there to be visible (see GH-384).
+    dbClient.getDB().user[TestConstants.BORROWER].reserved.push(TestConstants.RESERVATION_ID_2)
 
     const api: ListUpcomingReservations = new ListUpcomingReservations(dbClient)
 

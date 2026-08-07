@@ -115,5 +115,19 @@
     },
     "schedule": {},
     "transactions": {},
-    "user": {}
+    "user": {
+        "test borrower": {
+            "id": "test borrower",
+            "owned": [],
+            "reserved": [],
+            "borrowed": [
+                "123",
+                "12345"
+            ],
+            "history": [
+                "1000000000010-123",
+                "1000000000010-12345"
+            ]
+        }
+    }
 }

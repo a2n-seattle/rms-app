@@ -59,7 +59,10 @@ export class ReturnItem {
                         .then(() => {
                             return Promise.all(input.ids.map((id: string) =>
                                 this.itemTable.changeBorrower(id, input.borrower, "return", input.notes, undefined, input.conditions?.[id])
-                                    .then(() => this.userTable.removeBorrowed(input.borrower, id))
+                                    .then((historyId: string) => Promise.all([
+                                        this.userTable.removeBorrowed(input.borrower, id),
+                                        this.userTable.addHistory(input.borrower, historyId)
+                                    ]))
                             ))
                         })
                         .then(() => `Successfully returned items '${input.ids.toString()}'.`)

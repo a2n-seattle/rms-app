@@ -2,7 +2,7 @@ import { USER_TABLE, UserSchema } from "./Schemas"
 import { DBClient } from "../injection/db/DBClient"
 import { GetCommandInput, GetCommandOutput, PutCommandInput, UpdateCommandInput } from "@aws-sdk/lib-dynamodb"
 
-type ListField = "owned" | "reserved" | "borrowed"
+type ListField = "owned" | "reserved" | "borrowed" | "history"
 
 /**
  * Per-user index of owned/reserved/borrowed item/schedule ids, keyed by Cognito `sub`. Uses
@@ -25,7 +25,7 @@ export class UserTable {
                 if (entry) {
                     return entry
                 }
-                const item: UserSchema = { id, owned: [], reserved: [], borrowed: [] }
+                const item: UserSchema = { id, owned: [], reserved: [], borrowed: [], history: [] }
                 const params: PutCommandInput = {
                     TableName: USER_TABLE,
                     Item: item
@@ -67,6 +67,11 @@ export class UserTable {
 
     public removeBorrowed(id: string, itemId: string): Promise<any> {
         return this.removeFromList(id, "borrowed", itemId)
+    }
+
+    /** History is an append-only audit log -- no removeHistory counterpart. */
+    public addHistory(id: string, historyId: string): Promise<any> {
+        return this.addToList(id, "history", historyId)
     }
 
     private addToList(id: string, field: ListField, val: string): Promise<any> {

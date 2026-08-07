@@ -1,27 +1,28 @@
-import { HISTORY_TABLE, HistorySchema } from "../db/Schemas"
-import { decodePageToken } from "../db/PageToken"
-import { scanUntilLimit } from "../db/scanUntilLimit"
+import { HistorySchema } from "../db/Schemas"
+import { getUntilLimit } from "../db/getUntilLimit"
+import { HistoryTable } from "../db/HistoryTable"
+import { UserTable } from "../db/UserTable"
 import { DBClient } from "../injection/db/DBClient"
 import { MetricsClient } from "../injection/metrics/MetricsClient"
 import { emitAPIMetrics } from "../metrics/MetricsHelper"
-import { ScanCommandInput } from "@aws-sdk/lib-dynamodb"
 
 const DEFAULT_PAGE_SIZE = 25
 
 /**
- * Lists borrow/return history entries for a given borrower, paginated via
- * scanUntilLimit (no GSI on HistorySchema.borrower today -- see
- * db/scanUntilLimit.ts for the Scan+FilterExpression pagination gotcha it
- * works around).
+ * Lists borrow/return history entries for a given borrower, sourced from UserTable.history
+ * (a denormalized index maintained by BorrowItem/ReturnItem/BorrowFromSchedule via
+ * ItemTable.changeBorrower) rather than a full HistoryTable Scan -- see GH-384.
  */
 export class ListHistory {
     public static NAME: string = "list history"
 
-    private readonly client: DBClient
+    private readonly historyTable: HistoryTable
+    private readonly userTable: UserTable
     private readonly metrics?: MetricsClient
 
     public constructor(client: DBClient, metrics?: MetricsClient) {
-        this.client = client
+        this.historyTable = new HistoryTable(client)
+        this.userTable = new UserTable(client)
         this.metrics = metrics
     }
 
@@ -29,22 +30,13 @@ export class ListHistory {
         return emitAPIMetrics(
             () => {
                 return this.performAllFVAs(input)
-                    .then(() => {
-                        const params: ScanCommandInput = {
-                            TableName: HISTORY_TABLE,
-                            Limit: input.limit ?? DEFAULT_PAGE_SIZE,
-                            FilterExpression: "#borrower = :borrower",
-                            ExpressionAttributeNames: {
-                                "#borrower": "borrower"
-                            },
-                            ExpressionAttributeValues: {
-                                ":borrower": input.borrower
-                            },
-                            ...(input.pageToken ? { ExclusiveStartKey: decodePageToken(input.pageToken) } : {})
-                        }
-
-                        return scanUntilLimit<HistorySchema>(this.client, params, input.limit ?? DEFAULT_PAGE_SIZE)
-                    })
+                    .then(() => this.userTable.get(input.borrower))
+                    .then((user) => getUntilLimit<HistorySchema>(
+                        user?.history ?? [],
+                        (id) => this.historyTable.get(id),
+                        input.limit ?? DEFAULT_PAGE_SIZE,
+                        input.pageToken
+                    ))
             },
             ListHistory.NAME, this.metrics
         )

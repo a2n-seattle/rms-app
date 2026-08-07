@@ -68,7 +68,11 @@
             "id": "test borrower",
             "owned": [],
             "reserved": [],
-            "borrowed": []
+            "borrowed": [],
+            "history": [
+                "1000000000000-123",
+                "1000000000001-123"
+            ]
         }
     }
 }

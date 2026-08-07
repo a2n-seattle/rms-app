@@ -129,6 +129,17 @@ test('will record condition on the history entry on return when provided', async
     await expect(dbClient.getDB().history[historyKey]).toMatchObject({ condition: "cracked screen" })
 })
 
+test('changeBorrower resolves the generated history entry\'s id', async () => {
+    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.ONE_NAME)
+    const itemTable: ItemTable = new ItemTable(dbClient)
+
+    Date.now = jest.fn(() => TestTimestamps.BORROW_ITEM)
+
+    await expect(
+        itemTable.changeBorrower(TestConstants.ITEM_ID, TestConstants.BORROWER, "borrow", TestConstants.NOTES)
+    ).resolves.toEqual(`${TestTimestamps.BORROW_ITEM}-${TestConstants.ITEM_ID}`)
+})
+
 test('will not record condition on the history entry on borrow', async () => {
     const dbClient: LocalDBClient = new LocalDBClient(DBSeed.ONE_NAME)
     const itemTable: ItemTable = new ItemTable(dbClient)

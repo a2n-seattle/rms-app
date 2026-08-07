@@ -115,7 +115,8 @@
             "reserved": [
                 "123-12345"
             ],
-            "borrowed": []
+            "borrowed": [],
+            "history": []
         }
     }
 }

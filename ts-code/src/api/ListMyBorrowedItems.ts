@@ -1,26 +1,28 @@
-import { ITEMS_TABLE, ItemsSchema } from "../db/Schemas"
-import { decodePageToken } from "../db/PageToken"
-import { scanUntilLimit } from "../db/scanUntilLimit"
+import { ItemsSchema } from "../db/Schemas"
+import { getUntilLimit } from "../db/getUntilLimit"
+import { ItemTable } from "../db/ItemTable"
+import { UserTable } from "../db/UserTable"
 import { DBClient } from "../injection/db/DBClient"
 import { MetricsClient } from "../injection/metrics/MetricsClient"
 import { emitAPIMetrics } from "../metrics/MetricsHelper"
-import { ScanCommandInput } from "@aws-sdk/lib-dynamodb"
 
 const DEFAULT_PAGE_SIZE = 25
 
 /**
- * Lists items currently borrowed by a given borrower, paginated via
- * scanUntilLimit (see db/scanUntilLimit.ts for the Scan+FilterExpression
- * pagination gotcha it works around).
+ * Lists items currently borrowed by a given borrower, sourced from
+ * UserTable.borrowed (a denormalized index maintained by BorrowItem/ReturnItem/
+ * BorrowFromSchedule) rather than a full ItemsTable Scan -- see GH-384.
  */
 export class ListMyBorrowedItems {
     public static NAME: string = "list my borrowed items"
 
-    private readonly client: DBClient
+    private readonly itemTable: ItemTable
+    private readonly userTable: UserTable
     private readonly metrics?: MetricsClient
 
     public constructor(client: DBClient, metrics?: MetricsClient) {
-        this.client = client
+        this.itemTable = new ItemTable(client)
+        this.userTable = new UserTable(client)
         this.metrics = metrics
     }
 
@@ -28,22 +30,13 @@ export class ListMyBorrowedItems {
         return emitAPIMetrics(
             () => {
                 return this.performAllFVAs(input)
-                    .then(() => {
-                        const params: ScanCommandInput = {
-                            TableName: ITEMS_TABLE,
-                            Limit: input.limit ?? DEFAULT_PAGE_SIZE,
-                            FilterExpression: "#borrower = :borrower",
-                            ExpressionAttributeNames: {
-                                "#borrower": "borrower"
-                            },
-                            ExpressionAttributeValues: {
-                                ":borrower": input.borrower
-                            },
-                            ...(input.pageToken ? { ExclusiveStartKey: decodePageToken(input.pageToken) } : {})
-                        }
-
-                        return scanUntilLimit<ItemsSchema>(this.client, params, input.limit ?? DEFAULT_PAGE_SIZE)
-                    })
+                    .then(() => this.userTable.get(input.borrower))
+                    .then((user) => getUntilLimit<ItemsSchema>(
+                        user?.borrowed ?? [],
+                        (id) => this.itemTable.get(id),
+                        input.limit ?? DEFAULT_PAGE_SIZE,
+                        input.pageToken
+                    ))
             },
             ListMyBorrowedItems.NAME, this.metrics
         )

@@ -50,24 +50,35 @@ test('will fail when borrower is missing', async () => {
     await expect(api.execute({})).rejects.toThrow("Missing required field 'borrower'")
 })
 
-test('will find a match scanned after more than `limit` non-matching entries (regression, GH-357)', async () => {
+test('will return entries in order across a paginated cursor, driven by UserTable.history', async () => {
     const seed: any = {
-        main: {},
-        items: {},
-        batch: {},
-        tags: {},
+        main: {}, items: {}, batch: {}, tags: {},
         history: {
-            "a-nomatch": { id: "a-nomatch", name: "x", itemId: "x", borrower: "someone-else", action: "borrow", notes: "", timestamp: 1 },
-            "b-nomatch": { id: "b-nomatch", name: "x", itemId: "x", borrower: "someone-else", action: "borrow", notes: "", timestamp: 1 },
-            "z-match": { id: "z-match", name: "x", itemId: "x", borrower: TestConstants.BORROWER, action: "borrow", notes: "", timestamp: 1 }
+            "a": { id: "a", name: "x", itemId: "x", borrower: TestConstants.BORROWER, action: "borrow", notes: "", timestamp: 1 },
+            "b": { id: "b", name: "x", itemId: "x", borrower: TestConstants.BORROWER, action: "return", notes: "", timestamp: 2 }
         },
-        schedule: {}, transactions: {}, user: {}
+        schedule: {}, transactions: {},
+        user: { [TestConstants.BORROWER]: { id: TestConstants.BORROWER, owned: [], reserved: [], borrowed: [], history: ["a", "b"] } }
     }
     const dbClient: LocalDBClient = new LocalDBClient(seed)
     const api: ListHistory = new ListHistory(dbClient)
 
-    await expect(api.execute({ borrower: TestConstants.BORROWER, limit: 1 })).resolves.toEqual({
-        items: [seed.history["z-match"]],
+    const page1 = await api.execute({ borrower: TestConstants.BORROWER, limit: 1 })
+    expect(page1.items).toEqual([seed.history["a"]])
+    expect(page1.nextPageToken).toBeDefined()
+
+    await expect(api.execute({ borrower: TestConstants.BORROWER, limit: 1, pageToken: page1.nextPageToken })).resolves.toEqual({
+        items: [seed.history["b"]],
+        nextPageToken: undefined
+    })
+})
+
+test('will return no items when the borrower has no UserTable row yet', async () => {
+    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.EMPTY)
+    const api: ListHistory = new ListHistory(dbClient)
+
+    await expect(api.execute({ borrower: TestConstants.BORROWER })).resolves.toEqual({
+        items: [],
         nextPageToken: undefined
     })
 })

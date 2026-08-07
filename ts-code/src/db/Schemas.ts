@@ -99,13 +99,17 @@ export interface BatchSchema {
  *   resolved to this user's Cognito account at item-creation time).
  * @param reserved ScheduleTable ids currently reserved by this user.
  * @param borrowed ItemsTable ids currently borrowed by this user.
+ * @param history HistoryTable ids of every borrow/return entry ever recorded for this user.
+ *   Append-only (never removed) -- unlike owned/reserved/borrowed, this is an audit log, not
+ *   a "currently" index.
  */
 export const USER_TABLE: string = process.env.STORAGE_USER_NAME
 export interface UserSchema {
     id: string,
     owned: string[],
     reserved: string[],
-    borrowed: string[]
+    borrowed: string[],
+    history: string[]
 }
 
 /**
