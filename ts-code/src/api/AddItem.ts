@@ -96,22 +96,30 @@ export class AddItem {
             () => {
                 return this.performAllFVAs(input)
                     .then(() => this.mainTable.getByNameConsistent(input.name))
-                    .then((entry: MainSchema) => {
+                    .then((entry: MainSchema): Promise<FamilyResolution> => {
                         if (entry) {
                             // Object Exists. No need to add description, owner, or location
-                            return entry.id
+                            return Promise.resolve({ familyId: entry.id, familyName: entry.name, existingItemCount: entry.items.length })
                         } else {
                             // Add new Object
                             return this.mainTable.create(input.name, input.description, input.owner, input.location, input.type)
                                 .then((familyId: string) =>
                                     this.tagTable.create(familyId, input.tags)
                                         .then(() => this.resolveOwner(familyId, input.owner))
-                                        .then(() => familyId))
+                                        .then(() => ({ familyId, familyName: input.name, existingItemCount: 0 })))
                         }
                     })
-                    .then((familyId: string) =>
+                    .then(({ familyId, familyName, existingItemCount }: FamilyResolution) =>
                         this.getUniqueId()
-                            .then((id: string) => this.itemTable.create(id, familyId, input.notes, input.friendlyName).then(() => id))
+                            .then((id: string) => {
+                                // Default friendly-name numbering (GH-363): a sub-item with no
+                                // explicit friendlyName gets "<family name> <n>" (e.g. "Chairs 1",
+                                // "Chairs 2", ...) based on the family's item count *before* this
+                                // one is appended, rather than falling all the way through to
+                                // ItemTable.create's own `?? id` fallback (a raw UUID).
+                                const friendlyName = input.friendlyName ?? `${familyName} ${existingItemCount + 1}`
+                                return this.itemTable.create(id, familyId, input.notes, friendlyName).then(() => id)
+                            })
                     )
             },
             AddItem.NAME, this.metrics
@@ -132,7 +140,7 @@ export class AddItem {
                 if (!user) {
                     return Promise.resolve()
                 }
-                return this.mainTable.update(familyId, "ownerId", user.sub)
+                return this.mainTable.update(familyId, "ownerId", user.sub, false)
                     .then(() => this.userTable.addOwned(user.sub, familyId))
                     .then((): void => undefined)
             })
@@ -167,4 +175,10 @@ export interface AddItemInput {
     friendlyName?: string,
     notes?: string,
     type?: "item" | "room"
+}
+
+interface FamilyResolution {
+    familyId: string,
+    familyName: string,
+    existingItemCount: number
 }

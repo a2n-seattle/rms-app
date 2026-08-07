@@ -142,12 +142,19 @@ export class MainTable {
     }
 
     /**
-     * Update id-level attribute
+     * Update id-level attribute.
+     *
+     * @param requireExists When true (default), guards against typo'd/nonexistent attribute
+     *   names via `attribute_exists(#key)`. Pass false for an attribute that's legitimately
+     *   unset until first write -- e.g. `ownerId`, which `create()` never initializes, so
+     *   `resolveOwner`'s first-ever assignment on a given family would otherwise always fail
+     *   this precondition.
      */
     public update(
         id: string,
         key: string,
-        val: string
+        val: string,
+        requireExists: boolean = true
     ): Promise<UpdateCommandOutput> {
         const params: UpdateCommandInput = {
             TableName: MAIN_TABLE,
@@ -155,7 +162,7 @@ export class MainTable {
                 "id": id
             },
             UpdateExpression: "SET #key = :val",
-            ConditionExpression: 'attribute_exists(#key)',
+            ...(requireExists ? { ConditionExpression: 'attribute_exists(#key)' } : {}),
             ExpressionAttributeNames: {
                 "#key": key
             },

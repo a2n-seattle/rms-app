@@ -45,7 +45,9 @@ const API_NAMES = [
                     "ListHistory",
                     "ListBatches",
                     "GetBorrowGroup",
-                    "ExtendReservation"
+                    "ExtendReservation",
+                    "UpdateItem",
+                    "UpdateSubItem"
 ]
 
 function kebabCase(name) {
