@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test"
-import { waitVisible } from "./cleanup"
+import { cancelReservation } from "./cleanup"
 
 /**
  * Reservations: login -> reserve the test item -> verify it shows on
@@ -75,9 +75,6 @@ test("reserve an item and see it on the reservations page", async ({ page }) => 
         // violations.
         await page.goto("/dashboard")
         const alert = page.locator('[data-testid="upcoming-alert"]', { hasText: notes })
-        const cancelButton = alert.getByRole("button", { name: "Cancel" })
-        if (await waitVisible(cancelButton)) {
-            await cancelButton.click()
-        }
+        await cancelReservation(alert)
     }
 })

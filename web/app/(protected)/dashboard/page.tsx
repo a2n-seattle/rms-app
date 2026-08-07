@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/Button"
 import { Badge } from "@/components/ui/Badge"
 import { TabList, Tab } from "@/components/ui/Tabs"
 import { ActionForm } from "@/components/ui/ActionForm"
+import { DeleteReservationButton } from "./DeleteReservationButton"
 import { BorrowedItemsTable } from "./BorrowedItemsTable"
 import styles from "./dashboard.module.css"
 
@@ -116,12 +117,7 @@ export default async function DashboardPage({
                                     <input type="hidden" name="scheduleId" value={schedule.id} />
                                     <Button type="submit">Borrow</Button>
                                 </ActionForm>
-                                <ActionForm action={cancelReservationAction} successMessage="Reservation cancelled.">
-                                    <input type="hidden" name="scheduleId" value={schedule.id} />
-                                    <Button type="submit" variant="secondary">
-                                        Cancel
-                                    </Button>
-                                </ActionForm>
+                                <DeleteReservationButton scheduleId={schedule.id} action={cancelReservationAction} />
                             </div>
                         </div>
                     ))}
@@ -189,6 +185,7 @@ export default async function DashboardPage({
                                     <th>End</th>
                                     <th>Notes</th>
                                     <th>Extend</th>
+                                    <th>Cancel</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -206,6 +203,9 @@ export default async function DashboardPage({
                                                     Extend
                                                 </Button>
                                             </ActionForm>
+                                        </td>
+                                        <td>
+                                            <DeleteReservationButton scheduleId={schedule.id} action={cancelReservationAction} />
                                         </td>
                                     </tr>
                                 ))}

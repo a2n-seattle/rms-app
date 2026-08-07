@@ -58,6 +58,28 @@ export async function resolveFamilyId(page: Page, subItemId: string): Promise<st
     return decodeURIComponent(match[1])
 }
 
+/**
+ * Cancels a reservation via its "Cancel" button, scoped to `scope` (an alert or table row
+ * locator -- both the "Upcoming" alert banner and the Scheduled tab table render their own
+ * DeleteReservationButton for the same schedule.id when a reservation is both upcoming and
+ * shown in the Scheduled tab, so an unscoped page-wide lookup would be ambiguous). As of
+ * GH-361, "Cancel" opens a confirm dialog (Modal, not portal-based, so it renders as a DOM
+ * descendant of wherever the trigger button sits) rather than acting immediately -- a plain
+ * click-and-done here would silently leave the reservation in place.
+ */
+export async function cancelReservation(scope: Locator): Promise<void> {
+    const cancelButton = scope.getByRole("button", { name: "Cancel" })
+    if (!(await waitVisible(cancelButton))) {
+        return
+    }
+    await cancelButton.click()
+
+    const confirmButton = scope.getByRole("button", { name: "Confirm cancel" })
+    if (await waitVisible(confirmButton)) {
+        await confirmButton.click()
+    }
+}
+
 export async function cleanupReturn(page: Page): Promise<void> {
     const returnButton = page.getByRole("button", { name: "Return" })
     if (await waitVisible(returnButton, 2000)) {
