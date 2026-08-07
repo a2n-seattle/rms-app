@@ -83,6 +83,34 @@ test("closing the edit modal removes it", () => {
     expect(screen.queryByRole("dialog")).toBeNull()
 })
 
+describe("time field defaults", () => {
+    const FIXED_NOW = new Date("2026-03-01T12:00:00.000Z").getTime()
+
+    beforeEach(() => {
+        jest.spyOn(Date, "now").mockReturnValue(FIXED_NOW)
+    })
+
+    afterEach(() => {
+        jest.restoreAllMocks()
+    })
+
+    test("Return by defaults to 24h from now", () => {
+        renderBasket()
+
+        const returnBy = screen.getByLabelText("Return by") as HTMLInputElement
+        expect(new Date(returnBy.value).getTime()).toEqual(FIXED_NOW + 24 * 60 * 60 * 1000)
+    })
+
+    test("reserve Start defaults to now and End to start + 24h", () => {
+        renderBasket()
+
+        const start = screen.getByLabelText("Start") as HTMLInputElement
+        const end = screen.getByLabelText("End") as HTMLInputElement
+        expect(new Date(start.value).getTime()).toEqual(FIXED_NOW)
+        expect(new Date(end.value).getTime()).toEqual(FIXED_NOW + 24 * 60 * 60 * 1000)
+    })
+})
+
 describe("header select-all checkbox", () => {
     test("starts checked, not indeterminate, since all sub-items are selected by default", () => {
         renderBasket()
