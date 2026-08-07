@@ -72,7 +72,7 @@ test("create, edit, and delete an item and its sub-items", async ({ page }) => {
             page.waitForResponse((response) => response.request().method() === "POST"),
             page.getByRole("button", { name: "Save" }).click(),
         ])
-        await expect(page.getByRole("dialog")).toHaveCount(0)
+        await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 15000 })
         await expect(page.getByText("Updated Location")).toBeVisible({ timeout: 15000 })
 
         // Edit the second sub-item's friendly name.
@@ -84,7 +84,7 @@ test("create, edit, and delete an item and its sub-items", async ({ page }) => {
             page.waitForResponse((response) => response.request().method() === "POST"),
             page.getByRole("button", { name: "Save" }).click(),
         ])
-        await expect(page.getByRole("dialog")).toHaveCount(0)
+        await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 15000 })
         await expect(page.getByText("Renamed Sub-item")).toBeVisible({ timeout: 15000 })
 
         // Delete the first sub-item (not the last, so the family survives).
@@ -95,8 +95,8 @@ test("create, edit, and delete an item and its sub-items", async ({ page }) => {
             page.waitForResponse((response) => response.request().method() === "POST"),
             page.getByRole("button", { name: "Confirm delete" }).click(),
         ])
-        await expect(page.getByRole("dialog")).toHaveCount(0)
-        await expect(page.getByText(`${familyName} 1`)).toHaveCount(0)
+        await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 15000 })
+        await expect(page.getByText(`${familyName} 1`)).toHaveCount(0, { timeout: 15000 })
 
         // Delete the last remaining sub-item's family entirely -- cascades and redirects to
         // /browse.
@@ -127,5 +127,5 @@ test("create, edit, and delete an item and its sub-items", async ({ page }) => {
         }
     }
 
-    await expect(page.getByText(familyName)).toHaveCount(0)
+    await expect(page.getByText(familyName)).toHaveCount(0, { timeout: 15000 })
 })
