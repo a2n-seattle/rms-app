@@ -39,7 +39,7 @@ test("clicking Cancel opens a confirm dialog; only Confirm cancel removes the re
     await page.getByLabel("Email:").fill(TEST_EMAIL!)
     await page.getByLabel("Password:").fill(TEST_PASSWORD!)
     await page.getByRole("button", { name: "Sign in" }).click()
-    await expect(page).toHaveURL(/\/browse/)
+    await expect(page).toHaveURL(/\/dashboard/)
 
     const notes = `e2e-cancel-confirm-${Date.now()}`
     await reserve(page, notes)
@@ -84,7 +84,7 @@ test("Scheduled tab row shows both Extend and Cancel; Cancel there removes the r
     await page.getByLabel("Email:").fill(TEST_EMAIL!)
     await page.getByLabel("Password:").fill(TEST_PASSWORD!)
     await page.getByRole("button", { name: "Sign in" }).click()
-    await expect(page).toHaveURL(/\/browse/)
+    await expect(page).toHaveURL(/\/dashboard/)
 
     const notes = `e2e-scheduled-cancel-${Date.now()}`
     await reserve(page, notes)
