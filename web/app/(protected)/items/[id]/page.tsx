@@ -200,6 +200,7 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
 
             <ResourceBasket
                 familyId={main.id}
+                familyName={main.name}
                 items={items}
                 isRoom={main.type === "room"}
                 borrowAction={borrowAction}

@@ -1,4 +1,5 @@
 import { render, screen, fireEvent } from "@testing-library/react"
+import { CartProvider, useCart } from "@/lib/cart/CartContext"
 import { ResourceBasket } from "./ResourceBasket"
 import type { ActionState } from "@/lib/actionState"
 import type { ItemsSchema } from "@/lib/api/types"
@@ -29,17 +30,29 @@ const ITEM_2: ItemsSchema = {
 
 const noopAction = jest.fn(async (_prevState: ActionState, _formData: FormData): Promise<ActionState> => ({ success: true }))
 
-function renderBasket(props: Partial<React.ComponentProps<typeof ResourceBasket>> = {}) {
+function CartReader({ onCart }: { onCart: (entries: ReturnType<typeof useCart>["entries"]) => void }) {
+    onCart(useCart().entries)
+    return null
+}
+
+function renderBasket(
+    props: Partial<React.ComponentProps<typeof ResourceBasket>> = {},
+    onCart?: (entries: ReturnType<typeof useCart>["entries"]) => void
+) {
     return render(
-        <ResourceBasket
-            familyId="chairs"
-            items={[ITEM_1, ITEM_2]}
-            borrowAction={noopAction}
-            reserveAction={noopAction}
-            updateSubItemAction={noopAction}
-            deleteSubItemAction={noopAction}
-            {...props}
-        />
+        <CartProvider>
+            {onCart && <CartReader onCart={onCart} />}
+            <ResourceBasket
+                familyId="chairs"
+                familyName="Chairs"
+                items={[ITEM_1, ITEM_2]}
+                borrowAction={noopAction}
+                reserveAction={noopAction}
+                updateSubItemAction={noopAction}
+                deleteSubItemAction={noopAction}
+                {...props}
+            />
+        </CartProvider>
     )
 }
 
@@ -63,6 +76,38 @@ test("hides Borrow Selected and the Borrower column for a room", () => {
     expect(screen.queryByRole("button", { name: /Borrow Selected/ })).toBeNull()
     expect(screen.queryByText("Borrower")).toBeNull()
     expect(screen.getByRole("button", { name: "Reserve Selected (2)" })).not.toBeNull()
+})
+
+test("Add selected to cart adds every selected, available sub-item", () => {
+    let cartEntries: ReturnType<typeof useCart>["entries"] = []
+    renderBasket({}, (entries) => (cartEntries = entries))
+
+    fireEvent.click(screen.getByRole("button", { name: "Add selected to cart" }))
+
+    expect(cartEntries).toEqual([
+        { itemId: "chair-1", familyId: "chairs", itemName: "Chair 1", familyName: "Chairs" },
+        { itemId: "chair-2", familyId: "chairs", itemName: "Chair 2", familyName: "Chairs" },
+    ])
+    expect(screen.queryByText(/skipped/)).toBeNull()
+})
+
+test("Add selected to cart skips already-borrowed items and flags the count", () => {
+    let cartEntries: ReturnType<typeof useCart>["entries"] = []
+    const borrowedItem: ItemsSchema = { ...ITEM_2, borrower: "someone-else" }
+    renderBasket({ items: [ITEM_1, borrowedItem] }, (entries) => (cartEntries = entries))
+
+    fireEvent.click(screen.getByRole("button", { name: "Add selected to cart" }))
+
+    expect(cartEntries.map((e) => e.itemId)).toEqual(["chair-1"])
+    expect(screen.getByText("1 skipped — already borrowed")).not.toBeNull()
+})
+
+test("Add selected to cart is disabled with no selection", () => {
+    renderBasket()
+
+    fireEvent.click(screen.getByLabelText("Select all sub-items"))
+
+    expect(screen.getByRole("button", { name: "Add selected to cart" }).hasAttribute("disabled")).toBe(true)
 })
 
 test("clicking a row's Edit button opens the edit modal for that sub-item", () => {

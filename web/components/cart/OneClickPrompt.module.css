@@ -1,0 +1,14 @@
+.loading,
+.empty {
+    color: var(--color-text-muted);
+    margin: 0;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    margin: var(--space-md) 0;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
