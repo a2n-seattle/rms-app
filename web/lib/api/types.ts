@@ -193,6 +193,16 @@ export interface GetBatchInput {
     name?: string
 }
 
+export interface CreateBatchInput {
+    name?: string
+    ids?: string[]
+    groups?: string[]
+}
+
+export interface DeleteBatchInput {
+    name?: string
+}
+
 export interface GetBatchDetailedEntry {
     id: string
     name: string
