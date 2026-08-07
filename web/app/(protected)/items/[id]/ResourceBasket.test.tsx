@@ -46,35 +46,15 @@ function renderBasket(props: Partial<React.ComponentProps<typeof ResourceBasket>
 test("defaults to all sub-items selected", () => {
     renderBasket()
 
-    expect(screen.getByText("2 of 2 selected")).not.toBeNull()
     expect(screen.getByRole("button", { name: "Borrow Selected (2)" }).hasAttribute("disabled")).toBe(false)
 })
 
 test("allows deselecting an individual sub-item", () => {
     renderBasket()
 
-    fireEvent.click(screen.getAllByRole("checkbox")[0])
+    fireEvent.click(screen.getByLabelText("Select Chair 1"))
 
-    expect(screen.getByText("1 of 2 selected")).not.toBeNull()
-})
-
-test("Select none clears the selection and disables the submit buttons", () => {
-    renderBasket()
-
-    fireEvent.click(screen.getByText("Select none"))
-
-    expect(screen.getByText("0 of 2 selected")).not.toBeNull()
-    expect(screen.getByRole("button", { name: "Borrow Selected (0)" }).hasAttribute("disabled")).toBe(true)
-    expect(screen.getByRole("button", { name: "Reserve Selected (0)" }).hasAttribute("disabled")).toBe(true)
-})
-
-test("Select all restores the full selection after Select none", () => {
-    renderBasket()
-
-    fireEvent.click(screen.getByText("Select none"))
-    fireEvent.click(screen.getByText("Select all"))
-
-    expect(screen.getByText("2 of 2 selected")).not.toBeNull()
+    expect(screen.getByRole("button", { name: "Borrow Selected (1)" })).not.toBeNull()
 })
 
 test("hides Borrow Selected and the Borrower column for a room", () => {
@@ -101,4 +81,39 @@ test("closing the edit modal removes it", () => {
     fireEvent.click(screen.getByRole("button", { name: "Close" }))
 
     expect(screen.queryByRole("dialog")).toBeNull()
+})
+
+describe("header select-all checkbox", () => {
+    test("starts checked, not indeterminate, since all sub-items are selected by default", () => {
+        renderBasket()
+        const header = screen.getByLabelText("Select all sub-items") as HTMLInputElement
+        expect(header.checked).toBe(true)
+        expect(header.indeterminate).toBe(false)
+    })
+
+    test("becomes indeterminate when only some rows are checked", () => {
+        renderBasket()
+        fireEvent.click(screen.getByLabelText("Select Chair 1"))
+
+        const header = screen.getByLabelText("Select all sub-items") as HTMLInputElement
+        expect(header.checked).toBe(false)
+        expect(header.indeterminate).toBe(true)
+    })
+
+    test("clicking header when partial selects every row", () => {
+        renderBasket()
+        fireEvent.click(screen.getByLabelText("Select Chair 1"))
+
+        fireEvent.click(screen.getByLabelText("Select all sub-items"))
+
+        expect(screen.getByRole("button", { name: "Borrow Selected (2)" })).not.toBeNull()
+    })
+
+    test("clicking header when fully selected deselects every row", () => {
+        renderBasket()
+
+        fireEvent.click(screen.getByLabelText("Select all sub-items"))
+
+        expect(screen.getByRole("button", { name: "Borrow Selected (0)" }).hasAttribute("disabled")).toBe(true)
+    })
 })
