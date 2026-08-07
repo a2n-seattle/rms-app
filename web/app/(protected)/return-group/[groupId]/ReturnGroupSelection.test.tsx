@@ -31,16 +31,15 @@ const ITEM_2: ItemsSchema = {
 test("defaults to all group items selected", () => {
     render(<ReturnGroupSelection items={[ITEM_1, ITEM_2]} returnAction={jest.fn()} />)
 
-    expect(screen.getByText("2 of 2 selected")).not.toBeNull()
     expect(screen.getByRole("button", { name: "Confirm Return (2)" }).hasAttribute("disabled")).toBe(false)
 })
 
 test("allows deselecting an individual item from the batched return", () => {
     render(<ReturnGroupSelection items={[ITEM_1, ITEM_2]} returnAction={jest.fn()} />)
 
-    fireEvent.click(screen.getAllByRole("checkbox")[0])
+    fireEvent.click(screen.getByLabelText("Select Chair 1"))
 
-    expect(screen.getByText("1 of 2 selected")).not.toBeNull()
+    expect(screen.getByRole("button", { name: "Confirm Return (1)" })).not.toBeNull()
 })
 
 test("allows entering a per-item condition note", () => {
@@ -52,10 +51,37 @@ test("allows entering a per-item condition note", () => {
     expect(conditionInput.value).toEqual("cracked screen")
 })
 
-test("Select none disables Confirm Return", () => {
-    render(<ReturnGroupSelection items={[ITEM_1, ITEM_2]} returnAction={jest.fn()} />)
+describe("header select-all checkbox", () => {
+    test("starts checked, not indeterminate, since all items are selected by default", () => {
+        render(<ReturnGroupSelection items={[ITEM_1, ITEM_2]} returnAction={jest.fn()} />)
+        const header = screen.getByLabelText("Select all items") as HTMLInputElement
+        expect(header.checked).toBe(true)
+        expect(header.indeterminate).toBe(false)
+    })
 
-    fireEvent.click(screen.getByText("Select none"))
+    test("becomes indeterminate when only some rows are checked", () => {
+        render(<ReturnGroupSelection items={[ITEM_1, ITEM_2]} returnAction={jest.fn()} />)
+        fireEvent.click(screen.getByLabelText("Select Chair 1"))
 
-    expect(screen.getByRole("button", { name: "Confirm Return (0)" }).hasAttribute("disabled")).toBe(true)
+        const header = screen.getByLabelText("Select all items") as HTMLInputElement
+        expect(header.checked).toBe(false)
+        expect(header.indeterminate).toBe(true)
+    })
+
+    test("clicking header when partial selects every row", () => {
+        render(<ReturnGroupSelection items={[ITEM_1, ITEM_2]} returnAction={jest.fn()} />)
+        fireEvent.click(screen.getByLabelText("Select Chair 1"))
+
+        fireEvent.click(screen.getByLabelText("Select all items"))
+
+        expect(screen.getByRole("button", { name: "Confirm Return (2)" })).not.toBeNull()
+    })
+
+    test("clicking header when fully selected deselects every row", () => {
+        render(<ReturnGroupSelection items={[ITEM_1, ITEM_2]} returnAction={jest.fn()} />)
+
+        fireEvent.click(screen.getByLabelText("Select all items"))
+
+        expect(screen.getByRole("button", { name: "Confirm Return (0)" }).hasAttribute("disabled")).toBe(true)
+    })
 })

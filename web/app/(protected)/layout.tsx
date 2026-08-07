@@ -24,12 +24,6 @@ export default async function ProtectedLayout({ children }: { children: React.Re
                         <a href="/browse" className={styles.navLink}>
                             Browse
                         </a>
-                        <a href="/reservations" className={styles.navLink}>
-                            Reservations
-                        </a>
-                        <a href="/return" className={styles.navLink}>
-                            Return
-                        </a>
                         <Link href="/batches" className={styles.navLink}>
                             Batches
                         </Link>

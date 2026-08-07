@@ -4,5 +4,5 @@ export const Checkbox = forwardRef<HTMLInputElement, React.InputHTMLAttributes<H
     props,
     ref
 ) {
-    return <input ref={ref} type="checkbox" {...props} />
+    return <input type="checkbox" ref={ref} {...props} />
 })

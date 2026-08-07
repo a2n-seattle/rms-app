@@ -2,9 +2,21 @@
     margin-bottom: var(--space-lg);
 }
 
+.headerRow {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+}
+
 .title {
     font-size: 1.5rem;
     font-weight: 700;
+    margin-bottom: var(--space-xs);
+}
+
+.friendlyName {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
     margin-bottom: var(--space-xs);
 }
 

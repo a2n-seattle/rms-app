@@ -25,7 +25,7 @@ test("borrowing an already-borrowed item shows an inline error instead of crashi
     await page.getByLabel("Password:").fill(TEST_PASSWORD!)
     await page.getByRole("button", { name: "Sign in" }).click()
 
-    await expect(page).toHaveURL(/\/browse/)
+    await expect(page).toHaveURL(/\/dashboard/)
 
     const itemUrl = `/items/${encodeURIComponent(TEST_ITEM_ID!)}/${encodeURIComponent(TEST_ITEM_ID!)}`
     await page.goto(itemUrl)

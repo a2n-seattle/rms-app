@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from "@testing-library/react"
 import { CartProvider, useCart } from "@/lib/cart/CartContext"
 import { ResourceBasket } from "./ResourceBasket"
+import type { ActionState } from "@/lib/actionState"
 import type { ItemsSchema } from "@/lib/api/types"
 
 const ITEM_1: ItemsSchema = {
@@ -27,12 +28,17 @@ const ITEM_2: ItemsSchema = {
     notes: "",
 }
 
+const noopAction = jest.fn(async (_prevState: ActionState, _formData: FormData): Promise<ActionState> => ({ success: true }))
+
 function CartReader({ onCart }: { onCart: (entries: ReturnType<typeof useCart>["entries"]) => void }) {
     onCart(useCart().entries)
     return null
 }
 
-function renderBasket(props: Partial<React.ComponentProps<typeof ResourceBasket>> = {}, onCart?: (entries: ReturnType<typeof useCart>["entries"]) => void) {
+function renderBasket(
+    props: Partial<React.ComponentProps<typeof ResourceBasket>> = {},
+    onCart?: (entries: ReturnType<typeof useCart>["entries"]) => void
+) {
     return render(
         <CartProvider>
             {onCart && <CartReader onCart={onCart} />}
@@ -40,8 +46,10 @@ function renderBasket(props: Partial<React.ComponentProps<typeof ResourceBasket>
                 familyId="chairs"
                 familyName="Chairs"
                 items={[ITEM_1, ITEM_2]}
-                borrowAction={jest.fn()}
-                reserveAction={jest.fn()}
+                borrowAction={noopAction}
+                reserveAction={noopAction}
+                updateSubItemAction={noopAction}
+                deleteSubItemAction={noopAction}
                 {...props}
             />
         </CartProvider>
@@ -51,35 +59,15 @@ function renderBasket(props: Partial<React.ComponentProps<typeof ResourceBasket>
 test("defaults to all sub-items selected", () => {
     renderBasket()
 
-    expect(screen.getByText("2 of 2 selected")).not.toBeNull()
     expect(screen.getByRole("button", { name: "Borrow Selected (2)" }).hasAttribute("disabled")).toBe(false)
 })
 
 test("allows deselecting an individual sub-item", () => {
     renderBasket()
 
-    fireEvent.click(screen.getAllByRole("checkbox")[0])
+    fireEvent.click(screen.getByLabelText("Select Chair 1"))
 
-    expect(screen.getByText("1 of 2 selected")).not.toBeNull()
-})
-
-test("Select none clears the selection and disables the submit buttons", () => {
-    renderBasket()
-
-    fireEvent.click(screen.getByText("Select none"))
-
-    expect(screen.getByText("0 of 2 selected")).not.toBeNull()
-    expect(screen.getByRole("button", { name: "Borrow Selected (0)" }).hasAttribute("disabled")).toBe(true)
-    expect(screen.getByRole("button", { name: "Reserve Selected (0)" }).hasAttribute("disabled")).toBe(true)
-})
-
-test("Select all restores the full selection after Select none", () => {
-    renderBasket()
-
-    fireEvent.click(screen.getByText("Select none"))
-    fireEvent.click(screen.getByText("Select all"))
-
-    expect(screen.getByText("2 of 2 selected")).not.toBeNull()
+    expect(screen.getByRole("button", { name: "Borrow Selected (1)" })).not.toBeNull()
 })
 
 test("hides Borrow Selected and the Borrower column for a room", () => {
@@ -117,7 +105,88 @@ test("Add selected to cart skips already-borrowed items and flags the count", ()
 test("Add selected to cart is disabled with no selection", () => {
     renderBasket()
 
-    fireEvent.click(screen.getByText("Select none"))
+    fireEvent.click(screen.getByLabelText("Select all sub-items"))
 
     expect(screen.getByRole("button", { name: "Add selected to cart" }).hasAttribute("disabled")).toBe(true)
+})
+
+test("clicking a row's Edit button opens the edit modal for that sub-item", () => {
+    renderBasket()
+
+    fireEvent.click(screen.getByLabelText("Edit Chair 1"))
+
+    expect(screen.getByRole("dialog", { name: "Edit sub-item" })).not.toBeNull()
+    expect(screen.getByDisplayValue("Chair 1")).not.toBeNull()
+})
+
+test("closing the edit modal removes it", () => {
+    renderBasket()
+
+    fireEvent.click(screen.getByLabelText("Edit Chair 1"))
+    fireEvent.click(screen.getByRole("button", { name: "Close" }))
+
+    expect(screen.queryByRole("dialog")).toBeNull()
+})
+
+describe("time field defaults", () => {
+    const FIXED_NOW = new Date("2026-03-01T12:00:00.000Z").getTime()
+
+    beforeEach(() => {
+        jest.spyOn(Date, "now").mockReturnValue(FIXED_NOW)
+    })
+
+    afterEach(() => {
+        jest.restoreAllMocks()
+    })
+
+    test("Return by defaults to 24h from now", () => {
+        renderBasket()
+
+        const returnBy = screen.getByLabelText("Return by") as HTMLInputElement
+        expect(new Date(returnBy.value).getTime()).toEqual(FIXED_NOW + 24 * 60 * 60 * 1000)
+    })
+
+    test("reserve Start defaults to now and End to start + 24h", () => {
+        renderBasket()
+
+        const start = screen.getByLabelText("Start") as HTMLInputElement
+        const end = screen.getByLabelText("End") as HTMLInputElement
+        expect(new Date(start.value).getTime()).toEqual(FIXED_NOW)
+        expect(new Date(end.value).getTime()).toEqual(FIXED_NOW + 24 * 60 * 60 * 1000)
+    })
+})
+
+describe("header select-all checkbox", () => {
+    test("starts checked, not indeterminate, since all sub-items are selected by default", () => {
+        renderBasket()
+        const header = screen.getByLabelText("Select all sub-items") as HTMLInputElement
+        expect(header.checked).toBe(true)
+        expect(header.indeterminate).toBe(false)
+    })
+
+    test("becomes indeterminate when only some rows are checked", () => {
+        renderBasket()
+        fireEvent.click(screen.getByLabelText("Select Chair 1"))
+
+        const header = screen.getByLabelText("Select all sub-items") as HTMLInputElement
+        expect(header.checked).toBe(false)
+        expect(header.indeterminate).toBe(true)
+    })
+
+    test("clicking header when partial selects every row", () => {
+        renderBasket()
+        fireEvent.click(screen.getByLabelText("Select Chair 1"))
+
+        fireEvent.click(screen.getByLabelText("Select all sub-items"))
+
+        expect(screen.getByRole("button", { name: "Borrow Selected (2)" })).not.toBeNull()
+    })
+
+    test("clicking header when fully selected deselects every row", () => {
+        renderBasket()
+
+        fireEvent.click(screen.getByLabelText("Select all sub-items"))
+
+        expect(screen.getByRole("button", { name: "Borrow Selected (0)" }).hasAttribute("disabled")).toBe(true)
+    })
 })

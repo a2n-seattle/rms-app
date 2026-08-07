@@ -27,6 +27,8 @@ import { defineListHistoryFunction } from "./functions/list-history/resource"
 import { defineListBatchesFunction } from "./functions/list-batches/resource"
 import { defineGetBorrowGroupFunction } from "./functions/get-borrow-group/resource"
 import { defineExtendReservationFunction } from "./functions/extend-reservation/resource"
+import { defineUpdateItemFunction } from "./functions/update-item/resource"
+import { defineUpdateSubItemFunction } from "./functions/update-sub-item/resource"
 import { defineApiGateway } from "./api/resource"
 
 /**
@@ -75,6 +77,8 @@ const listHistoryFn = defineListHistoryFunction(functionsStack, tables)
 const listBatchesFn = defineListBatchesFunction(functionsStack, tables)
 const getBorrowGroupFn = defineGetBorrowGroupFunction(functionsStack, tables)
 const extendReservationFn = defineExtendReservationFunction(functionsStack, tables)
+const updateItemFn = defineUpdateItemFunction(functionsStack, tables)
+const updateSubItemFn = defineUpdateSubItemFunction(functionsStack, tables)
 defineSmsRouterFunction(functionsStack, tables)
 
 const apiStack = backend.createStack("ApiStack")
@@ -103,6 +107,8 @@ const api = defineApiGateway(apiStack, backend.auth.resources.userPool, {
     listBatches: listBatchesFn,
     getBorrowGroup: getBorrowGroupFn,
     extendReservation: extendReservationFn,
+    updateItem: updateItemFn,
+    updateSubItem: updateSubItemFn,
 })
 
 // `ampx generate outputs` only surfaces values added via backend.addOutput

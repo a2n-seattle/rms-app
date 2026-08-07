@@ -29,7 +29,7 @@ export default function TestLoginPage() {
         setError(null)
         try {
             await signIn({ username: email, password })
-            router.replace("/browse")
+            router.replace("/dashboard")
         } catch (err) {
             setError(err instanceof Error ? err.message : "Sign in failed")
         }

@@ -1,0 +1,57 @@
+{
+    "main": {
+        "00000000-0000-0000-0000-000000000001": {
+            "id": "00000000-0000-0000-0000-000000000001",
+            "description": "test description",
+            "items": [
+                "123",
+                "12345"
+            ],
+            "tags": [
+                "tag1"
+            ],
+            "owner": "test owner",
+            "location": "test location",
+            "batch": [],
+            "nameKey": "test name",
+            "name": "Test Name"
+        }
+    },
+    "items": {
+        "123": {
+            "id": "123",
+            "notes": "test note",
+            "borrower": "",
+            "history": [],
+            "schedule": [],
+            "borrowTime": 0,
+            "returnTime": 0,
+            "familyId": "00000000-0000-0000-0000-000000000001",
+            "name": "123"
+        },
+        "12345": {
+            "id": "12345",
+            "notes": "test note 2",
+            "borrower": "",
+            "history": [],
+            "schedule": [],
+            "borrowTime": 0,
+            "returnTime": 0,
+            "familyId": "00000000-0000-0000-0000-000000000001",
+            "name": "Test Name 2"
+        }
+    },
+    "batch": {},
+    "tags": {
+        "tag1": {
+            "id": "tag1",
+            "val": [
+                "00000000-0000-0000-0000-000000000001"
+            ]
+        }
+    },
+    "history": {},
+    "schedule": {},
+    "transactions": {},
+    "user": {}
+}
