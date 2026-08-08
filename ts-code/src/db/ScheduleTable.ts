@@ -188,7 +188,6 @@ export class ScheduleTable {
         return this.get(id)
             .then((entry: ScheduleSchema) => {
                 if (entry) {
-
                     const scheduleParams: DeleteCommandInput = {
                         TableName: SCHEDULE_TABLE,
                         Key: {
@@ -197,40 +196,68 @@ export class ScheduleTable {
                     }
 
                     return this.client.delete(scheduleParams)
-                        .then(() => entry.itemIds.reduce((prev: Promise<any>, itemId: string) => {
-                            const getItemsParams: GetCommandInput = {
-                                TableName: ITEMS_TABLE,
-                                Key: {
-                                    "id": itemId
-                                }
-                            }
-                            return prev
-                                .then(() => this.client.get(getItemsParams))
-                                .then((output: GetCommandOutput) => {
-                                    const item: ItemsSchema = output.Item as ItemsSchema
-                                    
-                                    if (item) {
-                                        const updateItemsParams: UpdateCommandInput = {
-                                            TableName: ITEMS_TABLE,
-                                            Key: {
-                                                "id": itemId
-                                            },
-                                            UpdateExpression: `REMOVE #key[${item.schedule.indexOf(id)}]`,
-                                            ExpressionAttributeNames: {
-                                                "#key": "schedule"
-                                            }
-                                        }
-                                        return this.client.update(updateItemsParams)
-                                    } else {
-                                        throw Error(`Unable to find itemId ${itemId}`)
-                                    }
-                                })
-                        }, Promise.resolve()))
+                        .then(() => this.removeItemReferences(id, entry.itemIds))
                         .then(() => entry.itemIds)
                 } else {
                     throw Error(`Schedule ${id} doesn't exist.`)
                 }
             })
+    }
+
+    /**
+     * Marks a reservation as consumed by a borrow (BorrowFromSchedule) -- removes this
+     * schedule's id from each of its items' schedule[] back-reference (same cleanup delete()
+     * does, so ListOverdueItems doesn't later treat this reservation's endTime as still
+     * relevant) but keeps the ScheduleTable row itself intact, since ItemsSchema.borrowGroupId
+     * continues to reference it afterward -- GetBorrowGroup looks it up directly by id instead
+     * of scanning ItemsTable (see GH-389).
+     */
+    public consume(
+        id: string
+    ): Promise<string[]> {
+        return this.get(id)
+            .then((entry: ScheduleSchema) => {
+                if (!entry) {
+                    throw Error(`Schedule ${id} doesn't exist.`)
+                }
+                return this.removeItemReferences(id, entry.itemIds).then(() => entry.itemIds)
+            })
+    }
+
+    /**
+     * Removes `id` from each of `itemIds`' schedule[] back-reference array. Shared by
+     * delete() (full removal) and consume() (schedule row itself survives).
+     */
+    private removeItemReferences(id: string, itemIds: string[]): Promise<void> {
+        return itemIds.reduce((prev: Promise<any>, itemId: string): Promise<any> => {
+            const getItemsParams: GetCommandInput = {
+                TableName: ITEMS_TABLE,
+                Key: {
+                    "id": itemId
+                }
+            }
+            return prev
+                .then(() => this.client.get(getItemsParams))
+                .then((output: GetCommandOutput) => {
+                    const item: ItemsSchema = output.Item as ItemsSchema
+
+                    if (item) {
+                        const updateItemsParams: UpdateCommandInput = {
+                            TableName: ITEMS_TABLE,
+                            Key: {
+                                "id": itemId
+                            },
+                            UpdateExpression: `REMOVE #key[${item.schedule.indexOf(id)}]`,
+                            ExpressionAttributeNames: {
+                                "#key": "schedule"
+                            }
+                        }
+                        return this.client.update(updateItemsParams)
+                    } else {
+                        throw Error(`Unable to find itemId ${itemId}`)
+                    }
+                })
+        }, Promise.resolve<any>(undefined)).then((): void => undefined)
     }
 
     /**

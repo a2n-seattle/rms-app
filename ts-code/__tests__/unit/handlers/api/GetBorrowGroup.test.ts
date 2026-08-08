@@ -6,6 +6,16 @@ import { LocalMetricsClient } from "../../../../__dev__/metrics/LocalMetricsClie
 
 test('will list borrow group items correctly when using handler', async () => {
     const dbClient: LocalDBClient = new LocalDBClient(DBSeed.TWO_NAMES_ONE_BATCH_BORROWED)
+    // GetBorrowGroup looks the group up via ScheduleTable.get(borrowGroupId) now, not a Scan
+    // (see GH-389) -- a real schedule row must exist for the lookup to find anything.
+    dbClient.getDB().schedule[TestConstants.RESERVATION_ID] = {
+        id: TestConstants.RESERVATION_ID,
+        borrower: TestConstants.BORROWER,
+        itemIds: [TestConstants.ITEM_ID],
+        startTime: 0,
+        endTime: 1,
+        notes: ""
+    }
     dbClient.getDB().items[TestConstants.ITEM_ID].borrowGroupId = TestConstants.RESERVATION_ID
     const metricsClient: LocalMetricsClient = new LocalMetricsClient()
 

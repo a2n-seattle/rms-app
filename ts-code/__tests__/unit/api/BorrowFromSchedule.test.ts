@@ -27,7 +27,10 @@ test('will borrow item correctly when schedule id exists', async () => {
     const db = dbClient.getDB()
     expect(db.items[TestConstants.ITEM_ID]).toMatchObject({ borrowGroupId: scheduleId })
     expect(db.items[TestConstants.ITEM_ID_2]).toMatchObject({ borrowGroupId: scheduleId })
-    expect(db.schedule).toEqual({})
+    // consume() (not delete()) is used here -- the schedule row survives unchanged so
+    // GetBorrowGroup can look it up directly by id later instead of scanning ItemsTable
+    // (see GH-389).
+    expect(db.schedule).toEqual((DBSeed.TWO_NAMES_ONE_BATCH_RESERVED as any).schedule)
     // Every borrowed item's history entry is also recorded on UserTable.history (see GH-384).
     expect(db.user[TestConstants.BORROWER].history).toEqual([
         `${TestTimestamps.BORROW_BATCH}-${TestConstants.ITEM_ID}`,

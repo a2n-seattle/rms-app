@@ -33,6 +33,7 @@ test('will borrow item correctly with handler when schedule id exists', async ()
     const db = dbClient.getDB()
     expect(db.items[TestConstants.ITEM_ID]).toMatchObject({ borrowGroupId: scheduleId })
     expect(db.items[TestConstants.ITEM_ID_2]).toMatchObject({ borrowGroupId: scheduleId })
-    expect(db.schedule).toEqual({})
+    // consume() (not delete()) is used here -- the schedule row survives unchanged (GH-389).
+    expect(db.schedule).toEqual((DBSeed.TWO_NAMES_ONE_BATCH_RESERVED as any).schedule)
     metricsClient.assureState(0)
 })
