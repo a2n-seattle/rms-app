@@ -45,8 +45,9 @@ test("create, edit, and delete an item and its sub-items", async ({ page }) => {
     // its status) -- lands on the new sub-item's own detail page
     // (/items/{familyId}/{subItemId}), since AddItem's returned id is the sub-item id, not
     // the family id.
+    const createItemUrl = page.url()
     await Promise.all([
-        page.waitForResponse((response) => response.request().method() === "POST"),
+        page.waitForResponse((response) => response.request().method() === "POST" && response.url() === createItemUrl),
         page.getByRole("button", { name: "Create item" }).click(),
     ])
     await expect(page).toHaveURL(/\/items\/[^/]+\/[^/]+/)
@@ -64,8 +65,9 @@ test("create, edit, and delete an item and its sub-items", async ({ page }) => {
         await page.getByRole("button", { name: "Add sub-item" }).click()
         const addSubItemDialog = page.getByRole("dialog", { name: "Add sub-item" })
         await expect(addSubItemDialog).toBeVisible()
+        const addSubItemUrl = page.url()
         await Promise.all([
-            page.waitForResponse((response) => response.request().method() === "POST"),
+            page.waitForResponse((response) => response.request().method() === "POST" && response.url() === addSubItemUrl),
             addSubItemDialog.getByRole("button", { name: "Add sub-item" }).click(),
         ])
         await expect(page.getByText(`${familyName} 2`)).toBeVisible({ timeout: 15000 })
@@ -76,8 +78,9 @@ test("create, edit, and delete an item and its sub-items", async ({ page }) => {
         await page.getByRole("button", { name: "Edit item" }).click()
         await expect(page.getByRole("dialog", { name: "Edit item" })).toBeVisible()
         await page.locator('input[name="location"]').fill("Updated Location")
+        const editItemUrl = page.url()
         await Promise.all([
-            page.waitForResponse((response) => response.request().method() === "POST"),
+            page.waitForResponse((response) => response.request().method() === "POST" && response.url() === editItemUrl),
             page.getByRole("button", { name: "Save" }).click(),
         ])
         await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 30000 })
@@ -89,8 +92,9 @@ test("create, edit, and delete an item and its sub-items", async ({ page }) => {
         await secondRowEdit.click()
         await expect(page.getByRole("dialog", { name: "Edit sub-item" })).toBeVisible()
         await page.locator('input[name="name"]').fill("Renamed Sub-item")
+        const editSubItemUrl = page.url()
         await Promise.all([
-            page.waitForResponse((response) => response.request().method() === "POST"),
+            page.waitForResponse((response) => response.request().method() === "POST" && response.url() === editSubItemUrl),
             page.getByRole("button", { name: "Save" }).click(),
         ])
         await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 30000 })
@@ -100,8 +104,9 @@ test("create, edit, and delete an item and its sub-items", async ({ page }) => {
         const firstRowEdit = page.getByRole("button", { name: `Edit ${familyName} 1` })
         await firstRowEdit.click()
         await page.getByRole("button", { name: "Delete sub-item" }).click()
+        const deleteSubItemUrl = page.url()
         await Promise.all([
-            page.waitForResponse((response) => response.request().method() === "POST"),
+            page.waitForResponse((response) => response.request().method() === "POST" && response.url() === deleteSubItemUrl),
             page.getByRole("button", { name: "Confirm delete" }).click(),
         ])
         await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 15000 })
@@ -112,8 +117,9 @@ test("create, edit, and delete an item and its sub-items", async ({ page }) => {
         await page.getByRole("button", { name: "Edit item" }).click()
         await page.getByRole("button", { name: "Delete item" }).click()
         await expect(page.getByText(/This will delete 1 sub-item/)).toBeVisible()
+        const deleteItemUrl = page.url()
         await Promise.all([
-            page.waitForResponse((response) => response.request().method() === "POST"),
+            page.waitForResponse((response) => response.request().method() === "POST" && response.url() === deleteItemUrl),
             page.getByRole("button", { name: "Confirm delete" }).click(),
         ])
         await expect(page).toHaveURL(/\/browse/, { timeout: 15000 })
