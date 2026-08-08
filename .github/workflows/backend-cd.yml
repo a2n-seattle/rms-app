@@ -8,9 +8,20 @@ on:
   # provisioned backend environment today (see root CLAUDE.md's
   # "Branching and environment promotion" section). beta/production get
   # their own deploy workflows once those environments are provisioned.
+  #
+  # Includes ts-code/** alongside amplify/** -- this job's own "build:gen2"
+  # step (below) compiles ts-code and fans it into every Lambda's deployed
+  # build/ directory, so a ts-code-only change (the common case: touching
+  # src/api/*.ts, src/db/*.ts, src/handlers/**/*.ts) changes what actually
+  # runs in production just as much as an amplify/** change does. Limiting
+  # this trigger to amplify/** alone let backend logic changes merge to
+  # alpha with green CI yet never actually deploy (confirmed directly: GH-384's
+  # Scan-avoidance fix sat live-but-undeployed for over 24 hours, and the
+  # real DynamoDB throughput pressure it was meant to fix never went away,
+  # since the old Lambda code was still the one actually running).
   push:
     branches: [ alpha ]
-    paths: [ 'amplify/**' ]
+    paths: [ 'amplify/**', 'ts-code/**' ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
