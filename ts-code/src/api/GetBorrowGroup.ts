@@ -1,28 +1,35 @@
-import { ITEMS_TABLE, ItemsSchema } from "../db/Schemas"
+import { ItemsSchema } from "../db/Schemas"
+import { ItemTable } from "../db/ItemTable"
+import { ScheduleTable } from "../db/ScheduleTable"
 import { DBClient } from "../injection/db/DBClient"
 import { MetricsClient } from "../injection/metrics/MetricsClient"
 import { emitAPIMetrics } from "../metrics/MetricsHelper"
-import { ScanCommandInput, ScanCommandOutput } from "@aws-sdk/lib-dynamodb"
 
 /**
  * Looks up every currently-borrowed item sharing a borrowGroupId -- i.e.
  * everything borrowed together via a single BorrowFromSchedule call -- so
  * the batched return flow can pull up a confirmation page listing the
- * whole group instead of just one item. No GSI on borrowGroupId today, so
- * this is a Scan+FilterExpression, same shape/caveats as the other list
- * APIs in this file's siblings (FilterExpression applies after any
- * DynamoDB-side Limit; a plain unbounded Scan is used here since a borrow
- * group is expected to be small - the same items selected together in one
- * basket borrow - not a table-wide listing).
+ * whole group instead of just one item.
+ *
+ * borrowGroupId is the id of the ScheduleTable reservation that was
+ * consumed to create the borrow (ScheduleTable.consume, called by
+ * BorrowFromSchedule instead of delete specifically so this row survives
+ * to be looked up here) -- read its itemIds directly rather than scanning
+ * ItemsTable (see GH-389). An item that's since been individually
+ * returned has its borrowGroupId cleared (ItemTable.changeBorrower's
+ * "return" action), so fetched items are still filtered on borrowGroupId
+ * to correctly support partial returns.
  */
 export class GetBorrowGroup {
     public static NAME: string = "get borrow group"
 
-    private readonly client: DBClient
+    private readonly itemTable: ItemTable
+    private readonly scheduleTable: ScheduleTable
     private readonly metrics?: MetricsClient
 
     public constructor(client: DBClient, metrics?: MetricsClient) {
-        this.client = client
+        this.itemTable = new ItemTable(client)
+        this.scheduleTable = new ScheduleTable(client)
         this.metrics = metrics
     }
 
@@ -30,23 +37,12 @@ export class GetBorrowGroup {
         return emitAPIMetrics(
             () => {
                 return this.performAllFVAs(input)
-                    .then(() => {
-                        const params: ScanCommandInput = {
-                            TableName: ITEMS_TABLE,
-                            FilterExpression: "#borrowGroupId = :borrowGroupId",
-                            ExpressionAttributeNames: {
-                                "#borrowGroupId": "borrowGroupId"
-                            },
-                            ExpressionAttributeValues: {
-                                ":borrowGroupId": input.borrowGroupId
-                            }
-                        }
-
-                        return this.client.scan(params)
-                            .then((output: ScanCommandOutput) => ({
-                                items: (output.Items ?? []) as ItemsSchema[]
-                            }))
-                    })
+                    .then(() => this.scheduleTable.get(input.borrowGroupId))
+                    .then((schedule) => Promise.all((schedule?.itemIds ?? []).map((id: string) => this.itemTable.get(id))))
+                    .then((items) => ({
+                        items: items.filter((item): item is ItemsSchema =>
+                            item !== undefined && item.borrowGroupId === input.borrowGroupId)
+                    }))
             },
             GetBorrowGroup.NAME, this.metrics
         )

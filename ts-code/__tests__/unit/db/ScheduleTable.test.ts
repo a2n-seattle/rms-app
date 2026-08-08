@@ -76,6 +76,27 @@ test('listByBorrower applies an optional predicate while still looping until `li
     })
 })
 
+test('consume() removes the schedule id from each item\'s schedule[] but keeps the schedule row itself (GH-389)', async () => {
+    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.TWO_NAMES_ONE_BATCH_RESERVED)
+    const table: ScheduleTable = new ScheduleTable(dbClient)
+
+    await expect(table.consume(TestConstants.RESERVATION_ID)).resolves.toEqual([TestConstants.ITEM_ID, TestConstants.ITEM_ID_2])
+
+    // Unlike delete(), the row is still retrievable afterward -- GetBorrowGroup depends on this.
+    await expect(table.get(TestConstants.RESERVATION_ID)).resolves.toEqual(RESERVED_SCHEDULE)
+    expect(dbClient.getDB().items[TestConstants.ITEM_ID].schedule).not.toContain(TestConstants.RESERVATION_ID)
+    expect(dbClient.getDB().items[TestConstants.ITEM_ID_2].schedule).not.toContain(TestConstants.RESERVATION_ID)
+})
+
+test('consume() fails when the reservation does not exist', async () => {
+    const dbClient: LocalDBClient = new LocalDBClient(DBSeed.EMPTY)
+    const table: ScheduleTable = new ScheduleTable(dbClient)
+
+    await expect(table.consume(TestConstants.RESERVATION_ID)).rejects.toThrow(
+        `Schedule ${TestConstants.RESERVATION_ID} doesn't exist.`
+    )
+})
+
 test('create() ignores a stale schedule id left on an item after its Schedule row was deleted out-of-band', async () => {
     // Simulates deleting a row directly from the Schedule table without
     // going through ScheduleTable.delete's cleanup of the item's

@@ -42,8 +42,8 @@ export class BorrowFromSchedule {
                         // batched return can look up everything borrowed
                         // together (see ItemTable.changeBorrower). Must wait
                         // for every item to be marked borrowed before
-                        // deleting the schedule below -- previously this map
-                        // wasn't awaited, so the schedule could be deleted
+                        // consuming the schedule below -- previously this map
+                        // wasn't awaited, so the schedule could be consumed
                         // (or the request could resolve as "successful")
                         // before some items were actually updated.
                         return Promise.all(schedule.itemIds.map((id: string) =>
@@ -53,7 +53,10 @@ export class BorrowFromSchedule {
                                     this.userTable.addHistory(schedule.borrower, historyId)
                                 ]))
                         )).then(() => this.userTable.removeReserved(schedule.borrower, input.scheduleId))
-                    }).then(() => this.scheduleTable.delete(input.scheduleId))
+                    // consume(), not delete() -- the schedule row survives so GetBorrowGroup
+                    // can look up this borrow group's itemIds directly by id later, rather
+                    // than scanning ItemsTable (see GH-389).
+                    }).then(() => this.scheduleTable.consume(input.scheduleId))
                     .then(() => {
                         return `Successfully borrowed items from schedule '${input.scheduleId}'.`
                     });
