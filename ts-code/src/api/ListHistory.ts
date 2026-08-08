@@ -11,7 +11,10 @@ const DEFAULT_PAGE_SIZE = 25
 /**
  * Lists borrow/return history entries for a given borrower, sourced from UserTable.history
  * (a denormalized index maintained by BorrowItem/ReturnItem/BorrowFromSchedule via
- * ItemTable.changeBorrower) rather than a full HistoryTable Scan -- see GH-384.
+ * ItemTable.changeBorrower) rather than a full HistoryTable Scan -- see GH-384. Read
+ * newest-first (UserTable.history is append-only, so the array itself is oldest-first) so a
+ * borrower with more history than one page holds still sees their most recent activity on
+ * the default (no pageToken) page -- see GH-370.
  */
 export class ListHistory {
     public static NAME: string = "list history"
@@ -32,7 +35,7 @@ export class ListHistory {
                 return this.performAllFVAs(input)
                     .then(() => this.userTable.get(input.borrower))
                     .then((user) => getUntilLimit<HistorySchema>(
-                        user?.history ?? [],
+                        [...(user?.history ?? [])].reverse(),
                         (id) => this.historyTable.get(id),
                         input.limit ?? DEFAULT_PAGE_SIZE,
                         input.pageToken

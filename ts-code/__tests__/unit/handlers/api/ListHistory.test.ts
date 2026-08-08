@@ -39,7 +39,7 @@ test('will list history entries correctly when using handler', async () => {
     ).resolves.toEqual({
         statusCode: 200,
         body: JSON.stringify({
-            items: [HISTORY_ENTRY_1, HISTORY_ENTRY_2],
+            items: [HISTORY_ENTRY_2, HISTORY_ENTRY_1],
             nextPageToken: undefined
         })
     })

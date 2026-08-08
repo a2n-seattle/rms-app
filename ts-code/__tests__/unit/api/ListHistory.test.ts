@@ -23,12 +23,14 @@ const HISTORY_ENTRY_2: HistorySchema = {
     timestamp: 1000000000010
 }
 
-test('will list history entries for a borrower when they exist', async () => {
+test('will list history entries for a borrower newest-first when they exist', async () => {
     const dbClient: LocalDBClient = new LocalDBClient(DBSeed.TWO_NAMES_ONE_BATCH_BORROWED)
     const api: ListHistory = new ListHistory(dbClient)
 
+    // Seed's user.history is ["...-123", "...-12345"] (insertion/oldest-first order) --
+    // ListHistory reverses it, so entry 2 (the later append) comes back first (GH-370).
     await expect(api.execute({ borrower: TestConstants.BORROWER })).resolves.toEqual({
-        items: [HISTORY_ENTRY_1, HISTORY_ENTRY_2],
+        items: [HISTORY_ENTRY_2, HISTORY_ENTRY_1],
         nextPageToken: undefined
     })
 })
@@ -50,7 +52,7 @@ test('will fail when borrower is missing', async () => {
     await expect(api.execute({})).rejects.toThrow("Missing required field 'borrower'")
 })
 
-test('will return entries in order across a paginated cursor, driven by UserTable.history', async () => {
+test('will return entries newest-first across a paginated cursor, driven by UserTable.history', async () => {
     const seed: any = {
         main: {}, items: {}, batch: {}, tags: {},
         history: {
@@ -58,17 +60,39 @@ test('will return entries in order across a paginated cursor, driven by UserTabl
             "b": { id: "b", name: "x", itemId: "x", borrower: TestConstants.BORROWER, action: "return", notes: "", timestamp: 2 }
         },
         schedule: {}, transactions: {},
+        // "a" was recorded before "b" (insertion/oldest-first order, matching UserTable.addHistory's
+        // list_append) -- ListHistory should reverse this so "b" (the newer entry) comes first.
         user: { [TestConstants.BORROWER]: { id: TestConstants.BORROWER, owned: [], reserved: [], borrowed: [], history: ["a", "b"] } }
     }
     const dbClient: LocalDBClient = new LocalDBClient(seed)
     const api: ListHistory = new ListHistory(dbClient)
 
     const page1 = await api.execute({ borrower: TestConstants.BORROWER, limit: 1 })
-    expect(page1.items).toEqual([seed.history["a"]])
+    expect(page1.items).toEqual([seed.history["b"]])
     expect(page1.nextPageToken).toBeDefined()
 
     await expect(api.execute({ borrower: TestConstants.BORROWER, limit: 1, pageToken: page1.nextPageToken })).resolves.toEqual({
-        items: [seed.history["b"]],
+        items: [seed.history["a"]],
+        nextPageToken: undefined
+    })
+})
+
+test('will surface the most recently recorded entry first even when more history exists than fits in one page (regression, GH-370)', async () => {
+    const seed: any = {
+        main: {}, items: {}, batch: {}, tags: {},
+        history: {
+            "oldest": { id: "oldest", name: "x", itemId: "x", borrower: TestConstants.BORROWER, action: "borrow", notes: "", timestamp: 1 },
+            "middle": { id: "middle", name: "x", itemId: "x", borrower: TestConstants.BORROWER, action: "return", notes: "", timestamp: 2 },
+            "newest": { id: "newest", name: "x", itemId: "x", borrower: TestConstants.BORROWER, action: "borrow", notes: "", timestamp: 3 }
+        },
+        schedule: {}, transactions: {},
+        user: { [TestConstants.BORROWER]: { id: TestConstants.BORROWER, owned: [], reserved: [], borrowed: [], history: ["oldest", "middle", "newest"] } }
+    }
+    const dbClient: LocalDBClient = new LocalDBClient(seed)
+    const api: ListHistory = new ListHistory(dbClient)
+
+    await expect(api.execute({ borrower: TestConstants.BORROWER, limit: 3 })).resolves.toEqual({
+        items: [seed.history["newest"], seed.history["middle"], seed.history["oldest"]],
         nextPageToken: undefined
     })
 })
