@@ -5,11 +5,16 @@
 # deliberate "this is verified, ship it further" decision, not something
 # that should fire on every merge to alpha.
 #
-# This workflow only moves code (fast-forwards the target branch to the
-# source branch's HEAD). It does not deploy anything itself -- pushing to
-# the target branch is what triggers that branch's own CD workflow (e.g.
-# backend-cd.yml for alpha). beta and production don't have CD workflows
-# yet, since neither environment is provisioned -- see the guard below.
+# beta and master are CANONICAL branches only -- nothing deploys directly
+# from them. This job fast-forwards the canonical branch, then fans out to
+# every real city branch registered at that stage in
+# amplify/config/cities.json (e.g. beta -> seattle), which is what actually
+# triggers a deploy (city-cd.yml, pushed to on any registered city branch).
+# Fanning out to a city whose AWS resources (tables/Cognito/Amplify branch)
+# haven't been provisioned yet is safe: city-cd.yml's deploy step will just
+# fail against nonexistent infra, same as pushing to any other unprovisioned
+# environment -- see the provisioning runbook in CLAUDE.md before relying on
+# a real promotion.
 name: Promote environment branch
 
 on:
@@ -34,25 +39,17 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Guard against promoting to an unprovisioned environment
-        if: github.event.inputs.target == 'beta'
-        run: |
-          echo "::error::The beta environment isn't provisioned yet (no Amplify app, tables, etc). Nothing to promote into -- see root CLAUDE.md's 'Branching and environment promotion' section for what's needed before this target can be used."
-          exit 1
-
       - name: Determine source branch for this target
         id: source
         run: |
           case "${{ github.event.inputs.target }}" in
             beta) echo "branch=alpha" >> "$GITHUB_OUTPUT" ;;
-            master) echo "branch=alpha" >> "$GITHUB_OUTPUT" ;;
+            master) echo "branch=beta" >> "$GITHUB_OUTPUT" ;;
           esac
-          # master promotes directly from alpha for now, since beta has no
-          # environment to verify against yet. Once beta is provisioned,
-          # change master's source to beta here so promotion always goes
-          # through the full alpha -> beta -> master chain.
+          # master promotes from beta, keeping the full alpha -> beta ->
+          # master chain intact per root CLAUDE.md.
 
-      - name: Fast-forward target branch
+      - name: Fast-forward canonical target branch
         env:
           SOURCE_BRANCH: ${{ steps.source.outputs.branch }}
           TARGET_BRANCH: ${{ github.event.inputs.target }}
@@ -67,3 +64,21 @@ jobs:
 
           git push origin "origin/$SOURCE_BRANCH:refs/heads/$TARGET_BRANCH"
           echo "Promoted $SOURCE_BRANCH -> $TARGET_BRANCH ($(git rev-parse --short origin/$SOURCE_BRANCH))"
+
+      - name: Fan out to cities registered at this stage
+        env:
+          TARGET_BRANCH: ${{ github.event.inputs.target }}
+        run: |
+          set -euo pipefail
+          cities=$(jq -r --arg stage "$TARGET_BRANCH" '.cities[] | select(.stage == $stage) | .branch' amplify/config/cities.json)
+
+          if [ -z "$cities" ]; then
+            echo "No cities registered at stage '$TARGET_BRANCH' in amplify/config/cities.json -- nothing to fan out to."
+            exit 0
+          fi
+
+          git fetch origin "$TARGET_BRANCH"
+          while IFS= read -r city_branch; do
+            git push origin "origin/$TARGET_BRANCH:refs/heads/$city_branch"
+            echo "Fanned out $TARGET_BRANCH -> $city_branch ($(git rev-parse --short "origin/$TARGET_BRANCH"))"
+          done <<< "$cities"

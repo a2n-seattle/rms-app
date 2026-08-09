@@ -1,0 +1,71 @@
+# Deploys a registered city's real environment on push to its own branch.
+# Shared by every city in amplify/config/cities.json rather than one
+# workflow file per city -- parameterized by github.ref_name so the same
+# job deploys whichever city branch triggered it.
+#
+# promote.yml's fan-out step is what actually pushes to these branches
+# (see its own comment) -- fast-forwarding beta/master alone deploys
+# nothing, since those are canonical, non-deployed waypoints.
+#
+# GitHub Actions requires an explicit branch list for push triggers, so
+# registering a new city in amplify/config/cities.json also means adding
+# its branch name here.
+name: City CD
+
+on:
+  push:
+    branches: [ seattle ]
+    paths: [ 'amplify/**', 'ts-code/**' ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+concurrency:
+  group: city-cd-${{ github.ref_name }}
+
+jobs:
+  amplify-deploy:
+    runs-on: ubuntu-latest
+    environment: AmplifyCD
+
+    strategy:
+      matrix:
+        node-version: [22.x]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: use node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: install, build and unit test
+        run: |
+          npm install
+          npm run build
+          npm run build:gen2
+          npm run test:unit
+
+      - name: deploy
+        run: |
+          npx ampx pipeline-deploy --branch "$CITY_BRANCH" --app-id "$GEN2_AMPLIFY_APP_ID"
+        env:
+          CITY_BRANCH: ${{ github.ref_name }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          GEN2_AMPLIFY_APP_ID: ${{ secrets.GEN2_AMPLIFY_APP_ID }}
+
+      - name: integration test
+        run: |
+          npm run test:integ
+
+      - name: Report Status
+        uses: ravsamhq/notify-slack-action@v2
+        if: always()
+        with:
+          status: ${{ job.status }}
+          notify_when: 'failure'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
