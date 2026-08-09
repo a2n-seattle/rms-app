@@ -18,6 +18,8 @@ interface ResourceBasketProps {
     familyName: string
     items: ItemsSchema[]
     isRoom?: boolean
+    /** Resolved Cognito display name per item id, keyed by ItemsSchema.id (GH-358). */
+    borrowerNames?: Record<string, string>
     borrowAction: (prevState: ActionState, formData: FormData) => Promise<ActionState>
     reserveAction: (prevState: ActionState, formData: FormData) => Promise<ActionState>
     updateSubItemAction: (prevState: ActionState, formData: FormData) => Promise<ActionState>
@@ -29,6 +31,7 @@ export function ResourceBasket({
     familyName,
     items,
     isRoom,
+    borrowerNames,
     borrowAction,
     reserveAction,
     updateSubItemAction,
@@ -114,7 +117,7 @@ export function ResourceBasket({
                                     {item.name || item.id}
                                 </a>
                             </td>
-                            {!isRoom && <td>{item.borrower || "(available)"}</td>}
+                            {!isRoom && <td>{(item.borrower && (borrowerNames?.[item.id] ?? item.borrower)) || "(available)"}</td>}
                             <td>{item.notes || "—"}</td>
                             <td>
                                 <button

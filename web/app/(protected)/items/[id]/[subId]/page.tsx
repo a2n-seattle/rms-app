@@ -23,8 +23,10 @@ export default async function SubItemDetailPage({ params }: { params: Promise<{ 
     }
 
     const { id, subId } = await params
-    const { main, items } = await getItem(session.idToken, { key: subId })
+    const { main, items, ownerDisplayName, borrowerDisplayNames } = await getItem(session.idToken, { key: subId })
     const instance = items.find((i) => i.id === subId)
+    const instanceIndex = items.findIndex((i) => i.id === subId)
+    const instanceBorrowerDisplayName = instanceIndex >= 0 ? borrowerDisplayNames?.[instanceIndex] : undefined
 
     async function borrowAction(_prevState: ActionState, _formData: FormData): Promise<ActionState> {
         "use server"
@@ -125,7 +127,7 @@ export default async function SubItemDetailPage({ params }: { params: Promise<{ 
             <Card className={styles.metaCard}>
                 <div className={styles.metaRow}>
                     <span className={styles.metaLabel}>Owner</span>
-                    <span>{main.owner}</span>
+                    <span>{ownerDisplayName ?? main.owner}</span>
                 </div>
                 <div className={styles.metaRow}>
                     <span className={styles.metaLabel}>Location</span>
@@ -135,7 +137,7 @@ export default async function SubItemDetailPage({ params }: { params: Promise<{ 
                     <>
                         <div className={styles.metaRow}>
                             <span className={styles.metaLabel}>Borrower</span>
-                            <span>{instance.borrower || "(available)"}</span>
+                            <span>{(instance.borrower && (instanceBorrowerDisplayName ?? instance.borrower)) || "(available)"}</span>
                         </div>
                         <div className={styles.borrowRow}>
                             {instance.borrower ? (
