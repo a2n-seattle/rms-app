@@ -208,6 +208,8 @@ export interface GetBatchDetailedEntry {
     name: string
     owner: string
     borrower: string
+    ownerDisplayName?: string
+    borrowerDisplayName?: string
 }
 
 export type GetBatchResult = GetBatchDetailedEntry[]

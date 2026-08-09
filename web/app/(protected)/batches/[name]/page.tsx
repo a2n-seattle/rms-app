@@ -57,8 +57,8 @@ export default async function BatchDetailPage({ params }: { params: Promise<{ na
                                     </a>
                                 </td>
                                 <td>{entry.name}</td>
-                                <td>{entry.owner}</td>
-                                <td>{entry.borrower || "(available)"}</td>
+                                <td>{entry.ownerDisplayName ?? entry.owner}</td>
+                                <td>{(entry.borrower && (entry.borrowerDisplayName ?? entry.borrower)) || "(available)"}</td>
                             </tr>
                         ))}
                     </tbody>

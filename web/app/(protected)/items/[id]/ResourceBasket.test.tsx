@@ -91,6 +91,27 @@ test("Add selected to cart adds every selected, available sub-item", () => {
     expect(screen.queryByText(/skipped/)).toBeNull()
 })
 
+test("shows the resolved display name for a borrowed item instead of the raw sub (GH-358)", () => {
+    const borrowedItem: ItemsSchema = { ...ITEM_2, borrower: "cognito-sub-123" }
+    renderBasket({ items: [ITEM_1, borrowedItem], borrowerNames: { "chair-2": "Jane Doe" } })
+
+    expect(screen.getByText("Jane Doe")).not.toBeNull()
+    expect(screen.queryByText("cognito-sub-123")).toBeNull()
+})
+
+test("falls back to the raw sub when no resolved display name is available", () => {
+    const borrowedItem: ItemsSchema = { ...ITEM_2, borrower: "cognito-sub-123" }
+    renderBasket({ items: [ITEM_1, borrowedItem] })
+
+    expect(screen.getByText("cognito-sub-123")).not.toBeNull()
+})
+
+test("still shows (available) for an unborrowed item even with borrowerNames provided", () => {
+    renderBasket({ borrowerNames: { "chair-1": "Someone", "chair-2": "Someone Else" } })
+
+    expect(screen.getAllByText("(available)")).toHaveLength(2)
+})
+
 test("Add selected to cart skips already-borrowed items and flags the count", () => {
     let cartEntries: ReturnType<typeof useCart>["entries"] = []
     const borrowedItem: ItemsSchema = { ...ITEM_2, borrower: "someone-else" }

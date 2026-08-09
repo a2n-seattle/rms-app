@@ -22,7 +22,12 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
     }
 
     const { id } = await params
-    const { main, items } = await getItem(session.idToken, { key: id })
+    const { main, items, ownerDisplayName, borrowerDisplayNames } = await getItem(session.idToken, { key: id })
+    const borrowerNames: Record<string, string> = Object.fromEntries(
+        items
+            .map((item, i) => [item.id, borrowerDisplayNames?.[i]] as const)
+            .filter((entry): entry is [string, string] => entry[1] !== undefined)
+    )
 
     // GetItem resolves `key` against either a sub-item id or a family id;
     // `main.id` is always the resolved family's id either way. If `id`
@@ -190,7 +195,7 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
             <Card className={styles.metaCard}>
                 <div className={styles.metaRow}>
                     <span className={styles.metaLabel}>Owner</span>
-                    <span>{main.owner}</span>
+                    <span>{ownerDisplayName ?? main.owner}</span>
                 </div>
                 <div className={styles.metaRow}>
                     <span className={styles.metaLabel}>Location</span>
@@ -203,6 +208,7 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
                 familyName={main.name}
                 items={items}
                 isRoom={main.type === "room"}
+                borrowerNames={borrowerNames}
                 borrowAction={borrowAction}
                 reserveAction={reserveAction}
                 updateSubItemAction={updateSubItemAction}
