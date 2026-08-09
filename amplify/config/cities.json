@@ -1,0 +1,11 @@
+{
+  "cities": [
+    {
+      "name": "seattle",
+      "stage": "beta",
+      "branch": "seattle",
+      "tableSuffix": "seattle",
+      "promotedAt": null
+    }
+  ]
+}
