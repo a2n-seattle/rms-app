@@ -1,27 +1,31 @@
-# Workflow to push to Amplify on commit
-name: Backend CD
+# Workflow to push to Amplify on commit -- also the sole trigger for Amplify
+# Hosting's frontend build (see the "trigger Amplify Hosting build" step
+# below), since Hosting's own auto-build-on-push is disabled for this
+# branch (GH-393). This is deliberate: Hosting's build (ampx generate
+# outputs) and this job's CDK deploy (ampx pipeline-deploy) used to fire
+# independently and simultaneously on every amplify/**-touching push,
+# racing for the same branch deployment state. When Hosting's build lost
+# that race it failed outright with [DeploymentInProgressError] -- twice in
+# a row for real merges (2026-08-08/09), leaving the live site serving a
+# day-old frontend bundle against an increasingly different backend until
+# the mismatch crashed the SSR compute Lambda on real /dashboard requests.
+# Collapsing to one trigger path (this job always runs any backend deploy
+# to completion first, then starts the Hosting build as its own last step)
+# makes that race structurally impossible instead of relying on someone
+# noticing a live crash and manually running
+# `aws amplify start-job --job-type RELEASE`.
+name: Backend + Hosting CD
 
 # Controls when the action will run.
 on:
-  # Triggers the workflow on push events but only for the alpha branch --
-  # alpha is this repo's active-development merge target and has the only
-  # provisioned backend environment today (see root CLAUDE.md's
-  # "Branching and environment promotion" section). beta/production get
-  # their own deploy workflows once those environments are provisioned.
-  #
-  # Includes ts-code/** alongside amplify/** -- this job's own "build:gen2"
-  # step (below) compiles ts-code and fans it into every Lambda's deployed
-  # build/ directory, so a ts-code-only change (the common case: touching
-  # src/api/*.ts, src/db/*.ts, src/handlers/**/*.ts) changes what actually
-  # runs in production just as much as an amplify/** change does. Limiting
-  # this trigger to amplify/** alone let backend logic changes merge to
-  # alpha with green CI yet never actually deploy (confirmed directly: GH-384's
-  # Scan-avoidance fix sat live-but-undeployed for over 24 hours, and the
-  # real DynamoDB throughput pressure it was meant to fix never went away,
-  # since the old Lambda code was still the one actually running).
+  # Triggers on every push to alpha, not just amplify/**/ts-code/** --
+  # Hosting's own auto-build-on-push is disabled (GH-393), so this job is
+  # now the only thing that ever triggers an Amplify Hosting build,
+  # including for web/-only changes. The `changes` job below decides
+  # whether the backend (CDK deploy) steps actually need to run; the
+  # Hosting-build step always runs regardless.
   push:
     branches: [ alpha ]
-    paths: [ 'amplify/**', 'ts-code/**' ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -29,7 +33,26 @@ on:
 concurrency: AmplifyCD
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      # workflow_dispatch has no push diff to filter on -- treat it as
+      # always touching the backend, preserving today's manual-trigger
+      # behavior of always deploying.
+      backend: ${{ github.event_name != 'push' || steps.filter.outputs.backend }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        if: github.event_name == 'push'
+        with:
+          filters: |
+            backend:
+              - 'amplify/**'
+              - 'ts-code/**'
+
   amplify-deploy:
+    needs: changes
     runs-on: ubuntu-latest
     environment: AmplifyCD
 
@@ -47,6 +70,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: install, build and unit test
+        if: needs.changes.outputs.backend == 'true'
         run: |
           npm install
           npm run build
@@ -54,6 +78,7 @@ jobs:
           npm run test:unit
 
       - name: deploy
+        if: needs.changes.outputs.backend == 'true'
         run: |
           npx ampx pipeline-deploy --branch alpha --app-id "$GEN2_AMPLIFY_APP_ID"
         env:
@@ -63,8 +88,45 @@ jobs:
           GEN2_AMPLIFY_APP_ID: ${{ secrets.GEN2_AMPLIFY_APP_ID }}
 
       - name: integration test
+        if: needs.changes.outputs.backend == 'true'
         run: |
           npm run test:integ
+
+      # From here on, unconditional -- runs whether or not the backend
+      # changed, and (for a backend change) only after the deploy step
+      # above has fully completed, so ampx generate outputs never races a
+      # live CDK deploy (GH-393).
+      - name: trigger Amplify Hosting build
+        id: hosting-build
+        run: |
+          JOB_ID=$(aws amplify start-job --app-id "$GEN2_AMPLIFY_APP_ID" --branch-name alpha --job-type RELEASE --query 'jobSummary.jobId' --output text)
+          echo "job_id=$JOB_ID" >> "$GITHUB_OUTPUT"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          GEN2_AMPLIFY_APP_ID: ${{ secrets.GEN2_AMPLIFY_APP_ID }}
+
+      - name: wait for Amplify Hosting build (retry once on failure)
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          GEN2_AMPLIFY_APP_ID: ${{ secrets.GEN2_AMPLIFY_APP_ID }}
+        run: |
+          wait_for_job() {
+            for i in $(seq 1 40); do
+              JOB_STATUS=$(aws amplify get-job --app-id "$GEN2_AMPLIFY_APP_ID" --branch-name alpha --job-id "$1" --query 'job.summary.status' --output text)
+              [ "$JOB_STATUS" = "SUCCEED" ] && return 0
+              { [ "$JOB_STATUS" = "FAILED" ] || [ "$JOB_STATUS" = "CANCELLED" ]; } && return 1
+              sleep 15
+            done
+            return 1
+          }
+          if wait_for_job "${{ steps.hosting-build.outputs.job_id }}"; then exit 0; fi
+          echo "Hosting build failed or timed out -- retrying once"
+          RETRY_JOB_ID=$(aws amplify start-job --app-id "$GEN2_AMPLIFY_APP_ID" --branch-name alpha --job-type RETRY --job-id "${{ steps.hosting-build.outputs.job_id }}" --query 'jobSummary.jobId' --output text)
+          wait_for_job "$RETRY_JOB_ID" || { echo "Hosting build retry also failed"; exit 1; }
 
       - name: Report Status
         uses: ravsamhq/notify-slack-action@v2
