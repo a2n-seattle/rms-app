@@ -1,7 +1,6 @@
 import { getSession } from "@/lib/session"
 import { getBatch } from "@/lib/api/getBatch"
 import { deleteBatch } from "@/lib/api/deleteBatch"
-import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { ActionState, runAction } from "@/lib/actionState"
 import { Card } from "@/components/ui/Card"
@@ -27,7 +26,6 @@ export default async function BatchDetailPage({ params }: { params: Promise<{ na
             }
             const batchName = formData.get("name") as string
             await deleteBatch(session.idToken, { name: batchName })
-            revalidatePath("/batches")
             redirect("/batches")
         })
     }

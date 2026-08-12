@@ -1,10 +1,11 @@
 "use client"
 
-import { useActionState, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { Modal } from "@/components/ui/Modal"
 import { Button } from "@/components/ui/Button"
 import { Alert } from "@/components/ui/Alert"
-import { ActionState, initialActionState } from "@/lib/actionState"
+import { ActionState } from "@/lib/actionState"
+import { useActionFormState } from "@/lib/useActionFormState"
 import styles from "./DeleteReservationButton.module.css"
 
 interface DeleteReservationButtonProps {
@@ -53,7 +54,7 @@ interface ConfirmCancelFormProps {
  * boundary the way it can a locally-defined setter).
  */
 function ConfirmCancelForm({ scheduleId, action, onClose }: ConfirmCancelFormProps) {
-    const [state, formAction] = useActionState(action, initialActionState)
+    const [state, formAction] = useActionFormState(action)
 
     useEffect(() => {
         if (state.success) {

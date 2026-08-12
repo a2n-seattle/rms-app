@@ -1,9 +1,10 @@
 "use client"
 
-import { useActionState, useEffect } from "react"
+import { useEffect } from "react"
 import { Button } from "@/components/ui/Button"
 import { Alert } from "@/components/ui/Alert"
-import { ActionState, initialActionState } from "@/lib/actionState"
+import { ActionState } from "@/lib/actionState"
+import { useActionFormState } from "@/lib/useActionFormState"
 import type { MainSchema } from "@/lib/api/types"
 import styles from "./EditFamilyModal.module.css"
 
@@ -15,7 +16,7 @@ interface EditFamilyFormProps {
 }
 
 export function EditFamilyForm({ main, action, onClose, onRequestDelete }: EditFamilyFormProps) {
-    const [state, formAction] = useActionState(action, initialActionState)
+    const [state, formAction] = useActionFormState(action)
 
     useEffect(() => {
         if (state.success) {

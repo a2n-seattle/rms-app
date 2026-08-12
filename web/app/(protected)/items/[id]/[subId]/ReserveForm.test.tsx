@@ -1,3 +1,7 @@
+jest.mock("next/navigation", () => ({
+    useRouter: () => ({ refresh: jest.fn() }),
+}))
+
 import { render, screen } from "@testing-library/react"
 import { ReserveForm } from "./ReserveForm"
 

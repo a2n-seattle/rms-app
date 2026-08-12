@@ -1,7 +1,6 @@
 import { getSession } from "@/lib/session"
 import { listBatches } from "@/lib/api/listBatches"
 import { createBatch } from "@/lib/api/createBatch"
-import { revalidatePath } from "next/cache"
 import { ActionState, runAction } from "@/lib/actionState"
 import { Card } from "@/components/ui/Card"
 import { Table } from "@/components/ui/Table"
@@ -35,7 +34,6 @@ export default async function BatchesPage({
             const groups = groupsRaw.split(/[\s,]+/).filter((s) => s.length > 0)
 
             await createBatch(session.idToken, { name, ids, groups: groups.length > 0 ? groups : undefined })
-            revalidatePath("/batches")
         })
     }
 

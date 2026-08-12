@@ -1,13 +1,13 @@
 "use client"
 
-import { useActionState, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { Modal } from "@/components/ui/Modal"
 import { Button } from "@/components/ui/Button"
 import { Alert } from "@/components/ui/Alert"
 import { useCart } from "@/lib/cart/CartContext"
 import { submitBorrowOrReserve } from "@/lib/actions/cart"
 import { getBorrowDefaults, getReserveDefaults, toLocalInputValue } from "@/lib/cart/defaults"
-import { initialActionState } from "@/lib/actionState"
+import { useActionFormState } from "@/lib/useActionFormState"
 import styles from "./CartCheckoutModal.module.css"
 
 interface CartCheckoutModalProps {
@@ -16,14 +16,14 @@ interface CartCheckoutModalProps {
 }
 
 /**
- * Reads useActionState() directly instead of using <ActionForm> -- unlike
+ * Reads useActionFormState() directly instead of using <ActionForm> -- unlike
  * every other form in this app, this one needs a completion callback (clear
  * the cart and close itself on success), which ActionForm doesn't expose.
  */
 export function CartCheckoutModal({ open, onClose }: CartCheckoutModalProps) {
     const cart = useCart()
     const [mode, setMode] = useState<"borrow" | "reserve">("borrow")
-    const [state, formAction] = useActionState(submitBorrowOrReserve, initialActionState)
+    const [state, formAction] = useActionFormState(submitBorrowOrReserve)
 
     useEffect(() => {
         if (state.success) {

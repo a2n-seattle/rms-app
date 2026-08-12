@@ -5,7 +5,6 @@ import { returnItem } from "@/lib/api/returnItem"
 import { createReservation } from "@/lib/api/createReservation"
 import { updateSubItem } from "@/lib/api/updateSubItem"
 import { deleteItem } from "@/lib/api/deleteItem"
-import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { ActionState, runAction } from "@/lib/actionState"
 import { Card } from "@/components/ui/Card"
@@ -36,7 +35,6 @@ export default async function SubItemDetailPage({ params }: { params: Promise<{ 
                 return
             }
             await borrowItem(session.idToken, { ids: [subId], borrower: session.sub })
-            revalidatePath(`/items/${id}/${subId}`)
         })
     }
 
@@ -48,7 +46,6 @@ export default async function SubItemDetailPage({ params }: { params: Promise<{ 
                 return
             }
             await returnItem(session.idToken, { ids: [subId], borrower: session.sub })
-            revalidatePath(`/items/${id}/${subId}`)
         })
     }
 
@@ -70,7 +67,6 @@ export default async function SubItemDetailPage({ params }: { params: Promise<{ 
                 endTime,
                 notes: notes || undefined,
             })
-            revalidatePath(`/items/${id}/${subId}`)
         })
     }
 
@@ -84,7 +80,6 @@ export default async function SubItemDetailPage({ params }: { params: Promise<{ 
             const name = formData.get("name") as string
             const notes = formData.get("notes") as string
             await updateSubItem(session.idToken, { id: subId, name, notes })
-            revalidatePath(`/items/${id}/${subId}`)
         })
     }
 
@@ -98,12 +93,10 @@ export default async function SubItemDetailPage({ params }: { params: Promise<{ 
             await deleteItem(session.idToken, { id: subId })
             // If this was the family's last item, DeleteItem's cascade already
             // removed the family row too -- /items/[id]/[subId] itself is no
-            // longer valid, so redirect instead of revalidating in place.
+            // longer valid, so redirect there instead.
             if (items.length === 1) {
-                revalidatePath("/browse")
                 redirect("/browse")
             }
-            revalidatePath(`/items/${id}`)
             redirect(`/items/${id}`)
         })
     }

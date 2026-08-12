@@ -1,13 +1,13 @@
 "use client"
 
-import { useActionState, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { Modal } from "@/components/ui/Modal"
 import { Button } from "@/components/ui/Button"
 import { Alert } from "@/components/ui/Alert"
 import { Badge } from "@/components/ui/Badge"
 import { resolveFamilyAvailability, submitBorrowOrReserve, AvailableItem } from "@/lib/actions/cart"
 import { getBorrowDefaults, getReserveDefaults, toLocalInputValue } from "@/lib/cart/defaults"
-import { initialActionState } from "@/lib/actionState"
+import { useActionFormState } from "@/lib/useActionFormState"
 import styles from "./OneClickPrompt.module.css"
 
 interface OneClickPromptProps {
@@ -28,7 +28,7 @@ interface OneClickPromptProps {
 export function OneClickPrompt({ open, onClose, mode, familyId, familyName }: OneClickPromptProps) {
     const [available, setAvailable] = useState<AvailableItem[] | null>(null)
     const [total, setTotal] = useState(0)
-    const [state, formAction] = useActionState(submitBorrowOrReserve, initialActionState)
+    const [state, formAction] = useActionFormState(submitBorrowOrReserve)
 
     useEffect(() => {
         if (!open) {

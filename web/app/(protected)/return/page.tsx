@@ -1,7 +1,6 @@
 import { getSession } from "@/lib/session"
 import { listMyBorrowedItems } from "@/lib/api/listMyBorrowedItems"
 import { returnItem } from "@/lib/api/returnItem"
-import { revalidatePath } from "next/cache"
 import { ActionState, runAction } from "@/lib/actionState"
 import { ReturnSelection } from "./ReturnSelection"
 import styles from "./return.module.css"
@@ -44,8 +43,6 @@ export default async function ReturnPage({
                 notes: notes || undefined,
                 conditions: Object.keys(conditions).length > 0 ? conditions : undefined,
             })
-            revalidatePath("/return")
-            revalidatePath("/dashboard")
         })
     }
 

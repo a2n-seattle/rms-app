@@ -1,11 +1,11 @@
 "use client"
 
-import { useActionState, useEffect } from "react"
+import { useEffect } from "react"
 import { Modal } from "@/components/ui/Modal"
 import { Button } from "@/components/ui/Button"
 import { Alert } from "@/components/ui/Alert"
 import { submitOneClickReturn } from "@/lib/actions/cart"
-import { initialActionState } from "@/lib/actionState"
+import { useActionFormState } from "@/lib/useActionFormState"
 import styles from "./OneClickPrompt.module.css"
 
 interface OneClickReturnPromptProps {
@@ -24,7 +24,7 @@ interface OneClickReturnPromptProps {
  * OneClickPrompt -- no time fields, just notes.
  */
 export function OneClickReturnPrompt({ open, onClose, ids, familyName }: OneClickReturnPromptProps) {
-    const [state, formAction] = useActionState(submitOneClickReturn, initialActionState)
+    const [state, formAction] = useActionFormState(submitOneClickReturn)
 
     useEffect(() => {
         if (state.success) {

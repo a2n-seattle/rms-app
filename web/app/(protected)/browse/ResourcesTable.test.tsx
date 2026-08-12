@@ -4,6 +4,11 @@ jest.mock("@/lib/actions/cart", () => ({
     submitOneClickReturn: jest.fn(),
 }))
 
+const mockRefresh = jest.fn()
+jest.mock("next/navigation", () => ({
+    useRouter: () => ({ refresh: mockRefresh }),
+}))
+
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import { CartProvider, useCart } from "@/lib/cart/CartContext"
 import { resolveFamilyAvailability } from "@/lib/actions/cart"

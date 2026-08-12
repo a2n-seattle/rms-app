@@ -7,7 +7,6 @@ import { addItem } from "@/lib/api/addItem"
 import { deleteItem } from "@/lib/api/deleteItem"
 import { updateItem } from "@/lib/api/updateItem"
 import { updateSubItem } from "@/lib/api/updateSubItem"
-import { revalidatePath } from "next/cache"
 import { ActionState, runAction } from "@/lib/actionState"
 import { Card } from "@/components/ui/Card"
 import { Badge } from "@/components/ui/Badge"
@@ -56,7 +55,6 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
                 endTime,
                 notes: notes || undefined,
             })
-            revalidatePath(`/items/${id}`)
         })
     }
 
@@ -82,7 +80,6 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
                 endTime,
             })
             await borrowFromSchedule(session.idToken, { scheduleId })
-            revalidatePath(`/items/${id}`)
         })
     }
 
@@ -98,7 +95,6 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
             const description = formData.get("description") as string
             const location = formData.get("location") as string
             await updateItem(session.idToken, { id: familyId, name, description, location })
-            revalidatePath(`/items/${familyId}`)
         })
     }
 
@@ -117,7 +113,6 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
             for (const item of items) {
                 await deleteItem(session.idToken, { id: item.id })
             }
-            revalidatePath("/browse")
             redirect("/browse")
         })
     }
@@ -136,7 +131,6 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
                 friendlyName: friendlyName || undefined,
                 notes: notes || undefined,
             })
-            revalidatePath(`/items/${id}`)
         })
     }
 
@@ -151,7 +145,6 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
             const name = formData.get("name") as string
             const notes = formData.get("notes") as string
             await updateSubItem(session.idToken, { id: itemId, name, notes })
-            revalidatePath(`/items/${id}`)
         })
     }
 
@@ -166,12 +159,10 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
             await deleteItem(session.idToken, { id: itemId })
             // If this was the family's last item, DeleteItem's cascade
             // already removed the family row too -- /items/[id] itself is
-            // no longer valid, so redirect instead of revalidating in place.
+            // no longer valid, so redirect instead of refreshing in place.
             if (items.length === 1) {
-                revalidatePath("/browse")
                 redirect("/browse")
             }
-            revalidatePath(`/items/${id}`)
         })
     }
 

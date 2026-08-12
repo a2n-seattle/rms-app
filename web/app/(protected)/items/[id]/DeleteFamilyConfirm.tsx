@@ -1,9 +1,9 @@
 "use client"
 
-import { useActionState } from "react"
 import { Button } from "@/components/ui/Button"
 import { Alert } from "@/components/ui/Alert"
-import { ActionState, initialActionState } from "@/lib/actionState"
+import { ActionState } from "@/lib/actionState"
+import { useActionFormState } from "@/lib/useActionFormState"
 import styles from "./EditFamilyModal.module.css"
 
 interface DeleteFamilyConfirmProps {
@@ -14,7 +14,7 @@ interface DeleteFamilyConfirmProps {
 }
 
 export function DeleteFamilyConfirm({ familyId, itemCount, action, onCancel }: DeleteFamilyConfirmProps) {
-    const [state, formAction] = useActionState(action, initialActionState)
+    const [state, formAction] = useActionFormState(action)
 
     return (
         <form action={formAction} className={styles.form}>

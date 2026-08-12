@@ -1,5 +1,10 @@
 jest.mock("@/lib/actions/cart", () => ({ submitOneClickReturn: jest.fn() }))
 
+const mockRefresh = jest.fn()
+jest.mock("next/navigation", () => ({
+    useRouter: () => ({ refresh: mockRefresh }),
+}))
+
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import { submitOneClickReturn } from "@/lib/actions/cart"
 import { OneClickReturnPrompt } from "./OneClickReturnPrompt"

@@ -1,9 +1,10 @@
 "use client"
 
-import { useActionState, useEffect } from "react"
+import { useEffect } from "react"
 import { Button } from "@/components/ui/Button"
 import { Alert } from "@/components/ui/Alert"
-import { ActionState, initialActionState } from "@/lib/actionState"
+import { ActionState } from "@/lib/actionState"
+import { useActionFormState } from "@/lib/useActionFormState"
 import styles from "./EditSubItemModal.module.css"
 
 interface DeleteSubItemConfirmProps {
@@ -14,10 +15,10 @@ interface DeleteSubItemConfirmProps {
 }
 
 export function DeleteSubItemConfirm({ itemId, action, onClose, onCancel }: DeleteSubItemConfirmProps) {
-    const [state, formAction] = useActionState(action, initialActionState)
+    const [state, formAction] = useActionFormState(action)
 
     // Only reached when deleteSubItemAction didn't redirect -- i.e. this wasn't the family's
-    // last item, so the page just revalidates in place instead of navigating away.
+    // last item, so the page just refreshes in place instead of navigating away.
     useEffect(() => {
         if (state.success) {
             onClose()

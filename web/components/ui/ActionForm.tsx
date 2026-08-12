@@ -1,8 +1,8 @@
 "use client"
 
-import { useActionState } from "react"
 import { Alert } from "./Alert"
-import { ActionState, initialActionState } from "@/lib/actionState"
+import { ActionState } from "@/lib/actionState"
+import { useActionFormState } from "@/lib/useActionFormState"
 
 interface ActionFormProps extends Omit<React.FormHTMLAttributes<HTMLFormElement>, "action"> {
     action: (prevState: ActionState, formData: FormData) => Promise<ActionState>
@@ -11,14 +11,15 @@ interface ActionFormProps extends Omit<React.FormHTMLAttributes<HTMLFormElement>
 }
 
 /**
- * Drop-in replacement for a raw `<form action={serverAction}>` -- wraps React's
- * useActionState so every borrow/return/reserve/etc. form gets the same inline
- * success/error feedback instead of an uncaught Server Action error surfacing as
- * Next's generic crash page (see web/lib/actionState.ts's runAction, which every
- * `action` passed here is expected to be built with).
+ * Drop-in replacement for a raw `<form action={serverAction}>` -- wraps
+ * useActionFormState so every borrow/return/reserve/etc. form gets the same
+ * inline success/error feedback instead of an uncaught Server Action error
+ * surfacing as Next's generic crash page (see web/lib/actionState.ts's
+ * runAction, which every `action` passed here is expected to be built with),
+ * and a fresh page refresh on success (see web/lib/useActionFormState.ts).
  */
 export function ActionForm({ action, successMessage, children, ...formProps }: ActionFormProps) {
-    const [state, formAction] = useActionState(action, initialActionState)
+    const [state, formAction] = useActionFormState(action)
 
     return (
         <form action={formAction} {...formProps}>
