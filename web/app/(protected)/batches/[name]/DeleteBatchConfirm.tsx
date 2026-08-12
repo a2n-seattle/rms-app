@@ -1,9 +1,9 @@
 "use client"
 
-import { useActionState } from "react"
 import { Button } from "@/components/ui/Button"
 import { Alert } from "@/components/ui/Alert"
-import { ActionState, initialActionState } from "@/lib/actionState"
+import { ActionState } from "@/lib/actionState"
+import { useActionFormState } from "@/lib/useActionFormState"
 import styles from "../BatchModal.module.css"
 
 interface DeleteBatchConfirmProps {
@@ -13,7 +13,7 @@ interface DeleteBatchConfirmProps {
 }
 
 export function DeleteBatchConfirm({ name, action, onCancel }: DeleteBatchConfirmProps) {
-    const [state, formAction] = useActionState(action, initialActionState)
+    const [state, formAction] = useActionFormState(action)
 
     return (
         <form action={formAction} className={styles.form}>

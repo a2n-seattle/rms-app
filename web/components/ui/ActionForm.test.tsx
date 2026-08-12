@@ -1,6 +1,17 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
-import { ActionForm } from "./ActionForm"
 import type { ActionState } from "@/lib/actionState"
+
+const mockRefresh = jest.fn()
+
+jest.mock("next/navigation", () => ({
+    useRouter: () => ({ refresh: mockRefresh }),
+}))
+
+import { ActionForm } from "./ActionForm"
+
+afterEach(() => {
+    jest.clearAllMocks()
+})
 
 test("shows a success alert after the action resolves { success: true }", async () => {
     const action = jest.fn(async (): Promise<ActionState> => ({ success: true }))
@@ -41,6 +52,20 @@ test("shows an error alert with the action's message after it resolves { success
         )
     })
     expect(screen.queryByRole("status")).toBeNull()
+})
+
+test("calls router.refresh() after the action resolves { success: true } (GH-395)", async () => {
+    const action = jest.fn(async (): Promise<ActionState> => ({ success: true }))
+
+    render(
+        <ActionForm action={action} successMessage="It worked.">
+            <button type="submit">Go</button>
+        </ActionForm>
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: "Go" }))
+
+    await waitFor(() => expect(mockRefresh).toHaveBeenCalledTimes(1))
 })
 
 test("shows neither alert before the form has been submitted", () => {

@@ -1,3 +1,8 @@
+const mockRefresh = jest.fn()
+jest.mock("next/navigation", () => ({
+    useRouter: () => ({ refresh: mockRefresh }),
+}))
+
 import { render, screen, fireEvent } from "@testing-library/react"
 import { ReturnGroupSelection } from "./ReturnGroupSelection"
 import type { ItemsSchema } from "@/lib/api/types"

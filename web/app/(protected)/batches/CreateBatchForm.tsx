@@ -1,9 +1,10 @@
 "use client"
 
-import { useActionState, useEffect } from "react"
+import { useEffect } from "react"
 import { Button } from "@/components/ui/Button"
 import { Alert } from "@/components/ui/Alert"
-import { ActionState, initialActionState } from "@/lib/actionState"
+import { ActionState } from "@/lib/actionState"
+import { useActionFormState } from "@/lib/useActionFormState"
 import styles from "./BatchModal.module.css"
 
 interface CreateBatchFormProps {
@@ -12,7 +13,7 @@ interface CreateBatchFormProps {
 }
 
 export function CreateBatchForm({ action, onClose }: CreateBatchFormProps) {
-    const [state, formAction] = useActionState(action, initialActionState)
+    const [state, formAction] = useActionFormState(action)
 
     useEffect(() => {
         if (state.success) {

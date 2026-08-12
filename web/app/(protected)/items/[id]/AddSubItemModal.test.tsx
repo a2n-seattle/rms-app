@@ -1,3 +1,8 @@
+const mockRefresh = jest.fn()
+jest.mock("next/navigation", () => ({
+    useRouter: () => ({ refresh: mockRefresh }),
+}))
+
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import { AddSubItemModal } from "./AddSubItemModal"
 import type { ActionState } from "@/lib/actionState"

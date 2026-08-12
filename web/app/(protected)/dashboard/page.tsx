@@ -7,7 +7,6 @@ import { listHistory } from "@/lib/api/listHistory"
 import { borrowFromSchedule } from "@/lib/api/borrowFromSchedule"
 import { deleteReservation } from "@/lib/api/deleteReservation"
 import { extendReservation } from "@/lib/api/extendReservation"
-import { revalidatePath } from "next/cache"
 import { ActionState, runAction } from "@/lib/actionState"
 import { Card } from "@/components/ui/Card"
 import { Table } from "@/components/ui/Table"
@@ -58,7 +57,6 @@ export default async function DashboardPage({
             }
             const scheduleId = formData.get("scheduleId") as string
             await borrowFromSchedule(session.idToken, { scheduleId })
-            revalidatePath("/dashboard")
         })
     }
 
@@ -71,7 +69,6 @@ export default async function DashboardPage({
             }
             const scheduleId = formData.get("scheduleId") as string
             await deleteReservation(session.idToken, { id: scheduleId })
-            revalidatePath("/dashboard")
         })
     }
 
@@ -85,7 +82,6 @@ export default async function DashboardPage({
             const scheduleId = formData.get("scheduleId") as string
             const newEndTime = new Date(formData.get("newEndTime") as string).getTime()
             await extendReservation(session.idToken, { id: scheduleId, newEndTime })
-            revalidatePath("/dashboard")
         })
     }
 

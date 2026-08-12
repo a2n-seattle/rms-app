@@ -1,5 +1,10 @@
 jest.mock("@/lib/actions/cart", () => ({ submitBorrowOrReserve: jest.fn() }))
 
+const mockRefresh = jest.fn()
+jest.mock("next/navigation", () => ({
+    useRouter: () => ({ refresh: mockRefresh }),
+}))
+
 import { useEffect } from "react"
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import { CartProvider, useCart, CartEntry } from "@/lib/cart/CartContext"

@@ -1,7 +1,6 @@
 import { getSession } from "@/lib/session"
 import { getBorrowGroup } from "@/lib/api/getBorrowGroup"
 import { returnItem } from "@/lib/api/returnItem"
-import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { ActionState, runAction } from "@/lib/actionState"
 import { ReturnGroupSelection } from "./ReturnGroupSelection"
@@ -40,8 +39,6 @@ export default async function ReturnGroupPage({ params }: { params: Promise<{ gr
                 notes: notes || undefined,
                 conditions: Object.keys(conditions).length > 0 ? conditions : undefined,
             })
-            revalidatePath("/dashboard")
-            revalidatePath("/return")
             redirect("/dashboard?tab=borrowed")
         })
     }

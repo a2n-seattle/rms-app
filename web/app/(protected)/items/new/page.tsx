@@ -1,6 +1,5 @@
 import { getSession } from "@/lib/session"
 import { addItem } from "@/lib/api/addItem"
-import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { ActionState, runAction } from "@/lib/actionState"
 import { CreateItemForm } from "./CreateItemForm"
@@ -39,7 +38,6 @@ export default async function NewItemPage() {
                 friendlyName: friendlyName || undefined,
                 notes: notes || undefined,
             })
-            revalidatePath("/browse")
             redirect(`/items/${encodeURIComponent(id)}`)
         })
     }

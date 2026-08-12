@@ -1,3 +1,8 @@
+const mockRefresh = jest.fn()
+jest.mock("next/navigation", () => ({
+    useRouter: () => ({ refresh: mockRefresh }),
+}))
+
 import { render, screen, fireEvent } from "@testing-library/react"
 import { CartProvider, useCart } from "@/lib/cart/CartContext"
 import { ResourceBasket } from "./ResourceBasket"

@@ -3,6 +3,11 @@ jest.mock("@/lib/actions/cart", () => ({
     submitBorrowOrReserve: jest.fn(),
 }))
 
+const mockRefresh = jest.fn()
+jest.mock("next/navigation", () => ({
+    useRouter: () => ({ refresh: mockRefresh }),
+}))
+
 import { render, screen, waitFor, fireEvent } from "@testing-library/react"
 import { resolveFamilyAvailability, submitBorrowOrReserve } from "@/lib/actions/cart"
 import { OneClickPrompt } from "./OneClickPrompt"

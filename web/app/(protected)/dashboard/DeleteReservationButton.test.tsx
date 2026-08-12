@@ -1,3 +1,8 @@
+const mockRefresh = jest.fn()
+jest.mock("next/navigation", () => ({
+    useRouter: () => ({ refresh: mockRefresh }),
+}))
+
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import { DeleteReservationButton } from "./DeleteReservationButton"
 import type { ActionState } from "@/lib/actionState"
