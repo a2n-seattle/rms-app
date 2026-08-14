@@ -5,7 +5,6 @@ import { getItem } from "@/lib/api/getItem"
 import { createReservation } from "@/lib/api/createReservation"
 import { borrowFromSchedule } from "@/lib/api/borrowFromSchedule"
 import { returnItem } from "@/lib/api/returnItem"
-import { revalidatePath } from "next/cache"
 import { ActionState, runAction } from "@/lib/actionState"
 
 /**
@@ -80,9 +79,6 @@ export async function submitBorrowOrReserve(_prevState: ActionState, formData: F
                 notes,
             })
         }
-
-        revalidatePath("/browse")
-        revalidatePath("/dashboard")
     })
 }
 
@@ -97,9 +93,5 @@ export async function submitOneClickReturn(_prevState: ActionState, formData: Fo
         const notes = (formData.get("notes") as string) || undefined
 
         await returnItem(session.idToken, { ids, borrower: session.sub, notes })
-
-        revalidatePath("/browse")
-        revalidatePath("/return")
-        revalidatePath("/dashboard")
     })
 }
