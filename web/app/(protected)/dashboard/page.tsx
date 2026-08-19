@@ -40,12 +40,18 @@ export default async function DashboardPage({
     // back their own tab's content, so skip the Scan entirely when that tab isn't active --
     // this repo's DynamoDB tables are deliberately provisioned at 1 RCU/1 WCU (see root
     // CLAUDE.md), and this page's fan-out is the single biggest per-render read cost.
-    const [upcoming, overdue, borrowed, owned] = await Promise.all([
-        listUpcomingReservations(session.idToken, { borrower: session.sub }),
-        listOverdueItems(session.idToken, { borrower: session.sub }),
-        tab === "borrowed" ? listMyBorrowedItems(session.idToken, { borrower: session.sub }) : undefined,
-        tab === "owned" ? listMyOwnedItems(session.idToken, { ownerId: session.sub }) : undefined,
-    ])
+    //
+    // Sequential, not Promise.all -- see GH-395: every tableName: null crash confirmed via
+    // CloudWatch has been on a page using Promise.all for concurrent data fetching (this
+    // page and browse/page.tsx), while single-await pages have shown no confirmed crashes.
+    // Working theory is Amplify Hosting's injected SSR caching wrapper loses request-scoped
+    // async context across concurrent Promise.all branches. Slower (sequential RCU reads
+    // against 1 RCU/1 WCU tables), but correctness over the parallel-read optimization until
+    // GH-395 is otherwise resolved.
+    const upcoming = await listUpcomingReservations(session.idToken, { borrower: session.sub })
+    const overdue = await listOverdueItems(session.idToken, { borrower: session.sub })
+    const borrowed = tab === "borrowed" ? await listMyBorrowedItems(session.idToken, { borrower: session.sub }) : undefined
+    const owned = tab === "owned" ? await listMyOwnedItems(session.idToken, { ownerId: session.sub }) : undefined
     const history = tab === "history" ? await listHistory(session.idToken, { borrower: session.sub }) : undefined
 
     async function borrowFromScheduleAction(_prevState: ActionState, formData: FormData): Promise<ActionState> {

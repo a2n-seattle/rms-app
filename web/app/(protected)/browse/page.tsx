@@ -20,10 +20,10 @@ export default async function BrowsePage({
     // family's full item data) is what lets a row show a one-click Return action for the
     // "forgot I had this borrowed" case without violating this repo's 1 RCU/1 WCU table
     // budget (see root CLAUDE.md).
-    const [{ items, nextPageToken }, { items: myBorrowed }] = await Promise.all([
-        listItems(session.idToken, { pageToken: page }),
-        listMyBorrowedItems(session.idToken, { borrower: session.sub }),
-    ])
+    //
+    // Sequential, not Promise.all -- see GH-395's comment in dashboard/page.tsx for why.
+    const { items, nextPageToken } = await listItems(session.idToken, { pageToken: page })
+    const { items: myBorrowed } = await listMyBorrowedItems(session.idToken, { borrower: session.sub })
 
     const myBorrowedByFamily: Record<string, { id: string; name: string }[]> = {}
     for (const item of myBorrowed) {
