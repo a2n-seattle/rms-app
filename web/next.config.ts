@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.join(__dirname),
   },
+  // No-op cache handler -- see cache-handler.js for why.
+  cacheHandler: path.join(__dirname, "cache-handler.js"),
+  cacheMaxMemorySize: 0,
 };
 
 export default nextConfig;
